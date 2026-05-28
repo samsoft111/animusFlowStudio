@@ -1,0 +1,131 @@
+{
+  "nav": {
+    "dashboard": "Dashboard",
+    "themes": "Themes",
+    "plugins": "Plugins",
+    "settings": "Settings",
+    "about": "About",
+    "create": "Create",
+    "system": "System"
+  },
+  "topbar": {
+    "dark_mode": "Dark mode",
+    "light_mode": "Light mode",
+    "language": "Language",
+    "logout": "Log out"
+  },
+  "common": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "create": "Create",
+    "edit": "Edit",
+    "delete": "Delete",
+    "export": "Export ZIP",
+    "search": "Search",
+    "loading": "Loading…",
+    "yes": "Yes",
+    "no": "No",
+    "new": "New",
+    "status": "Status",
+    "version": "Version",
+    "description": "Description",
+    "label": "Label",
+    "name": "Name",
+    "actions": "Actions",
+    "confirm_delete": "Delete \"{name}\"?",
+    "no_items": "No items yet"
+  },
+  "auth": {
+    "sign_in": "Sign in",
+    "sign_in_subtitle": "Access your studio",
+    "email": "Email",
+    "password": "Password",
+    "remember": "Remember me",
+    "signing_in": "Signing in…",
+    "tagline": "Build themes & plugins for AnimusFlow",
+    "footer": "AnimusFlow — The AI-native CMS"
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "themes": "Themes",
+    "plugins": "Plugins",
+    "published": "Published",
+    "recent_themes": "Recent themes",
+    "recent_plugins": "Recent plugins",
+    "no_themes": "No themes yet",
+    "no_plugins": "No plugins yet",
+    "create_theme": "Create first theme",
+    "create_plugin": "Create first plugin",
+    "draft": "Draft",
+    "ready": "Ready",
+    "welcome": "Welcome to AnimusFlowStudio"
+  },
+  "themes": {
+    "title": "Themes",
+    "new": "New Theme",
+    "create_title": "Create New Theme",
+    "edit_title": "Edit: {name}",
+    "slug": "Slug (name)",
+    "slug_hint": "Lowercase letters, numbers, hyphens, underscores.",
+    "details": "Theme Details",
+    "colors": "Color Tokens",
+    "colors_hint": "Enter CSS values (e.g. #6366f1 or oklch(0.55 0.22 265)).",
+    "preview_url": "Preview URL",
+    "no_themes": "No themes yet",
+    "no_themes_desc": "Create your first AnimusFlow theme.",
+    "status": {
+      "draft": "Draft",
+      "ready": "Ready",
+      "published": "Published"
+    }
+  },
+  "plugins": {
+    "title": "Plugins",
+    "new": "New Plugin",
+    "create_title": "Create New Plugin",
+    "edit_title": "Edit: {name}",
+    "slug": "Slug (name)",
+    "details": "Plugin Details",
+    "plugin_php": "Plugin.php",
+    "widget_blade": "Widget Blade",
+    "widget_blade_hint": "optional — for page.render hook",
+    "widget_js": "Widget JavaScript",
+    "widget_js_hint": "optional",
+    "hooks": "Hooks",
+    "no_plugins": "No plugins yet",
+    "no_plugins_desc": "Create your first AnimusFlow plugin.",
+    "status": {
+      "draft": "Draft",
+      "ready": "Ready",
+      "published": "Published"
+    }
+  },
+  "settings": {
+    "title": "Settings",
+    "studio_config": "Studio Configuration",
+    "studio_name": "Studio Name",
+    "marketplace": "AnimusFlow Marketplace",
+    "animus_api_url": "Animus API URL",
+    "ai_provider": "AI Provider",
+    "provider": "Provider",
+    "model": "Model",
+    "api_key": "API Key",
+    "save": "Save Settings",
+    "providers": {
+      "claude": "Claude (Anthropic)",
+      "openai": "OpenAI",
+      "gemini": "Google Gemini"
+    }
+  },
+  "about": {
+    "title": "About",
+    "contact": "Contact",
+    "developer": "Developer",
+    "project": "Project",
+    "tech_stack": "Tech Stack",
+    "version": "Version",
+    "description": "Theme & plugin development tool for the AnimusFlow CMS.",
+    "open_source": "Open Source",
+    "license": "MIT License"
+  }
+}

@@ -11,34 +11,38 @@
           </div>
           <div>
             <p class="font-bold text-sidebar-foreground text-sm leading-tight">AnimusFlowStudio</p>
-            <p class="text-[11px] text-sidebar-muted">Theme & Plugin Builder</p>
+            <p class="text-[11px] text-sidebar-muted">Theme &amp; Plugin Builder</p>
           </div>
         </div>
       </div>
 
       <!-- Nav -->
       <nav class="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
-        <SidebarLink :href="route('dashboard')" :active="isActive('dashboard')">
+        <SidebarLink href="/dashboard" :active="isActive('dashboard')">
           <LayoutDashboardIcon class="w-4 h-4" />
-          Dashboard
+          {{ t('nav.dashboard') }}
         </SidebarLink>
         <div class="px-3 pt-4 pb-1">
-          <p class="text-[10px] uppercase tracking-widest text-sidebar-muted font-semibold">Create</p>
+          <p class="text-[10px] uppercase tracking-widest text-sidebar-muted font-semibold">{{ t('nav.create') }}</p>
         </div>
-        <SidebarLink :href="route('themes.index')" :active="isActive('themes')">
+        <SidebarLink href="/themes" :active="isActive('themes')">
           <PaletteIcon class="w-4 h-4" />
-          Themes
+          {{ t('nav.themes') }}
         </SidebarLink>
-        <SidebarLink :href="route('plugins.index')" :active="isActive('plugins')">
+        <SidebarLink href="/plugins" :active="isActive('plugins')">
           <PuzzleIcon class="w-4 h-4" />
-          Plugins
+          {{ t('nav.plugins') }}
         </SidebarLink>
         <div class="px-3 pt-4 pb-1">
-          <p class="text-[10px] uppercase tracking-widest text-sidebar-muted font-semibold">System</p>
+          <p class="text-[10px] uppercase tracking-widest text-sidebar-muted font-semibold">{{ t('nav.system') }}</p>
         </div>
-        <SidebarLink :href="route('settings.index')" :active="isActive('settings')">
+        <SidebarLink href="/settings" :active="isActive('settings')">
           <SettingsIcon class="w-4 h-4" />
-          Settings
+          {{ t('nav.settings') }}
+        </SidebarLink>
+        <SidebarLink href="/about" :active="isActive('about')">
+          <InfoIcon class="w-4 h-4" />
+          {{ t('nav.about') }}
         </SidebarLink>
       </nav>
 
@@ -55,6 +59,39 @@
         <h1 class="font-semibold text-foreground text-sm">{{ title }}</h1>
         <div class="flex items-center gap-2">
           <slot name="actions" />
+
+          <!-- Language switcher -->
+          <div class="relative">
+            <button @click="langOpen = !langOpen"
+              class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold text-muted-foreground hover:bg-muted transition-colors">
+              <GlobeIcon class="w-3.5 h-3.5" />
+              <span class="uppercase">{{ locale }}</span>
+            </button>
+            <div v-if="langOpen"
+              class="absolute right-0 top-full mt-1 w-28 bg-card border border-border rounded-xl shadow-lg z-50 py-1 overflow-hidden">
+              <button v-for="lang in languages" :key="lang.code"
+                @click="setLocale(lang.code)"
+                class="w-full flex items-center gap-2 px-3 py-2 text-xs hover:bg-muted transition-colors"
+                :class="locale === lang.code ? 'text-primary font-semibold' : 'text-foreground'">
+                <span>{{ lang.flag }}</span>
+                <span>{{ lang.label }}</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Theme toggle -->
+          <button @click="toggleTheme" :title="isDark ? t('topbar.light_mode') : t('topbar.dark_mode')"
+            class="w-8 h-8 flex items-center justify-center rounded-lg text-muted-foreground hover:bg-muted transition-colors">
+            <MoonIcon v-if="!isDark" class="w-4 h-4" />
+            <SunIcon v-else class="w-4 h-4" />
+          </button>
+
+          <!-- Logout -->
+          <button @click="logout"
+            class="w-8 h-8 flex items-center justify-center rounded-lg text-muted-foreground hover:bg-muted transition-colors"
+            :title="t('topbar.logout')">
+            <LogOutIcon class="w-4 h-4" />
+          </button>
         </div>
       </header>
 
@@ -81,30 +118,60 @@
 </template>
 
 <script setup>
-import { computed } from 'vue';
-import { usePage } from '@inertiajs/vue3';
+import { ref, computed, onMounted, onBeforeUnmount } from 'vue';
+import { usePage, router } from '@inertiajs/vue3';
+import { useI18n } from 'vue-i18n';
 import SidebarLink from '@/Components/SidebarLink.vue';
 import {
   LayoutDashboardIcon, PaletteIcon, PuzzleIcon,
   SettingsIcon, CheckCircleIcon, XCircleIcon,
+  MoonIcon, SunIcon, GlobeIcon, LogOutIcon, InfoIcon,
 } from 'lucide-vue-next';
 
-const props = defineProps({ title: { type: String, default: '' } });
+defineProps({ title: { type: String, default: '' } });
+
+const { t, locale } = useI18n();
 
 const page  = usePage();
 const flash = computed(() => page.props.flash ?? {});
 
+/* ── Dark / light theme ── */
+const isDark = ref(localStorage.getItem('theme') === 'dark');
+
+function toggleTheme() {
+  isDark.value = !isDark.value;
+  const theme = isDark.value ? 'dark' : 'light';
+  localStorage.setItem('theme', theme);
+  document.documentElement.setAttribute('data-theme', isDark.value ? 'dark' : '');
+}
+
+/* ── Language switcher ── */
+const langOpen = ref(false);
+const languages = [
+  { code: 'pt', label: 'Português', flag: '🇵🇹' },
+  { code: 'en', label: 'English',   flag: '🇬🇧' },
+];
+
+function setLocale(code) {
+  locale.value = code;
+  localStorage.setItem('locale', code);
+  langOpen.value = false;
+}
+
+function closeLang(e) {
+  if (!e.target.closest('.relative')) langOpen.value = false;
+}
+
+onMounted(() => document.addEventListener('click', closeLang));
+onBeforeUnmount(() => document.removeEventListener('click', closeLang));
+
+/* ── Navigation helpers ── */
 function isActive(segment) {
   return window.location.pathname.startsWith('/' + segment);
 }
 
-function route(name) {
-  const map = {
-    'dashboard':    '/dashboard',
-    'themes.index': '/themes',
-    'plugins.index':'/plugins',
-    'settings.index':'/settings',
-  };
-  return map[name] ?? '/';
+/* ── Logout ── */
+function logout() {
+  router.post('/logout');
 }
 </script>

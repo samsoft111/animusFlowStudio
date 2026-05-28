@@ -1,0 +1,131 @@
+{
+  "nav": {
+    "dashboard": "Dashboard",
+    "themes": "Temas",
+    "plugins": "Plugins",
+    "settings": "Definições",
+    "about": "Sobre",
+    "create": "Criar",
+    "system": "Sistema"
+  },
+  "topbar": {
+    "dark_mode": "Modo escuro",
+    "light_mode": "Modo claro",
+    "language": "Idioma",
+    "logout": "Sair"
+  },
+  "common": {
+    "save": "Guardar",
+    "cancel": "Cancelar",
+    "create": "Criar",
+    "edit": "Editar",
+    "delete": "Eliminar",
+    "export": "Exportar ZIP",
+    "search": "Pesquisar",
+    "loading": "A carregar…",
+    "yes": "Sim",
+    "no": "Não",
+    "new": "Novo",
+    "status": "Estado",
+    "version": "Versão",
+    "description": "Descrição",
+    "label": "Etiqueta",
+    "name": "Nome",
+    "actions": "Acções",
+    "confirm_delete": "Eliminar \"{name}\"?",
+    "no_items": "Nenhum item ainda"
+  },
+  "auth": {
+    "sign_in": "Entrar",
+    "sign_in_subtitle": "Acede ao teu estúdio",
+    "email": "Email",
+    "password": "Palavra-passe",
+    "remember": "Lembrar-me",
+    "signing_in": "A entrar…",
+    "tagline": "Cria temas e plugins para o AnimusFlow",
+    "footer": "AnimusFlow — O CMS nativo de IA"
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "themes": "Temas",
+    "plugins": "Plugins",
+    "published": "Publicados",
+    "recent_themes": "Temas recentes",
+    "recent_plugins": "Plugins recentes",
+    "no_themes": "Ainda não há temas",
+    "no_plugins": "Ainda não há plugins",
+    "create_theme": "Criar primeiro tema",
+    "create_plugin": "Criar primeiro plugin",
+    "draft": "Rascunho",
+    "ready": "Pronto",
+    "welcome": "Bem-vindo ao AnimusFlowStudio"
+  },
+  "themes": {
+    "title": "Temas",
+    "new": "Novo Tema",
+    "create_title": "Criar Novo Tema",
+    "edit_title": "Editar: {name}",
+    "slug": "Slug (nome)",
+    "slug_hint": "Letras minúsculas, números, hífens, underscores.",
+    "details": "Detalhes do Tema",
+    "colors": "Tokens de Cor",
+    "colors_hint": "Introduz valores CSS (ex. #6366f1 ou oklch(0.55 0.22 265)).",
+    "preview_url": "URL de Pré-visualização",
+    "no_themes": "Ainda não há temas",
+    "no_themes_desc": "Cria o teu primeiro tema AnimusFlow.",
+    "status": {
+      "draft": "Rascunho",
+      "ready": "Pronto",
+      "published": "Publicado"
+    }
+  },
+  "plugins": {
+    "title": "Plugins",
+    "new": "Novo Plugin",
+    "create_title": "Criar Novo Plugin",
+    "edit_title": "Editar: {name}",
+    "slug": "Slug (nome)",
+    "details": "Detalhes do Plugin",
+    "plugin_php": "Plugin.php",
+    "widget_blade": "Widget Blade",
+    "widget_blade_hint": "opcional — para hook page.render",
+    "widget_js": "Widget JavaScript",
+    "widget_js_hint": "opcional",
+    "hooks": "Hooks",
+    "no_plugins": "Ainda não há plugins",
+    "no_plugins_desc": "Cria o teu primeiro plugin AnimusFlow.",
+    "status": {
+      "draft": "Rascunho",
+      "ready": "Pronto",
+      "published": "Publicado"
+    }
+  },
+  "settings": {
+    "title": "Definições",
+    "studio_config": "Configuração do Estúdio",
+    "studio_name": "Nome do Estúdio",
+    "marketplace": "AnimusFlow Marketplace",
+    "animus_api_url": "URL da API Animus",
+    "ai_provider": "Fornecedor de IA",
+    "provider": "Fornecedor",
+    "model": "Modelo",
+    "api_key": "Chave API",
+    "save": "Guardar Definições",
+    "providers": {
+      "claude": "Claude (Anthropic)",
+      "openai": "OpenAI",
+      "gemini": "Google Gemini"
+    }
+  },
+  "about": {
+    "title": "Sobre",
+    "contact": "Contacto",
+    "developer": "Desenvolvedor",
+    "project": "Projecto",
+    "tech_stack": "Stack Tecnológico",
+    "version": "Versão",
+    "description": "Ferramenta de desenvolvimento de temas e plugins para o AnimusFlow CMS.",
+    "open_source": "Código Aberto",
+    "license": "Licença MIT"
+  }
+}

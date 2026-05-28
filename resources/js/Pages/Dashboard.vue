@@ -1,11 +1,13 @@
 <template>
-  <AppLayout title="Dashboard">
+  <AppLayout :title="t('dashboard.title')">
     <!-- Stats -->
     <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-      <StatCard label="Themes" :value="stats.themes" icon="palette" />
-      <StatCard label="Plugins" :value="stats.plugins" icon="puzzle" />
-      <StatCard label="Published Themes" :value="stats.published_themes" icon="upload" color="success" />
-      <StatCard label="Published Plugins" :value="stats.published_plugins" icon="upload" color="success" />
+      <StatCard :label="t('dashboard.themes')"    :value="stats.themes"           icon="palette" />
+      <StatCard :label="t('dashboard.plugins')"   :value="stats.plugins"          icon="puzzle" />
+      <StatCard :label="t('themes.status.published') + ' ' + t('nav.themes')"
+                :value="stats.published_themes"   icon="upload" color="success" />
+      <StatCard :label="t('themes.status.published') + ' ' + t('nav.plugins')"
+                :value="stats.published_plugins"  icon="upload" color="success" />
     </div>
 
     <!-- Recent items -->
@@ -13,41 +15,45 @@
       <!-- Recent themes -->
       <div class="bg-card border border-border rounded-2xl p-6">
         <div class="flex items-center justify-between mb-4">
-          <h2 class="font-semibold text-foreground">Recent Themes</h2>
-          <Link href="/themes/create" class="text-xs text-primary hover:underline font-medium">+ New</Link>
+          <h2 class="font-semibold text-foreground">{{ t('dashboard.recent_themes') }}</h2>
+          <Link href="/themes/create" class="text-xs text-primary hover:underline font-medium">
+            + {{ t('common.new') }}
+          </Link>
         </div>
         <div v-if="recentThemes.length" class="space-y-2">
-          <div v-for="t in recentThemes" :key="t.uuid"
+          <div v-for="th in recentThemes" :key="th.uuid"
             class="flex items-center justify-between p-3 hover:bg-muted rounded-xl transition-colors">
             <div>
-              <p class="text-sm font-medium text-foreground">{{ t.label }}</p>
-              <p class="text-xs text-muted-foreground">{{ t.name }}</p>
+              <p class="text-sm font-medium text-foreground">{{ th.label }}</p>
+              <p class="text-xs text-muted-foreground">{{ th.name }}</p>
             </div>
             <span class="px-2 py-0.5 rounded-full text-[11px] font-semibold"
-              :class="statusClass(t.status)">{{ t.status }}</span>
+              :class="statusClass(th.status)">{{ t('themes.status.' + th.status) }}</span>
           </div>
         </div>
-        <p v-else class="text-sm text-muted-foreground py-4 text-center">No themes yet.</p>
+        <p v-else class="text-sm text-muted-foreground py-4 text-center">{{ t('dashboard.no_themes') }}</p>
       </div>
 
       <!-- Recent plugins -->
       <div class="bg-card border border-border rounded-2xl p-6">
         <div class="flex items-center justify-between mb-4">
-          <h2 class="font-semibold text-foreground">Recent Plugins</h2>
-          <Link href="/plugins/create" class="text-xs text-primary hover:underline font-medium">+ New</Link>
+          <h2 class="font-semibold text-foreground">{{ t('dashboard.recent_plugins') }}</h2>
+          <Link href="/plugins/create" class="text-xs text-primary hover:underline font-medium">
+            + {{ t('common.new') }}
+          </Link>
         </div>
         <div v-if="recentPlugins.length" class="space-y-2">
-          <div v-for="p in recentPlugins" :key="p.uuid"
+          <div v-for="pl in recentPlugins" :key="pl.uuid"
             class="flex items-center justify-between p-3 hover:bg-muted rounded-xl transition-colors">
             <div>
-              <p class="text-sm font-medium text-foreground">{{ p.label }}</p>
-              <p class="text-xs text-muted-foreground">{{ p.name }}</p>
+              <p class="text-sm font-medium text-foreground">{{ pl.label }}</p>
+              <p class="text-xs text-muted-foreground">{{ pl.name }}</p>
             </div>
             <span class="px-2 py-0.5 rounded-full text-[11px] font-semibold"
-              :class="statusClass(p.status)">{{ p.status }}</span>
+              :class="statusClass(pl.status)">{{ t('plugins.status.' + pl.status) }}</span>
           </div>
         </div>
-        <p v-else class="text-sm text-muted-foreground py-4 text-center">No plugins yet.</p>
+        <p v-else class="text-sm text-muted-foreground py-4 text-center">{{ t('dashboard.no_plugins') }}</p>
       </div>
     </div>
   </AppLayout>
@@ -55,8 +61,11 @@
 
 <script setup>
 import { Link } from '@inertiajs/vue3';
+import { useI18n } from 'vue-i18n';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import StatCard from '@/Components/StatCard.vue';
+
+const { t } = useI18n();
 
 defineProps({
   stats:         { type: Object, default: () => ({}) },
