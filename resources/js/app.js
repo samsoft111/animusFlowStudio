@@ -1,6 +1,6 @@
 import '../css/app.css';
 import { createApp, h } from 'vue';
-import { createInertiaApp } from '@inertiajs/vue3';
+import { createInertiaApp, router } from '@inertiajs/vue3';
 import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers';
 import { createI18n } from 'vue-i18n';
 import pt from './locales/pt.json';
@@ -21,6 +21,14 @@ const savedTheme = localStorage.getItem('theme') ?? 'dark';
 if (savedTheme !== 'light') {
     document.documentElement.setAttribute('data-theme', 'dark');
 }
+
+/* ── Sessão expirada (419) → recarrega a página para obter novo CSRF token ── */
+router.on('httpException', (event) => {
+    if (event.detail?.response?.status === 419) {
+        event.preventDefault();
+        window.location.reload();
+    }
+});
 
 createInertiaApp({
     title: (title) => title ? `${title} — AnimusFlowStudio` : 'AnimusFlowStudio',
