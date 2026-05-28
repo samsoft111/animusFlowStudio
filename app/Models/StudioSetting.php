@@ -1,0 +1,24 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+
+class StudioSetting extends Model
+{
+    protected $table = 'studio_settings';
+
+    protected $fillable = ['key', 'value', 'group'];
+
+    public static function get(string $key, mixed $default = null): mixed
+    {
+        return static::where('key', $key)->value('value') ?? $default;
+    }
+
+    public static function set(string $key, mixed $value, string $group = 'general'): void
+    {
+        static::updateOrCreate(['key' => $key], ['value' => $value, 'group' => $group]);
+    }
+}
