@@ -17,13 +17,8 @@
       <div class="hidden lg:flex lg:w-5/12 flex-col px-12 py-14">
 
         <!-- Logo -->
-        <div class="flex items-center gap-3">
-          <div class="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
-            style="background: linear-gradient(135deg, #6366f1, #8b5cf6);">
-            <span class="text-white font-black text-sm">AF</span>
-          </div>
-          <span class="font-bold text-white text-base">AnimusFlowStudio</span>
-        </div>
+        <img :src="'/images/logos/animusflowstudio-logo.svg'"
+             alt="AnimusFlowStudio" style="height:32px;width:auto;" />
 
         <!-- Center text -->
         <div class="flex-1 flex flex-col justify-center">
@@ -54,12 +49,9 @@
         <div class="w-full max-w-sm">
 
           <!-- Mobile logo -->
-          <div class="flex items-center gap-3 mb-10 lg:hidden">
-            <div class="w-9 h-9 rounded-xl flex items-center justify-center"
-              style="background: linear-gradient(135deg, #6366f1, #8b5cf6);">
-              <span class="text-white font-black text-sm">AF</span>
-            </div>
-            <span class="font-bold text-white text-base">AnimusFlowStudio</span>
+          <div class="mb-10 lg:hidden">
+            <img :src="'/images/logos/animusflowstudio-logo.svg'"
+                 alt="AnimusFlowStudio" style="height:30px;width:auto;" />
           </div>
 
           <!-- Form card -->

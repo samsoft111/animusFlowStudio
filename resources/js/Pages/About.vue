@@ -36,8 +36,9 @@
           {{ t('about.project') }}
         </h2>
         <div class="flex items-start gap-4">
-          <div class="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center shrink-0">
-            <span class="text-primary font-black text-lg">AF</span>
+          <div class="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center shrink-0 p-2">
+            <img :src="'/images/logos/animusflowstudio-icon.svg'"
+                 alt="AnimusFlowStudio" class="w-full h-full object-contain" />
           </div>
           <div class="flex-1">
             <div class="flex items-center gap-3 mb-1">

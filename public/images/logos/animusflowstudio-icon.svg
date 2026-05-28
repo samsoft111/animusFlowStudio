@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <defs>
+    <linearGradient id="afs-l1" x1="18" y1="32" x2="82" y2="51" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#93A4F8"/>
+      <stop offset="100%" stop-color="#6366F1"/>
+    </linearGradient>
+    <linearGradient id="afs-l2" x1="18" y1="51" x2="82" y2="70" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#6366F1"/>
+      <stop offset="100%" stop-color="#7C3AED"/>
+    </linearGradient>
+    <linearGradient id="afs-l3" x1="18" y1="70" x2="82" y2="89" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#7C3AED"/>
+      <stop offset="100%" stop-color="#5B21B6"/>
+    </linearGradient>
+    <linearGradient id="afs-spark" x1="65" y1="14" x2="86" y2="35" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#22D3EE"/>
+      <stop offset="100%" stop-color="#EC4899"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Bottom card -->
+  <rect x="18" y="70" width="64" height="19" rx="7" fill="url(#afs-l3)"/>
+  <!-- Middle card -->
+  <rect x="18" y="51" width="64" height="19" rx="7" fill="url(#afs-l2)"/>
+  <!-- Top card -->
+  <rect x="18" y="32" width="64" height="19" rx="7" fill="url(#afs-l1)"/>
+
+  <!-- 4-pointed star sparkle (top-right of top card) -->
+  <path d="M75.5,14 L78,22 L86,24.5 L78,27 L75.5,35 L73,27 L65,24.5 L73,22 Z"
+        fill="url(#afs-spark)"/>
+</svg>

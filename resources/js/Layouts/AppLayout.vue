@@ -4,16 +4,10 @@
     <!-- Sidebar -->
     <aside class="w-60 flex-shrink-0 flex flex-col bg-sidebar text-sidebar-foreground border-r border-sidebar-border">
       <!-- Brand -->
-      <div class="px-5 py-5 border-b border-sidebar-border">
-        <div class="flex items-center gap-3">
-          <div class="w-8 h-8 rounded-lg bg-primary flex items-center justify-center shrink-0">
-            <span class="text-white font-black text-sm">AF</span>
-          </div>
-          <div>
-            <p class="font-bold text-sidebar-foreground text-sm leading-tight">AnimusFlowStudio</p>
-            <p class="text-[11px] text-sidebar-muted">Theme &amp; Plugin Builder</p>
-          </div>
-        </div>
+      <div class="px-5 py-4 border-b border-sidebar-border">
+        <img :src="'/images/logos/animusflowstudio-logo.svg'"
+             alt="AnimusFlowStudio"
+             class="h-8 w-auto" />
       </div>
 
       <!-- Nav -->
