@@ -136,7 +136,7 @@ const page  = usePage();
 const flash = computed(() => page.props.flash ?? {});
 
 /* ── Dark / light theme ── */
-const isDark = ref(localStorage.getItem('theme') === 'dark');
+const isDark = ref((localStorage.getItem('theme') ?? 'dark') !== 'light');
 
 function toggleTheme() {
   isDark.value = !isDark.value;

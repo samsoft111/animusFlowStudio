@@ -16,8 +16,9 @@ const i18n = createI18n({
 });
 
 /* Apply saved theme on page load before Vue mounts (avoids flash) */
-const savedTheme = localStorage.getItem('theme') ?? 'light';
-if (savedTheme === 'dark') {
+/* Default is dark — only override if user explicitly chose light */
+const savedTheme = localStorage.getItem('theme') ?? 'dark';
+if (savedTheme !== 'light') {
     document.documentElement.setAttribute('data-theme', 'dark');
 }
 
