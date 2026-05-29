@@ -82,6 +82,13 @@
       <!-- ════════════════════ TAB: Layout ════════════════════ -->
       <div v-show="activeTab === 'layout'" class="max-w-3xl space-y-5">
 
+        <!-- Legenda da aba -->
+        <div class="bg-blue-500/10 border border-blue-500/20 rounded-xl px-4 py-3 text-xs text-blue-600 dark:text-blue-400 space-y-1">
+          <p class="font-semibold">📐 O que configuras aqui?</p>
+          <p>A <strong>estrutura visual</strong> do tema — como o header, navegação, conteúdo e footer são apresentados. Estas opções definem a aparência e disposição dos elementos de layout.</p>
+          <p class="text-blue-500/70">💡 Funcionalidades especiais (parallax, vídeo de fundo, animações) → aba <strong>⚙️ Capacidades</strong> · Ficheiros de media → aba <strong>🖼️ Assets</strong></p>
+        </div>
+
         <!-- Header -->
         <section-card title="🔝 Header">
           <div class="grid grid-cols-3 gap-4">
@@ -94,6 +101,7 @@
                 <option value="centered">Logo centrado</option>
                 <option value="sidebar">Sidebar vertical</option>
               </select>
+              <p class="field-hint">Estilo visual do cabeçalho. <em>Glass</em> aplica backdrop-blur; <em>Transparente</em> mostra o fundo da hero por baixo; <em>Sidebar</em> move o menu para a lateral.</p>
             </div>
             <div>
               <label class="field-label">Posição do Menu</label>
@@ -102,6 +110,7 @@
                 <option value="center">Centro</option>
                 <option value="right">Direita</option>
               </select>
+              <p class="field-hint">Alinhamento horizontal dos links de navegação no header.</p>
             </div>
             <div>
               <label class="field-label">Tipo de Navegação</label>
@@ -112,21 +121,30 @@
                 <option value="fullscreen">Full-screen overlay</option>
                 <option value="sidebar">Sidebar vertical</option>
               </select>
+              <p class="field-hint">Estrutura do menu. Se escolheres <em>Mega Menu</em>, activa também a capacidade <strong>Mega Menu</strong> em ⚙️ Capacidades para gerar o JS/CSS correspondente.</p>
             </div>
           </div>
           <div class="grid grid-cols-2 gap-4">
             <div>
               <label class="field-label">CTA Botão — Texto</label>
               <input v-model="form.layout_config.header_cta_text" placeholder="Ex: Começar agora" class="field-input" />
+              <p class="field-hint">Texto do botão de chamada à acção no header. Deixa vazio para não mostrar.</p>
             </div>
             <div>
               <label class="field-label">CTA Botão — URL</label>
               <input v-model="form.layout_config.header_cta_url" placeholder="#" class="field-input" />
+              <p class="field-hint">Destino do botão CTA. Usa <code class="bg-muted px-1 rounded">#contacto</code> para ancoras ou URLs completos.</p>
             </div>
           </div>
-          <div class="flex gap-6">
-            <toggle-field v-model="form.layout_config.header_sticky" label="Header fixo (sticky)" />
-            <toggle-field v-model="form.layout_config.show_dark_toggle" label="Mostrar toggle dark/light" />
+          <div class="grid grid-cols-2 gap-6 pt-1">
+            <div>
+              <toggle-field v-model="form.layout_config.header_sticky" label="Header fixo (sticky)" />
+              <p class="field-hint mt-1.5">O header mantém-se visível enquanto o utilizador faz scroll para baixo.</p>
+            </div>
+            <div>
+              <toggle-field v-model="form.layout_config.show_dark_toggle" label="Mostrar toggle dark/light" />
+              <p class="field-hint mt-1.5">Mostra o botão de alternância entre modo claro e escuro no header. Para personalizar o aspecto do botão, vai a 🔧 Componentes → dark_toggle.</p>
+            </div>
           </div>
         </section-card>
 
@@ -141,27 +159,29 @@
                 <option value="sidebar-left">Sidebar esquerda</option>
                 <option value="sidebar-right">Sidebar direita</option>
               </select>
+              <p class="field-hint"><em>Full-width</em>: ocupa toda a largura. <em>Boxed</em>: conteúdo centrado com margens. <em>Sidebar</em>: adiciona coluna lateral de conteúdo.</p>
             </div>
             <div>
-              <label class="field-label">Largura máxima</label>
+              <label class="field-label">Largura máxima do conteúdo</label>
               <select v-model="form.layout_config.max_width" class="field-input">
-                <option value="960">960px — Estreito</option>
-                <option value="1120">1120px — Normal</option>
+                <option value="960">960px — Estreito (blog/texto)</option>
+                <option value="1120">1120px — Normal (recomendado)</option>
                 <option value="1280">1280px — Largo</option>
                 <option value="1440">1440px — Extra largo</option>
                 <option value="full">Full — Sem limite</option>
               </select>
+              <p class="field-hint">Largura máxima do container de conteúdo interno. Afecta todos os blocos que usam a classe <code class="bg-muted px-1 rounded">container</code>.</p>
             </div>
             <div>
               <label class="field-label">Espaçamento entre secções</label>
               <select v-model="form.layout_config.spacing" class="field-input">
-                <option value="compact">Compacto</option>
-                <option value="normal">Normal</option>
-                <option value="spacious">Espaçoso</option>
+                <option value="compact">Compacto (py-10)</option>
+                <option value="normal">Normal (py-16)</option>
+                <option value="spacious">Espaçoso (py-24)</option>
               </select>
+              <p class="field-hint">Padding vertical aplicado a cada secção do tema. <em>Compacto</em> para temas densos; <em>Espaçoso</em> para temas de luxo/minimalistas.</p>
             </div>
           </div>
-          <toggle-field v-model="form.layout_config.back_to_top" label="Botão 'Voltar ao topo'" />
         </section-card>
 
         <!-- Footer -->
@@ -176,12 +196,14 @@
                 <option value="dark">Dark background</option>
                 <option value="accent">Accent / Primário</option>
               </select>
+              <p class="field-hint"><em>Simples</em>: apenas copyright e links. <em>Colunas</em>: layout multi-coluna com widgets. <em>Dark/Accent</em>: footer com cor de fundo própria. Para override completo do HTML → 🔧 Componentes → footer.</p>
             </div>
             <div>
               <label class="field-label">Texto de Copyright</label>
               <input v-model="form.layout_config.footer_copyright"
                 :placeholder="`© ${new Date().getFullYear()} Empresa. Todos os direitos reservados.`"
                 class="field-input" />
+              <p class="field-hint">Texto mostrado no rodapé. Suporta HTML simples (ex: links). Deixa vazio para o AnimusFlow usar o nome do site automaticamente.</p>
             </div>
           </div>
         </section-card>
@@ -190,46 +212,78 @@
       </div>
 
       <!-- ════════════════════ TAB: Capabilities ════════════════════ -->
-      <div v-show="activeTab === 'capabilities'" class="max-w-2xl">
-        <div class="bg-card border border-border rounded-2xl p-6 space-y-4">
-          <h2 class="font-semibold text-foreground">⚙️ Funcionalidades do Tema</h2>
-          <p class="text-xs text-muted-foreground">Define que funcionalidades este tema suporta. Cada opção activa gera o código correspondente no ZIP exportado.</p>
+      <div v-show="activeTab === 'capabilities'" class="max-w-2xl space-y-5">
 
-          <div class="grid grid-cols-1 gap-2">
-            <capability-row v-model="form.capabilities.video_bg"
-              label="🎬 Vídeo de fundo"
-              hint="Suporte para vídeo MP4/WebM autoplay no hero e em secções" />
-            <capability-row v-model="form.capabilities.parallax"
-              label="🌊 Efeito Parallax"
-              hint="Scrolling parallax em imagens de fundo" />
-            <capability-row v-model="form.capabilities.animations"
-              label="✨ Animações de scroll"
-              hint="Fade-in e slide-up via IntersectionObserver quando os elementos entram no viewport" />
-            <capability-row v-model="form.capabilities.lightbox"
-              label="🖼️ Lightbox de imagens"
-              hint="Clique em imagens para abrir em fullscreen (galeria, portfolio)" />
-            <capability-row v-model="form.capabilities.mega_menu"
-              label="📋 Mega Menu"
-              hint="Menu de navegação com sub-colunas, imagens e descrições" />
-            <capability-row v-model="form.capabilities.search"
-              label="🔍 Pesquisa no site"
-              hint="Ícone de pesquisa no header com overlay de resultados" />
-            <capability-row v-model="form.capabilities.cookie_banner"
-              label="🍪 Banner de cookies"
-              hint="Aviso RGPD/GDPR de cookies com botão aceitar/recusar" />
-            <capability-row v-model="form.capabilities.preloader"
-              label="⏳ Preloader de página"
-              hint="Animação de carregamento antes do conteúdo aparecer" />
-            <capability-row v-model="form.capabilities.scroll_progress"
-              label="📏 Barra de progresso de scroll"
-              hint="Linha fina no topo da página que mostra o progresso de leitura" />
-            <capability-row v-model="form.capabilities.back_to_top"
-              label="⬆️ Botão Voltar ao topo"
-              hint="Botão flutuante para voltar ao início da página" />
-          </div>
-
-          <btn-save @click="save" :saving="saving" />
+        <!-- Legenda da aba -->
+        <div class="bg-amber-500/10 border border-amber-500/20 rounded-xl px-4 py-3 text-xs text-amber-700 dark:text-amber-400 space-y-1">
+          <p class="font-semibold">⚙️ O que são Capacidades?</p>
+          <p>São <strong>feature flags</strong> — interruptores que dizem ao AnimusFlow que funcionalidades este tema suporta. Cada flag activa <strong>gera o código correspondente</strong> (JS/CSS) no ZIP exportado.</p>
+          <p class="text-amber-600/70">⚠️ Activar uma capacidade <strong>não faz upload dos ficheiros</strong> (imagens/vídeos). Para isso vai a 🖼️ <strong>Assets</strong>. Também não personaliza o HTML do componente — para isso vai a 🔧 <strong>Componentes</strong>.</p>
         </div>
+
+        <!-- Grupo: Media -->
+        <div class="bg-card border border-border rounded-2xl p-5 space-y-3">
+          <div class="flex items-center gap-2 pb-1 border-b border-border">
+            <span class="text-base">🎬</span>
+            <h3 class="text-sm font-semibold text-foreground">Media & Visuais</h3>
+          </div>
+          <capability-row v-model="form.capabilities.video_bg"
+            label="🎬 Vídeo de fundo"
+            hint="Gera o código de suporte para vídeos MP4/WebM em autoplay, muted e loop no hero e em secções. Após activar, faz o upload do vídeo em 🖼️ Assets → Fundo Global ou Hero." />
+          <capability-row v-model="form.capabilities.parallax"
+            label="🌊 Efeito Parallax"
+            hint="Activa o script de parallax scrolling nas imagens de fundo das secções. As imagens devem ser maiores que o contentor (min 1.5× altura). Faz upload das imagens em 🖼️ Assets → Fundos de Secções." />
+          <capability-row v-model="form.capabilities.animations"
+            label="✨ Animações de entrada"
+            hint="Adiciona fade-in e slide-up automáticos via IntersectionObserver quando os elementos entram no viewport durante o scroll. Não requer assets adicionais." />
+          <capability-row v-model="form.capabilities.lightbox"
+            label="🖼️ Lightbox de imagens"
+            hint="Permite clicar em imagens para as ver em ecrã completo com navegação por teclado. Aplica-se automaticamente às secções Galeria e Portfólio." />
+        </div>
+
+        <!-- Grupo: Navegação -->
+        <div class="bg-card border border-border rounded-2xl p-5 space-y-3">
+          <div class="flex items-center gap-2 pb-1 border-b border-border">
+            <span class="text-base">🗺️</span>
+            <h3 class="text-sm font-semibold text-foreground">Navegação</h3>
+          </div>
+          <capability-row v-model="form.capabilities.mega_menu"
+            label="📋 Mega Menu"
+            hint="Gera o JS/CSS para menus de navegação com sub-colunas, imagens e descrições. Requer que o Tipo de Navegação em 📐 Layout → Header esteja definido como 'Mega Menu'. Personaliza o HTML em 🔧 Componentes → nav_mega." />
+          <capability-row v-model="form.capabilities.search"
+            label="🔍 Pesquisa no site"
+            hint="Adiciona ícone de pesquisa no header com overlay de resultados em tempo real. Personaliza o formulário de pesquisa em 🔧 Componentes → form_search." />
+        </div>
+
+        <!-- Grupo: UX & Acessibilidade -->
+        <div class="bg-card border border-border rounded-2xl p-5 space-y-3">
+          <div class="flex items-center gap-2 pb-1 border-b border-border">
+            <span class="text-base">♿</span>
+            <h3 class="text-sm font-semibold text-foreground">UX & Acessibilidade</h3>
+          </div>
+          <capability-row v-model="form.capabilities.back_to_top"
+            label="⬆️ Botão Voltar ao topo"
+            hint="Botão flutuante no canto inferior direito para voltar ao início da página. Aparece apenas após o utilizador fazer scroll. Personaliza o HTML em 🔧 Componentes → back_to_top." />
+          <capability-row v-model="form.capabilities.scroll_progress"
+            label="📏 Barra de progresso de scroll"
+            hint="Linha fina no topo da página que cresce à medida que o utilizador faz scroll — indica o progresso de leitura. Personaliza o aspecto em 💻 Código → custom.css." />
+          <capability-row v-model="form.capabilities.preloader"
+            label="⏳ Preloader de página"
+            hint="Ecrã de carregamento animado antes do conteúdo aparecer. Melhora a percepção de velocidade em páginas pesadas. Personaliza o HTML/animação em 🔧 Componentes → preloader." />
+        </div>
+
+        <!-- Grupo: Legal & Compliance -->
+        <div class="bg-card border border-border rounded-2xl p-5 space-y-3">
+          <div class="flex items-center gap-2 pb-1 border-b border-border">
+            <span class="text-base">⚖️</span>
+            <h3 class="text-sm font-semibold text-foreground">Legal & Compliance</h3>
+          </div>
+          <capability-row v-model="form.capabilities.cookie_banner"
+            label="🍪 Banner de cookies (RGPD)"
+            hint="Aviso de cookies conforme o RGPD/GDPR com botões Aceitar / Recusar / Preferências. Guarda a escolha em localStorage. Personaliza o HTML em 🔧 Componentes → cookie_bar." />
+        </div>
+
+        <btn-save @click="save" :saving="saving" />
       </div>
 
       <!-- ════════════════════ TAB: Design ════════════════════ -->
@@ -314,13 +368,22 @@
       <!-- ════════════════════ TAB: Assets ════════════════════ -->
       <div v-show="activeTab === 'assets'" class="max-w-4xl space-y-5">
 
-        <div class="bg-muted/50 border border-border rounded-xl px-4 py-3 text-xs text-muted-foreground">
-          📦 Todos os ficheiros são incluídos na pasta <code class="bg-muted px-1 rounded">assets/</code> do ZIP exportado.
+        <!-- Legenda da aba -->
+        <div class="bg-green-500/10 border border-green-500/20 rounded-xl px-4 py-3 text-xs text-green-700 dark:text-green-400 space-y-1">
+          <p class="font-semibold">🖼️ O que configuras aqui?</p>
+          <p>O <strong>upload e configuração dos ficheiros de media</strong> do tema — logos, imagens de fundo, vídeos, ícones sociais. Todos os ficheiros são incluídos na pasta <code class="bg-green-500/10 px-1 rounded">assets/</code> do ZIP exportado.</p>
+          <p class="text-green-600/70">💡 Para que o <strong>vídeo de fundo</strong> ou o <strong>parallax</strong> funcionem, activa as capacidades correspondentes em ⚙️ <strong>Capacidades</strong>. Os assets aqui são apenas os ficheiros — a lógica é gerada pelas capacidades.</p>
         </div>
 
         <!-- Identidade -->
         <div class="bg-card border border-border rounded-2xl p-5 space-y-4">
-          <h3 class="text-sm font-semibold text-foreground">🏷️ Identidade</h3>
+          <div class="flex items-start gap-2 pb-2 border-b border-border">
+            <span class="text-base">🏷️</span>
+            <div>
+              <h3 class="text-sm font-semibold text-foreground">Identidade</h3>
+              <p class="text-xs text-muted-foreground mt-0.5">Logos e ícones da marca. Recomendado SVG para logos (escalável) e PNG 64×64 para favicon.</p>
+            </div>
+          </div>
           <div class="grid grid-cols-3 gap-4">
             <asset-slot v-for="slot in assetGroups.identity" :key="slot.id"
               :slot-id="slot.id" :label="slot.label" :hint="slot.hint" :accept="slot.accept"
@@ -334,19 +397,20 @@
           <div class="flex items-start justify-between gap-4">
             <div>
               <h3 class="text-sm font-semibold text-foreground">🎞️ Fundo Global</h3>
-              <p class="text-xs text-muted-foreground mt-0.5">Fundo aplicado a toda a página. Vídeo tem prioridade sobre imagem quando ambos existem.</p>
+              <p class="text-xs text-muted-foreground mt-0.5">Fundo aplicado a toda a página (atrás de todas as secções). Para vídeo ou parallax, activa a capacidade correspondente em ⚙️ Capacidades.</p>
             </div>
             <!-- Tipo de fundo -->
-            <div class="shrink-0 w-44">
+            <div class="shrink-0 w-52">
               <label class="field-label">Tipo de fundo</label>
               <select v-model="form.assets.bg_type" class="field-input text-xs">
                 <option value="">Nenhum</option>
-                <option value="color">Cor sólida (CSS)</option>
-                <option value="image">Imagem</option>
-                <option value="video">Vídeo</option>
-                <option value="gradient">Gradiente</option>
-                <option value="pattern">Padrão / textura</option>
+                <option value="color">Cor sólida (via Design → cores)</option>
+                <option value="image">Imagem estática</option>
+                <option value="video">Vídeo ⚠️ requer capacidade</option>
+                <option value="gradient">Gradiente CSS</option>
+                <option value="pattern">Padrão / textura repetida</option>
               </select>
+              <p class="field-hint">Escolhe o tipo de fundo. Se seleccionares <em>Vídeo</em>, activa a capacidade <strong>🎬 Vídeo de fundo</strong> em ⚙️ Capacidades para gerar o código JS necessário.</p>
             </div>
           </div>
           <div class="grid grid-cols-3 gap-4">
@@ -390,7 +454,7 @@
           <div class="flex items-start justify-between gap-4">
             <div>
               <h3 class="text-sm font-semibold text-foreground">🌅 Hero / Banner</h3>
-              <p class="text-xs text-muted-foreground mt-0.5">Media da secção principal (primeira secção visível).</p>
+              <p class="text-xs text-muted-foreground mt-0.5">Imagem ou vídeo da primeira secção visível da página. Para vídeo activa <strong>🎬 Vídeo de fundo</strong> em ⚙️ Capacidades. Para slideshow activa <strong>✨ Animações</strong>.</p>
             </div>
             <div class="shrink-0 w-44">
               <label class="field-label">Tipo de hero</label>
@@ -450,8 +514,10 @@
 
         <!-- Secções específicas -->
         <div class="bg-card border border-border rounded-2xl p-5 space-y-4">
-          <h3 class="text-sm font-semibold text-foreground">📐 Fundos de Secções</h3>
-          <p class="text-xs text-muted-foreground -mt-1">Imagens de fundo para secções específicas do tema.</p>
+          <div class="pb-2 border-b border-border">
+            <h3 class="text-sm font-semibold text-foreground">📐 Fundos de Secções</h3>
+            <p class="text-xs text-muted-foreground mt-0.5">Imagens de fundo para secções específicas. Para o efeito parallax nestas imagens, activa <strong>🌊 Parallax</strong> em ⚙️ Capacidades. Tamanho mínimo recomendado: 1920×600px.</p>
+          </div>
           <div class="grid grid-cols-3 gap-4">
             <asset-slot v-for="slot in assetGroups.sections" :key="slot.id"
               :slot-id="slot.id" :label="slot.label" :hint="slot.hint" :accept="slot.accept"
@@ -462,7 +528,10 @@
 
         <!-- Social / SEO -->
         <div class="bg-card border border-border rounded-2xl p-5 space-y-4">
-          <h3 class="text-sm font-semibold text-foreground">📤 Social &amp; SEO</h3>
+          <div class="pb-2 border-b border-border">
+            <h3 class="text-sm font-semibold text-foreground">📤 Social & SEO</h3>
+            <p class="text-xs text-muted-foreground mt-0.5">Imagens usadas ao partilhar o site nas redes sociais e resultados de pesquisa. OG Image: 1200×630px. Twitter Card: 1200×600px. Apple Touch: 180×180px PNG.</p>
+          </div>
           <div class="grid grid-cols-3 gap-4">
             <asset-slot v-for="slot in assetGroups.social" :key="slot.id"
               :slot-id="slot.id" :label="slot.label" :hint="slot.hint" :accept="slot.accept"
@@ -476,6 +545,13 @@
 
       <!-- ════════════════════ TAB: Secções ════════════════════ -->
       <div v-show="activeTab === 'sections'" class="max-w-5xl space-y-5">
+
+        <!-- Legenda da aba -->
+        <div class="bg-orange-500/10 border border-orange-500/20 rounded-xl px-4 py-3 text-xs text-orange-700 dark:text-orange-400 space-y-1">
+          <p class="font-semibold">🧩 O que configuras aqui?</p>
+          <p>As <strong>secções de página</strong> do tema — os blocos de conteúdo que compõem cada página (Hero, Features, Testemunhos, Preços, etc.). Selecciona os blocos na biblioteca e ordena-os conforme necessário.</p>
+          <p class="text-orange-600/70">💡 Cada bloco pode ter um <strong>Blade override</strong> — código HTML/Blade personalizado que substitui o template padrão. Deixa vazio para usar o template gerado automaticamente pelo AnimusFlow. Para imagens de fundo das secções → 🖼️ <strong>Assets → Fundos de Secções</strong>.</p>
+        </div>
 
         <!-- Layout: painel esquerdo (biblioteca) + direita (activas) -->
         <div class="grid grid-cols-[260px_1fr] gap-5 items-start">
@@ -581,6 +657,14 @@
 
       <!-- ════════════════════ TAB: Componentes ════════════════════ -->
       <div v-show="activeTab === 'components'" class="max-w-5xl space-y-5">
+
+        <!-- Legenda da aba -->
+        <div class="bg-purple-500/10 border border-purple-500/20 rounded-xl px-4 py-3 text-xs text-purple-700 dark:text-purple-400 space-y-1">
+          <p class="font-semibold">🔧 O que configuras aqui?</p>
+          <p>Selecciona e ordena os <strong>componentes de UI</strong> do tema. Cada componente pode ter um <strong>Blade override</strong> — HTML personalizado que substitui completamente o template padrão do AnimusFlow.</p>
+          <p class="text-purple-600/70">💡 Componentes como <em>Cookie Banner</em>, <em>Preloader</em> e <em>Pesquisa</em> só aparecem no site se a <strong>capacidade correspondente</strong> estiver activa em ⚙️ Capacidades. O componente aqui controla apenas o <strong>aspecto visual</strong>.</p>
+          <p class="text-purple-600/70">🔀 <strong>Arrasta pelo símbolo ⠿</strong> para reordenar os componentes. A ordem define a sequência de renderização no tema.</p>
+        </div>
 
         <div class="grid grid-cols-[260px_1fr] gap-5 items-start">
 
@@ -698,6 +782,13 @@
       <!-- ════════════════════ TAB: Código ════════════════════ -->
       <div v-show="activeTab === 'code'" class="max-w-4xl space-y-4">
 
+        <!-- Legenda da aba -->
+        <div class="bg-slate-500/10 border border-slate-500/20 rounded-xl px-4 py-3 text-xs text-slate-700 dark:text-slate-400 space-y-1">
+          <p class="font-semibold">💻 O que configuras aqui?</p>
+          <p><strong>CSS e JavaScript personalizados</strong> adicionados ao tema. O CSS é injectado após os tokens de cor (podes usar variáveis como <code class="bg-slate-500/10 px-1 rounded">var(--color-primary)</code>). O JS é injectado antes do <code class="bg-slate-500/10 px-1 rounded">&lt;/body&gt;</code>.</p>
+          <p class="text-slate-600/70">⚠️ Este código aplica-se ao <strong>tema inteiro</strong>. Para estilos específicos de um componente, usa o Blade override em 🔧 Componentes. Para tokens de cor → 🎨 Design.</p>
+        </div>
+
         <div class="bg-card border border-border rounded-2xl overflow-hidden">
           <div class="flex items-center justify-between px-4 py-3 border-b border-border bg-muted/50">
             <span class="text-sm font-semibold">🎨 custom.css</span>
@@ -723,6 +814,14 @@
 
       <!-- ════════════════════ TAB: Variantes ════════════════════ -->
       <div v-show="activeTab === 'variants'" class="max-w-3xl space-y-4">
+
+        <!-- Legenda da aba -->
+        <div class="bg-pink-500/10 border border-pink-500/20 rounded-xl px-4 py-3 text-xs text-pink-700 dark:text-pink-400 space-y-1">
+          <p class="font-semibold">🌈 O que são Variantes?</p>
+          <p><strong>Paletas de cor alternativas</strong> para o mesmo tema — skins que o utilizador final pode seleccionar sem mudar o tema completo. Cada variante define os 4 tokens de cor principais em modo claro e escuro.</p>
+          <p class="text-pink-600/70">💡 As variantes são publicadas no marketplace como opções de personalização do tema. Define no mínimo uma variante "Default" igual às cores da aba 🎨 Design.</p>
+        </div>
+
         <div class="flex items-center justify-between">
           <div>
             <h2 class="font-semibold text-foreground">🎨 Variantes de Cor (Skins)</h2>
