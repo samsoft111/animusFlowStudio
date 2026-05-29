@@ -63,19 +63,76 @@ class ThemeController extends Controller
         $theme = StudioTheme::where('uuid', $uuid)->firstOrFail();
 
         $data = $request->validate([
+            // Details
             'label'       => 'sometimes|string|max:200',
             'description' => 'nullable|string|max:1000',
             'version'     => 'nullable|string|max:20',
-            'colors'      => 'nullable|array',
-            'fonts'       => 'nullable|array',
-            'sections'    => 'nullable|array',
             'status'      => 'nullable|in:draft,ready,published',
             'preview_url' => 'nullable|url|max:500',
+            // Design
+            'colors'   => 'nullable|array',
+            'fonts'    => 'nullable|array',
+            'sections' => 'nullable|array',
+            // Layout
+            'layout_config' => 'nullable|array',
+            // Capabilities
+            'capabilities' => 'nullable|array',
+            // Components (Blade overrides)
+            'components' => 'nullable|array',
+            // Custom code
+            'custom_css' => 'nullable|string',
+            'custom_js'  => 'nullable|string',
+            // Variants
+            'variants' => 'nullable|array',
         ]);
 
         $theme->update($data);
 
         return back()->with('success', 'Theme saved.');
+    }
+
+    // ──────────────────────────────────────────────
+    //  Asset Upload
+    // ──────────────────────────────────────────────
+
+    public function uploadAsset(Request $request, string $uuid): JsonResponse
+    {
+        $theme = StudioTheme::where('uuid', $uuid)->firstOrFail();
+
+        $request->validate([
+            'file' => 'required|file|max:20480', // 20 MB
+            'slot' => 'required|in:logo,logo_dark,favicon,hero_image,hero_video,og_image',
+        ]);
+
+        $slot = $request->input('slot');
+        $dir  = "themes/{$theme->uuid}";
+        $path = $request->file('file')->store($dir, 'public');
+        $url  = '/storage/' . $path;
+
+        $assets = $theme->assets ?? [];
+        $assets[$slot] = $url;
+        $theme->update(['assets' => $assets]);
+
+        return response()->json(['success' => true, 'url' => $url, 'slot' => $slot]);
+    }
+
+    public function deleteAsset(Request $request, string $uuid): JsonResponse
+    {
+        $theme = StudioTheme::where('uuid', $uuid)->firstOrFail();
+        $slot  = $request->validate(['slot' => 'required|string'])['slot'];
+
+        $assets = $theme->assets ?? [];
+        if (isset($assets[$slot])) {
+            // Delete file from disk
+            $localPath = public_path(str_replace('/storage/', 'storage/', $assets[$slot]));
+            if (file_exists($localPath)) {
+                @unlink($localPath);
+            }
+            unset($assets[$slot]);
+            $theme->update(['assets' => $assets]);
+        }
+
+        return response()->json(['success' => true]);
     }
 
     public function destroy(string $uuid): RedirectResponse
@@ -243,6 +300,76 @@ class ThemeController extends Controller
         foreach ($theme->sections ?? [] as $type => $blade) {
             file_put_contents("{$themeDir}/sections/{$type}.blade.php", $blade);
         }
+
+        // Component overrides (header / footer / nav)
+        $components = $theme->components ?? [];
+        if (!empty($components)) {
+            File::ensureDirectoryExists("{$themeDir}/components");
+            foreach ($components as $name => $blade) {
+                if (!empty($blade)) {
+                    file_put_contents("{$themeDir}/components/{$name}.blade.php", $blade);
+                }
+            }
+        }
+
+        // Custom CSS
+        if (!empty($theme->custom_css)) {
+            $minify = (bool) StudioSetting::get('export_minify_html', '0');
+            $css = $minify
+                ? preg_replace(['/\/\*.*?\*\//s', '/\s+/', '/\s*([{:;,}])\s*/'], ['', ' ', '$1'], $theme->custom_css)
+                : $theme->custom_css;
+            file_put_contents("{$themeDir}/custom.css", $css);
+        }
+
+        // Custom JS
+        if (!empty($theme->custom_js)) {
+            file_put_contents("{$themeDir}/custom.js", $theme->custom_js);
+        }
+
+        // Assets — copy uploaded files
+        File::ensureDirectoryExists("{$themeDir}/assets");
+        foreach ($theme->assets ?? [] as $slot => $url) {
+            $localPath = public_path(str_replace('/storage/', 'storage/', $url));
+            if (file_exists($localPath)) {
+                File::copy($localPath, "{$themeDir}/assets/" . basename($localPath));
+            }
+        }
+
+        // README.md
+        if (StudioSetting::get('export_include_readme', '1') === '1') {
+            $author    = StudioSetting::get('studio_author', '');
+            $authorUrl = StudioSetting::get('studio_author_url', '');
+            $minVer    = StudioSetting::get('export_animusflow_min_ver', '1.0.0');
+            $readme    = "# {$theme->label}\n\n"
+                . ($theme->description ? "{$theme->description}\n\n" : '')
+                . "**Version:** {$theme->version}\n"
+                . "**Requires AnimusFlow:** {$minVer}+\n"
+                . ($author    ? "**Author:** {$author}" . ($authorUrl ? " <{$authorUrl}>" : '') . "\n" : '')
+                . "\n## Installation\n\n"
+                . "Upload this ZIP via AnimusFlow Admin → Extensions → Themes → Upload ZIP.\n"
+                . "\n## Capabilities\n\n"
+                . implode("\n", array_map(
+                    fn ($k, $v) => "- **{$k}**: " . ($v ? '✅' : '❌'),
+                    array_keys($theme->capabilities ?? []),
+                    array_values($theme->capabilities ?? [])
+                )) . "\n";
+            file_put_contents("{$themeDir}/README.md", $readme);
+        }
+
+        // Extended theme.json with layout + capabilities
+        file_put_contents("{$themeDir}/theme.json", json_encode([
+            'name'          => $theme->name,
+            'label'         => $theme->label,
+            'description'   => $theme->description,
+            'version'       => $theme->version ?? '1.0.0',
+            'requires'      => StudioSetting::get('export_animusflow_min_ver', '1.0.0'),
+            'author'        => StudioSetting::get('studio_author', ''),
+            'author_url'    => StudioSetting::get('studio_author_url', ''),
+            'fonts'         => $theme->fonts   ?? [],
+            'layout'        => $theme->layout_config,
+            'capabilities'  => $theme->capabilities,
+            'blocks'        => $this->allBlockTypes(),
+        ], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
 
         // Build ZIP
         $zipPath = storage_path("app/{$theme->name}.zip");

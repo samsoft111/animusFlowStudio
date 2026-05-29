@@ -37,8 +37,10 @@ Route::middleware('auth')->group(function () {
     Route::delete('/themes/{uuid}',     [ThemeController::class, 'destroy'])->name('themes.destroy');
     Route::get('/themes/{uuid}/export', [ThemeController::class, 'export'])->name('themes.export');
 
-    Route::post('/themes/{uuid}/generate-ai', [ThemeController::class, 'generateAi'])->name('themes.generate-ai');
-    Route::post('/themes/{uuid}/publish',     [ThemeController::class, 'publish'])->name('themes.publish');
+    Route::post('/themes/{uuid}/generate-ai',   [ThemeController::class, 'generateAi'])->name('themes.generate-ai');
+    Route::post('/themes/{uuid}/publish',       [ThemeController::class, 'publish'])->name('themes.publish');
+    Route::post('/themes/{uuid}/upload-asset',  [ThemeController::class, 'uploadAsset'])->name('themes.upload-asset');
+    Route::delete('/themes/{uuid}/asset',       [ThemeController::class, 'deleteAsset'])->name('themes.delete-asset');
 
     /* ── Plugins ── */
     Route::get('/plugins',               [PluginController::class, 'index'])->name('plugins.index');
