@@ -580,26 +580,119 @@
       </div>
 
       <!-- ════════════════════ TAB: Componentes ════════════════════ -->
-      <div v-show="activeTab === 'components'" class="max-w-4xl space-y-4">
-        <div class="bg-muted/50 border border-border rounded-xl px-4 py-3 text-sm text-muted-foreground">
-          💡 Substitui completamente o header/footer/nav gerado pelo AnimusFlow. Usa variáveis Blade normais: <code class="bg-muted px-1 rounded text-xs">$layout</code>, <code class="bg-muted px-1 rounded text-xs">$segment</code>, <code class="bg-muted px-1 rounded text-xs">$page</code>.
-        </div>
+      <div v-show="activeTab === 'components'" class="max-w-5xl space-y-5">
 
-        <div v-for="comp in componentSlots" :key="comp.id"
-          class="bg-card border border-border rounded-2xl overflow-hidden">
-          <div class="flex items-center justify-between px-4 py-3 border-b border-border bg-muted/50">
-            <div>
-              <span class="text-sm font-semibold text-foreground">{{ comp.icon }} {{ comp.label }}</span>
-              <span class="text-xs text-muted-foreground ml-2">{{ comp.hint }}</span>
+        <div class="grid grid-cols-[260px_1fr] gap-5 items-start">
+
+          <!-- ── Biblioteca de componentes ── -->
+          <div class="bg-card border border-border rounded-2xl overflow-hidden sticky top-4">
+            <div class="px-4 py-3 border-b border-border bg-muted/50">
+              <p class="text-xs font-semibold text-foreground">🧱 Biblioteca de Componentes</p>
+              <p class="text-xs text-muted-foreground mt-0.5">Clica para adicionar à composição</p>
             </div>
-            <span class="text-xs text-muted-foreground font-mono">{{ (form.components[comp.id]||'').length }} chars</span>
-          </div>
-          <textarea v-model="form.components[comp.id]" :rows="comp.rows" spellcheck="false"
-            :placeholder="comp.placeholder"
-            class="w-full px-4 py-3 bg-muted/30 text-xs font-mono focus:outline-none resize-y border-0" />
-        </div>
 
-        <btn-save @click="save" :saving="saving" label="Guardar Componentes" />
+            <!-- Filtro de categorias -->
+            <div class="flex flex-wrap gap-1 px-3 py-2 border-b border-border">
+              <button v-for="cat in compCategories" :key="cat.id"
+                @click="activeCompCat = cat.id"
+                class="px-2 py-0.5 rounded-md text-xs font-semibold transition-colors"
+                :class="activeCompCat === cat.id
+                  ? 'bg-primary text-primary-foreground'
+                  : 'bg-muted text-muted-foreground hover:text-foreground'">
+                {{ cat.icon }} {{ cat.label }}
+              </button>
+            </div>
+
+            <!-- Blocos disponíveis -->
+            <div class="p-3 space-y-1.5 max-h-[560px] overflow-y-auto">
+              <button v-for="block in filteredCompBlocks" :key="block.id"
+                @click="addCompBlock(block)"
+                class="w-full flex items-start gap-3 p-2.5 rounded-xl border text-left transition-all bg-muted/50 hover:bg-muted border-transparent hover:border-border">
+                <span class="text-lg leading-none mt-0.5 shrink-0">{{ block.icon }}</span>
+                <div class="min-w-0">
+                  <p class="text-xs font-semibold text-foreground leading-tight">{{ block.label }}</p>
+                  <p class="text-xs text-muted-foreground leading-tight mt-0.5">{{ block.hint }}</p>
+                </div>
+                <PlusIcon class="w-3.5 h-3.5 shrink-0 mt-0.5 text-muted-foreground" />
+              </button>
+            </div>
+          </div>
+
+          <!-- ── Área de composição (drag & drop) ── -->
+          <div class="space-y-3">
+            <div class="flex items-center justify-between">
+              <p class="text-sm font-semibold text-foreground">
+                Componentes activos
+                <span class="ml-1.5 text-xs font-normal text-muted-foreground">({{ compOrder.length }} itens · arrasta para reordenar)</span>
+              </p>
+              <btn-save @click="save" :saving="saving" label="Guardar" />
+            </div>
+
+            <!-- Vazio -->
+            <div v-if="!compOrder.length"
+              class="bg-card border-2 border-dashed border-border rounded-2xl p-16 text-center">
+              <p class="text-3xl mb-2">🧱</p>
+              <p class="text-sm font-semibold text-foreground mb-1">Sem componentes</p>
+              <p class="text-xs text-muted-foreground">Adiciona componentes da biblioteca à esquerda</p>
+            </div>
+
+            <!-- Lista drag & drop -->
+            <div
+              @dragover.prevent
+              @drop="onCompDrop($event)"
+              class="space-y-2 min-h-[60px]">
+
+              <div v-for="(item, idx) in compOrder" :key="item.uid"
+                draggable="true"
+                @dragstart="onCompDragStart($event, idx)"
+                @dragover.prevent="onCompDragOver($event, idx)"
+                @dragend="onCompDragEnd"
+                class="bg-card border border-border rounded-2xl overflow-hidden transition-opacity select-none"
+                :class="dragCompIdx === idx ? 'opacity-40' : 'opacity-100'">
+
+                <!-- Header do componente -->
+                <div class="flex items-center gap-2 px-3 py-2.5 border-b border-border bg-muted/40 cursor-grab active:cursor-grabbing">
+                  <!-- Handle -->
+                  <span class="text-muted-foreground/50 hover:text-muted-foreground text-sm select-none px-0.5">⠿</span>
+                  <span class="text-base">{{ getCompBlock(item.type)?.icon ?? '🧱' }}</span>
+                  <div class="flex-1 min-w-0">
+                    <p class="text-sm font-semibold text-foreground leading-tight">{{ getCompBlock(item.type)?.label ?? item.type }}</p>
+                    <p class="text-xs text-muted-foreground font-mono">{{ item.type }}{{ item.uid !== item.type ? ' #' + item.uid.split('_').pop() : '' }}</p>
+                  </div>
+                  <!-- Variante -->
+                  <select v-if="getCompBlock(item.type)?.variants?.length"
+                    v-model="item.variant"
+                    class="text-xs bg-muted border border-border rounded-lg px-2 py-1 focus:outline-none">
+                    <option v-for="v in getCompBlock(item.type).variants" :key="v.id" :value="v.id">{{ v.label }}</option>
+                  </select>
+                  <!-- Toggle editor -->
+                  <button @click="item.open = !item.open"
+                    class="text-xs text-muted-foreground hover:text-foreground px-2 py-1 rounded bg-muted hover:bg-border transition-colors">
+                    {{ item.open ? '▲' : '▼ Blade' }}
+                  </button>
+                  <!-- Duplicar -->
+                  <button @click="duplicateCompBlock(idx)"
+                    title="Duplicar" class="w-6 h-6 flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors text-xs">⧉</button>
+                  <!-- Remover -->
+                  <button @click="removeCompBlock(idx)"
+                    class="w-6 h-6 flex items-center justify-center rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors text-xs font-bold">✕</button>
+                </div>
+
+                <!-- Editor Blade (colapsável) -->
+                <div v-show="item.open">
+                  <div class="px-4 py-2 bg-muted/20 border-b border-border flex items-center gap-2">
+                    <span class="text-xs text-muted-foreground flex-1">Blade override — deixa vazio para usar o componente padrão</span>
+                    <button @click="item.blade = ''"
+                      class="text-xs text-muted-foreground hover:text-destructive px-2 py-0.5 rounded hover:bg-destructive/10">Limpar</button>
+                  </div>
+                  <textarea v-model="item.blade" rows="8" spellcheck="false"
+                    placeholder="Blade personalizado do componente — deixa vazio para usar o padrão do AnimusFlow"
+                    class="w-full px-4 py-3 bg-muted/10 text-xs font-mono focus:outline-none resize-y border-0" />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
       <!-- ════════════════════ TAB: Código ════════════════════ -->
@@ -827,7 +920,15 @@ const form = reactive({
 const saving   = ref(false);
 const feedback = reactive({ success: '', error: '' });
 
+function syncComponents() {
+  form.components = {};
+  compOrder.value.forEach(item => {
+    form.components[item.uid] = { type: item.type, variant: item.variant, blade: item.blade };
+  });
+}
+
 function save() {
+  syncComponents();
   saving.value = true;
   feedback.success = ''; feedback.error = '';
   router.put(`/themes/${props.theme.uuid}`, form, {
@@ -1071,27 +1172,155 @@ function removeSection(type) {
   delete openSectionEditors[type];
 }
 
-// ── Components ────────────────────────────────────────────────────
-const componentSlots = [
-  {
-    id: 'header', icon: '🔝', label: 'Header',
-    hint: 'Override completo do cabeçalho',
-    rows: 12,
-    placeholder: `{{-- Header personalizado --}}\n<header class="af-header" style="...">\n  <nav>...</nav>\n</header>`,
-  },
-  {
-    id: 'nav', icon: '📋', label: 'Navegação',
-    hint: 'Menu de navegação (injectado no header)',
-    rows: 10,
-    placeholder: `{{-- Navegação --}}\n<ul class="af-nav">\n  @foreach($navLinks as $link)\n    <li><a href="{{ $link['url'] }}">{{ $link['label'] }}</a></li>\n  @endforeach\n</ul>`,
-  },
-  {
-    id: 'footer', icon: '🔻', label: 'Footer',
-    hint: 'Override completo do rodapé',
-    rows: 12,
-    placeholder: `{{-- Footer personalizado --}}\n<footer class="af-footer" style="...">\n  <p>© {{ date('Y') }} {{ $siteName }}</p>\n</footer>`,
-  },
+// ── Components — biblioteca + drag & drop ─────────────────────────
+const activeCompCat = ref('all');
+
+const compCategories = [
+  { id: 'all',       icon: '🔠', label: 'Todos'      },
+  { id: 'structure', icon: '🏗️',  label: 'Estrutura'  },
+  { id: 'nav',       icon: '🗺️',  label: 'Navegação'  },
+  { id: 'ui',        icon: '🎨', label: 'UI'          },
+  { id: 'forms',     icon: '📝', label: 'Formulários' },
+  { id: 'media',     icon: '🖼️',  label: 'Media'      },
+  { id: 'feedback',  icon: '💬', label: 'Feedback'    },
+  { id: 'data',      icon: '📊', label: 'Dados'       },
 ];
+
+const compLibrary = [
+  // Estrutura
+  { id: 'header',       cat: 'structure', icon: '🔝', label: 'Header',            hint: 'Cabeçalho principal da página',
+    variants: [{ id: 'glass', label: 'Glass' }, { id: 'solid', label: 'Solid' }, { id: 'transparent', label: 'Transparente' }, { id: 'centered', label: 'Logo centrado' }] },
+  { id: 'footer',       cat: 'structure', icon: '🔻', label: 'Footer',            hint: 'Rodapé da página',
+    variants: [{ id: 'simple', label: 'Simples' }, { id: 'columns', label: 'Colunas' }, { id: 'dark', label: 'Dark' }, { id: 'minimal', label: 'Minimal' }] },
+  { id: 'sidebar',      cat: 'structure', icon: '◧',  label: 'Sidebar',          hint: 'Painel lateral fixo ou flutuante',
+    variants: [{ id: 'left', label: 'Esquerda' }, { id: 'right', label: 'Direita' }] },
+  { id: 'topbar',       cat: 'structure', icon: '📢', label: 'Top Bar',           hint: 'Barra de aviso acima do header' },
+  { id: 'breadcrumb',   cat: 'structure', icon: '🗺️',  label: 'Breadcrumb',      hint: 'Navegação em migalhas de pão' },
+  { id: 'back_to_top',  cat: 'structure', icon: '⬆️',  label: 'Voltar ao Topo',  hint: 'Botão flutuante de regresso ao topo' },
+  { id: 'preloader',    cat: 'structure', icon: '⏳', label: 'Preloader',         hint: 'Ecrã de carregamento inicial' },
+  { id: 'cookie_bar',   cat: 'structure', icon: '🍪', label: 'Cookie Banner',     hint: 'Aviso de cookies (GDPR)' },
+  // Navegação
+  { id: 'nav_horizontal', cat: 'nav',    icon: '➡️',  label: 'Nav Horizontal',   hint: 'Menu horizontal clássico' },
+  { id: 'nav_hamburger',  cat: 'nav',    icon: '☰',   label: 'Nav Hamburger',    hint: 'Menu mobile com botão hamburger' },
+  { id: 'nav_mega',       cat: 'nav',    icon: '📋', label: 'Mega Menu',          hint: 'Menu com painéis de sub-navegação' },
+  { id: 'nav_sidebar',    cat: 'nav',    icon: '◧',  label: 'Nav Sidebar',       hint: 'Navegação em painel lateral',
+    variants: [{ id: 'push', label: 'Push' }, { id: 'overlay', label: 'Overlay' }] },
+  { id: 'nav_fullscreen', cat: 'nav',    icon: '⛶',  label: 'Nav Fullscreen',   hint: 'Menu sobreposição ecrã completo' },
+  { id: 'pagination',     cat: 'nav',    icon: '📄', label: 'Paginação',          hint: 'Navegação entre páginas' },
+  { id: 'tabs',           cat: 'nav',    icon: '🗂️',  label: 'Tabs',             hint: 'Abas de navegação horizontal',
+    variants: [{ id: 'line', label: 'Linha' }, { id: 'pill', label: 'Pill' }, { id: 'boxed', label: 'Boxed' }] },
+  // UI
+  { id: 'button',       cat: 'ui',       icon: '🔘', label: 'Botão',             hint: 'Componente de botão reutilizável',
+    variants: [{ id: 'primary', label: 'Primary' }, { id: 'secondary', label: 'Secondary' }, { id: 'ghost', label: 'Ghost' }, { id: 'outline', label: 'Outline' }] },
+  { id: 'card',         cat: 'ui',       icon: '🃏', label: 'Card',              hint: 'Cartão de conteúdo genérico',
+    variants: [{ id: 'flat', label: 'Flat' }, { id: 'shadow', label: 'Shadow' }, { id: 'bordered', label: 'Bordered' }] },
+  { id: 'badge',        cat: 'ui',       icon: '🏷️',  label: 'Badge',           hint: 'Etiqueta/badge de estado' },
+  { id: 'alert',        cat: 'ui',       icon: '⚠️',  label: 'Alert',           hint: 'Mensagem de alerta/info',
+    variants: [{ id: 'info', label: 'Info' }, { id: 'success', label: 'Success' }, { id: 'warning', label: 'Warning' }, { id: 'error', label: 'Error' }] },
+  { id: 'modal',        cat: 'ui',       icon: '🪟', label: 'Modal / Dialog',    hint: 'Janela popup modal' },
+  { id: 'drawer',       cat: 'ui',       icon: '◨',  label: 'Drawer',           hint: 'Painel deslizante lateral' },
+  { id: 'tooltip',      cat: 'ui',       icon: '💬', label: 'Tooltip',           hint: 'Dica de contexto ao hover' },
+  { id: 'accordion',    cat: 'ui',       icon: '🪗', label: 'Acordeão',          hint: 'Lista colapsável de itens' },
+  { id: 'progress',     cat: 'ui',       icon: '📶', label: 'Barra de Progresso',hint: 'Barra de progresso animada' },
+  { id: 'dark_toggle',  cat: 'ui',       icon: '🌓', label: 'Toggle Dark Mode',  hint: 'Botão de alternância claro/escuro' },
+  { id: 'scroll_progress', cat: 'ui',   icon: '📏', label: 'Scroll Progress',   hint: 'Barra de progresso de scroll' },
+  // Formulários
+  { id: 'form_input',   cat: 'forms',    icon: '✏️',  label: 'Input',            hint: 'Campo de texto' },
+  { id: 'form_select',  cat: 'forms',    icon: '📋', label: 'Select',            hint: 'Lista de selecção' },
+  { id: 'form_search',  cat: 'forms',    icon: '🔍', label: 'Pesquisa',          hint: 'Barra de pesquisa com autocomplete' },
+  { id: 'form_contact', cat: 'forms',    icon: '📩', label: 'Form de Contacto',  hint: 'Formulário de contacto completo' },
+  { id: 'form_newsletter', cat: 'forms', icon: '📧', label: 'Form Newsletter',   hint: 'Subscrição de newsletter' },
+  // Media
+  { id: 'carousel',     cat: 'media',    icon: '🎠', label: 'Carrossel',         hint: 'Slider de imagens/conteúdo',
+    variants: [{ id: 'fade', label: 'Fade' }, { id: 'slide', label: 'Slide' }, { id: 'loop', label: 'Loop' }] },
+  { id: 'lightbox',     cat: 'media',    icon: '🔍', label: 'Lightbox',          hint: 'Visualizador de imagens ampliadas' },
+  { id: 'video_player', cat: 'media',    icon: '▶️',  label: 'Video Player',     hint: 'Player de vídeo embed ou nativo' },
+  { id: 'audio_player', cat: 'media',    icon: '🎵', label: 'Audio Player',      hint: 'Player de áudio' },
+  { id: 'map_embed',    cat: 'media',    icon: '📍', label: 'Mapa Embed',        hint: 'Google Maps incorporado' },
+  // Feedback
+  { id: 'toast',        cat: 'feedback', icon: '🔔', label: 'Toast Notification',hint: 'Notificação temporária' },
+  { id: 'rating',       cat: 'feedback', icon: '⭐', label: 'Rating',            hint: 'Sistema de avaliação por estrelas' },
+  { id: 'review_card',  cat: 'feedback', icon: '💬', label: 'Review Card',       hint: 'Card de avaliação de utilizador' },
+  { id: 'chat_widget',  cat: 'feedback', icon: '💬', label: 'Chat Widget',       hint: 'Widget de chat ao vivo' },
+  // Dados
+  { id: 'data_table',   cat: 'data',     icon: '📊', label: 'Tabela de Dados',   hint: 'Tabela com ordenação e filtros' },
+  { id: 'chart_bar',    cat: 'data',     icon: '📊', label: 'Gráfico de Barras', hint: 'Gráfico de barras interactivo' },
+  { id: 'chart_pie',    cat: 'data',     icon: '🥧', label: 'Gráfico Circular',  hint: 'Gráfico em fatia/donut' },
+  { id: 'counter',      cat: 'data',     icon: '🔢', label: 'Contador Animado',  hint: 'Número que conta até ao valor' },
+];
+
+const filteredCompBlocks = computed(() =>
+  activeCompCat.value === 'all'
+    ? compLibrary
+    : compLibrary.filter(b => b.cat === activeCompCat.value)
+);
+
+function getCompBlock(id) {
+  return compLibrary.find(b => b.id === id);
+}
+
+// Estado dos componentes activos (ordem + blade + variante)
+// Carregamos a partir de form.components que é { uid: { type, variant, blade } }
+const compOrder = ref(
+  Object.entries(props.theme?.components ?? {})
+    .filter(([, v]) => v && typeof v === 'object' && v.type)
+    .map(([uid, v]) => ({ uid, type: v.type, variant: v.variant ?? '', blade: v.blade ?? '', open: false }))
+);
+
+
+
+let uidCounter = compOrder.value.length;
+
+function addCompBlock(block) {
+  uidCounter++;
+  const uid = block.id + '_' + uidCounter;
+  compOrder.value.push({
+    uid,
+    type: block.id,
+    variant: block.variants?.[0]?.id ?? '',
+    blade: '',
+    open: false,
+  });
+}
+
+function duplicateCompBlock(idx) {
+  uidCounter++;
+  const src = compOrder.value[idx];
+  const uid = src.type + '_' + uidCounter;
+  compOrder.value.splice(idx + 1, 0, { ...src, uid, open: false });
+}
+
+function removeCompBlock(idx) {
+  compOrder.value.splice(idx, 1);
+}
+
+// ── Drag & Drop ──────────────────────────────────────────────────
+const dragCompIdx = ref(null);
+const dragOverIdx = ref(null);
+
+function onCompDragStart(e, idx) {
+  dragCompIdx.value = idx;
+  e.dataTransfer.effectAllowed = 'move';
+}
+function onCompDragOver(e, idx) {
+  e.preventDefault();
+  dragOverIdx.value = idx;
+  if (dragCompIdx.value !== null && dragCompIdx.value !== idx) {
+    const items = compOrder.value;
+    const moved = items.splice(dragCompIdx.value, 1)[0];
+    items.splice(idx, 0, moved);
+    dragCompIdx.value = idx;
+  }
+}
+function onCompDrop(e) {
+  e.preventDefault();
+  dragCompIdx.value = null;
+  dragOverIdx.value = null;
+}
+function onCompDragEnd() {
+  dragCompIdx.value = null;
+  dragOverIdx.value = null;
+}
 
 // ── Variants ──────────────────────────────────────────────────────
 const variantTokens = [
