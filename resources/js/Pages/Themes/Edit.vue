@@ -527,7 +527,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, defineComponent, h } from 'vue';
+import { ref, reactive, computed } from 'vue';
 import { router } from '@inertiajs/vue3';
 import { useI18n } from 'vue-i18n';
 import AppLayout from '@/Layouts/AppLayout.vue';
@@ -800,13 +800,10 @@ async function publishTheme() {
   } catch(e) { feedback.error = e.message; }
   finally { publishing.value = false; }
 }
-</script>
 
-<!-- ── Micro-components ─────────────────────────────────────────── -->
+// ── Micro-componentes (registados no script setup para Vue os detectar) ───
 
-<script>
-// BtnSave
-export const BtnSave = {
+const BtnSave = {
   props: { saving: Boolean, label: { type: String, default: 'Guardar' } },
   emits: ['click'],
   template: `<button type="button" @click="$emit('click')" :disabled="saving"
@@ -816,8 +813,7 @@ export const BtnSave = {
   </button>`,
 };
 
-// SectionCard
-export const SectionCard = {
+const SectionCard = {
   props: { title: String },
   template: `<div class="bg-card border border-border rounded-2xl p-6 space-y-4">
     <h3 class="font-semibold text-foreground text-sm">{{ title }}</h3>
@@ -825,8 +821,7 @@ export const SectionCard = {
   </div>`,
 };
 
-// ToggleField
-export const ToggleField = {
+const ToggleField = {
   props: { modelValue: Boolean, label: String },
   emits: ['update:modelValue'],
   template: `<label class="flex items-center gap-2.5 cursor-pointer select-none">
@@ -840,8 +835,7 @@ export const ToggleField = {
   </label>`,
 };
 
-// CapabilityRow
-export const CapabilityRow = {
+const CapabilityRow = {
   props: { modelValue: Boolean, label: String, hint: String },
   emits: ['update:modelValue'],
   template: `<label class="flex items-start gap-3 p-3 bg-muted rounded-xl cursor-pointer hover:bg-border/50 transition-colors">
@@ -858,8 +852,7 @@ export const CapabilityRow = {
   </label>`,
 };
 
-// AssetSlot
-export const AssetSlot = {
+const AssetSlot = {
   props: { slotId: String, label: String, hint: String, accept: String, currentUrl: String, uploading: Boolean },
   emits: ['upload', 'delete'],
   template: `<div class="border border-border rounded-xl p-4 space-y-3">
