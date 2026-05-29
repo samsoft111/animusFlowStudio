@@ -1,50 +1,24 @@
 <template>
-  <AppLayout :title="theme ? theme.label : t('themes.create_title')">
+  <AppLayout :title="theme.label">
     <template #actions>
-      <template v-if="theme">
-        <a :href="`/preview/theme/${theme.uuid}`" target="_blank"
-          class="px-3 py-2 bg-muted text-foreground rounded-lg text-sm font-semibold hover:bg-border transition-colors flex items-center gap-1.5">
-          <EyeIcon class="w-3.5 h-3.5" /> {{ t('themes.preview') }}
-        </a>
-        <a :href="`/themes/${theme.uuid}/export`"
-          class="px-3 py-2 bg-muted text-foreground rounded-lg text-sm font-semibold hover:bg-border transition-colors flex items-center gap-1.5">
-          <DownloadIcon class="w-3.5 h-3.5" /> {{ t('common.export') }}
-        </a>
-        <button @click="publishTheme" :disabled="publishing"
-          class="px-3 py-2 rounded-lg text-sm font-semibold transition-colors flex items-center gap-1.5 disabled:opacity-50"
-          :class="theme.is_published ? 'bg-success/10 text-success hover:bg-success/20' : 'bg-primary text-primary-foreground hover:opacity-90'">
-          <UploadIcon class="w-3.5 h-3.5" />
-          {{ publishing ? t('common.loading') : (theme.is_published ? t('themes.republish') : t('themes.publish')) }}
-        </button>
-      </template>
+      <a :href="`/preview/theme/${theme.uuid}`" target="_blank"
+        class="px-3 py-2 bg-muted text-foreground rounded-lg text-sm font-semibold hover:bg-border transition-colors flex items-center gap-1.5">
+        <EyeIcon class="w-3.5 h-3.5" /> {{ t('themes.preview') }}
+      </a>
+      <a :href="`/themes/${theme.uuid}/export`"
+        class="px-3 py-2 bg-muted text-foreground rounded-lg text-sm font-semibold hover:bg-border transition-colors flex items-center gap-1.5">
+        <DownloadIcon class="w-3.5 h-3.5" /> {{ t('common.export') }}
+      </a>
+      <button @click="publishTheme" :disabled="publishing"
+        class="px-3 py-2 rounded-lg text-sm font-semibold transition-colors flex items-center gap-1.5 disabled:opacity-50"
+        :class="theme.is_published ? 'bg-success/10 text-success hover:bg-success/20' : 'bg-primary text-primary-foreground hover:opacity-90'">
+        <UploadIcon class="w-3.5 h-3.5" />
+        {{ publishing ? t('common.loading') : (theme.is_published ? t('themes.republish') : t('themes.publish')) }}
+      </button>
     </template>
 
-    <!-- CREATE FORM -->
-    <div v-if="!theme" class="max-w-lg">
-      <form @submit.prevent="createTheme" class="bg-card border border-border rounded-2xl p-6 space-y-4">
-        <h2 class="font-semibold text-foreground">{{ t('themes.create_title') }}</h2>
-        <div>
-          <label class="field-label">{{ t('themes.slug') }}</label>
-          <input v-model="createForm.name" placeholder="e.g. aurora-dark" autofocus class="field-input" />
-          <p class="field-hint">{{ t('themes.slug_hint') }}</p>
-        </div>
-        <div>
-          <label class="field-label">{{ t('common.label') }}</label>
-          <input v-model="createForm.label" placeholder="e.g. Aurora Dark" class="field-input" />
-        </div>
-        <div>
-          <label class="field-label">{{ t('common.description') }}</label>
-          <textarea v-model="createForm.description" rows="2" class="field-input resize-none" />
-        </div>
-        <button type="submit" :disabled="createForm.processing"
-          class="w-full py-2.5 bg-primary text-primary-foreground rounded-xl text-sm font-semibold disabled:opacity-50">
-          {{ createForm.processing ? t('common.loading') : t('themes.create_title') }}
-        </button>
-      </form>
-    </div>
-
     <!-- EDIT TABS -->
-    <div v-else class="space-y-4">
+    <div class="space-y-4">
 
       <!-- Feedback -->
       <div v-if="feedback.error" class="flex items-center gap-2 px-4 py-3 bg-destructive/10 text-destructive border border-destructive/20 rounded-xl text-sm">
@@ -69,6 +43,16 @@
       <div v-show="activeTab === 'details'" class="max-w-xl">
         <div class="bg-card border border-border rounded-2xl p-6 space-y-4">
           <h2 class="font-semibold text-foreground">{{ t('themes.details') }}</h2>
+
+          <!-- Slug (name) — só leitura, indica ao utilizador como alterar -->
+          <div>
+            <label class="field-label">{{ t('themes.slug') }}</label>
+            <div class="flex items-center gap-2">
+              <input v-model="form.name" class="field-input font-mono text-xs" placeholder="ex: aurora-dark" />
+            </div>
+            <p class="text-xs text-muted-foreground mt-1">{{ t('themes.slug_hint') }}</p>
+          </div>
+
           <div class="grid grid-cols-2 gap-4">
             <div>
               <label class="field-label">{{ t('common.label') }}</label>
@@ -544,7 +528,7 @@
 
 <script setup>
 import { ref, reactive, computed, defineComponent, h } from 'vue';
-import { useForm, router } from '@inertiajs/vue3';
+import { router } from '@inertiajs/vue3';
 import { useI18n } from 'vue-i18n';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import {
@@ -571,15 +555,12 @@ const tabs = [
   { id: 'preview',      icon: '👁️',  label: 'Preview'     },
 ];
 
-// ── Create form ───────────────────────────────────────────────────
-const createForm = useForm({ name: '', label: '', description: '', version: '1.0.0' });
-function createTheme() { createForm.post('/themes'); }
-
 // ── Edit form ─────────────────────────────────────────────────────
 const defaultLayout = props.theme?.layout_config ?? {};
 const defaultCaps   = props.theme?.capabilities  ?? {};
 
 const form = reactive({
+  name:        props.theme?.name        ?? '',
   label:       props.theme?.label       ?? '',
   description: props.theme?.description ?? '',
   version:     props.theme?.version     ?? '1.0.0',

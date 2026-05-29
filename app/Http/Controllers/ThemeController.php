@@ -32,9 +32,19 @@ class ThemeController extends Controller
         ]);
     }
 
-    public function create(): Response
+    public function create(): RedirectResponse
     {
-        return Inertia::render('Themes/Edit', ['theme' => null]);
+        // Cria automaticamente um rascunho e redireciona para o editor completo (10 abas)
+        $counter = StudioTheme::withTrashed()->count() + 1;
+        $theme = StudioTheme::create([
+            'name'    => 'novo-tema-' . $counter,
+            'label'   => 'Novo Tema ' . $counter,
+            'version' => '1.0.0',
+            'status'  => 'draft',
+        ]);
+
+        return redirect()->route('themes.edit', $theme->uuid)
+            ->with('success', 'Tema criado — edita os detalhes abaixo.');
     }
 
     public function store(Request $request): RedirectResponse
@@ -64,6 +74,7 @@ class ThemeController extends Controller
 
         $data = $request->validate([
             // Details
+            'name'        => 'sometimes|string|regex:/^[a-z0-9][a-z0-9\-_]{0,49}$/|unique:studio_themes,name,' . $theme->id,
             'label'       => 'sometimes|string|max:200',
             'description' => 'nullable|string|max:1000',
             'version'     => 'nullable|string|max:20',
