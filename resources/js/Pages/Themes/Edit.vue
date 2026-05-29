@@ -813,79 +813,176 @@
       </div>
 
       <!-- ════════════════════ TAB: Variantes ════════════════════ -->
-      <div v-show="activeTab === 'variants'" class="max-w-3xl space-y-4">
+      <div v-show="activeTab === 'variants'" class="max-w-5xl space-y-5">
 
-        <!-- Legenda da aba -->
+        <!-- Legenda -->
         <div class="bg-pink-500/10 border border-pink-500/20 rounded-xl px-4 py-3 text-xs text-pink-700 dark:text-pink-400 space-y-1">
           <p class="font-semibold">🌈 O que são Variantes?</p>
-          <p><strong>Paletas de cor alternativas</strong> para o mesmo tema — skins que o utilizador final pode seleccionar sem mudar o tema completo. Cada variante define os 4 tokens de cor principais em modo claro e escuro.</p>
-          <p class="text-pink-600/70">💡 As variantes são publicadas no marketplace como opções de personalização do tema. Define no mínimo uma variante "Default" igual às cores da aba 🎨 Design.</p>
+          <p><strong>Paletas de cor alternativas</strong> (skins) para o mesmo tema. Cada variante redefine todos os tokens de cor em modo claro e escuro. O utilizador final escolhe a skin no painel AnimusFlow.</p>
+          <p class="text-pink-600/70">💡 Clica em <strong>"+ Usar esta paleta"</strong> para adicionar uma paleta pré-definida, ou cria a tua própria com <strong>"+ Variante em branco"</strong>. Edita as cores individualmente em cada variante.</p>
         </div>
 
-        <div class="flex items-center justify-between">
-          <div>
-            <h2 class="font-semibold text-foreground">🎨 Variantes de Cor (Skins)</h2>
-            <p class="text-xs text-muted-foreground mt-0.5">Paletas alternativas para o mesmo tema — o utilizador pode escolher no painel AnimusFlow.</p>
-          </div>
-          <button @click="addVariant"
-            class="px-3 py-1.5 bg-muted text-foreground rounded-lg text-xs font-semibold hover:bg-border transition-colors flex items-center gap-1">
-            <PlusIcon class="w-3.5 h-3.5" /> Adicionar variante
-          </button>
-        </div>
-
-        <div v-if="!form.variants.length"
-          class="bg-card border border-border border-dashed rounded-2xl p-10 text-center">
-          <PaletteIcon class="w-8 h-8 text-muted-foreground opacity-30 mx-auto mb-3" />
-          <p class="text-sm text-muted-foreground">Ainda não há variantes.</p>
-          <p class="text-xs text-muted-foreground mt-1">As variantes permitem que o mesmo tema tenha múltiplos esquemas de cor.</p>
-        </div>
-
-        <div v-for="(variant, idx) in form.variants" :key="idx"
-          class="bg-card border border-border rounded-2xl p-4 space-y-3">
+        <!-- Paletas pré-definidas -->
+        <div class="bg-card border border-border rounded-2xl p-5 space-y-4">
           <div class="flex items-center justify-between">
-            <div class="grid grid-cols-2 gap-3 flex-1 mr-4">
-              <div>
-                <label class="field-label">Nome interno</label>
-                <input v-model="variant.name" placeholder="ocean-blue" class="field-input font-mono text-xs" />
-              </div>
-              <div>
-                <label class="field-label">Label</label>
-                <input v-model="variant.label" placeholder="Ocean Blue" class="field-input" />
-              </div>
+            <div>
+              <h3 class="text-sm font-semibold text-foreground">🎨 Paletas Pré-definidas</h3>
+              <p class="text-xs text-muted-foreground mt-0.5">Clica numa paleta para a adicionar directamente às variantes do tema.</p>
             </div>
-            <!-- Swatch preview -->
-            <div class="flex gap-1.5">
-              <div v-for="(val, varKey) in (variant.colors?.light ?? {})" :key="varKey"
-                v-if="['--color-primary','--color-background','--color-card'].includes(varKey)"
-                class="w-6 h-6 rounded-full border border-border"
-                :style="{ background: val }" :title="varKey" />
-            </div>
-            <button @click="form.variants.splice(idx, 1)"
-              class="ml-3 text-xs text-destructive/60 hover:text-destructive px-2 py-1 rounded hover:bg-destructive/10">
-              {{ t('common.delete') }}
+            <button @click="addVariant()"
+              class="px-3 py-1.5 bg-muted text-foreground rounded-lg text-xs font-semibold hover:bg-border transition-colors flex items-center gap-1.5">
+              <PlusIcon class="w-3.5 h-3.5" /> Variante em branco
             </button>
           </div>
 
-          <!-- Simplified color pickers for variant -->
+          <!-- Grid de paletas -->
           <div class="grid grid-cols-2 gap-3">
-            <div v-for="token in variantTokens" :key="token.var">
-              <label class="text-[10px] font-mono text-muted-foreground block mb-1">{{ token.var }} (light)</label>
-              <div class="flex gap-2 items-center">
-                <input type="color"
-                  :value="hexFallback(variant.colors?.light?.[token.var] || token.default)"
-                  @input="e => setVariantColor(idx, 'light', token.var, e.target.value)"
-                  class="w-8 h-7 rounded border border-border cursor-pointer bg-transparent p-0.5" />
-                <input
-                  :value="variant.colors?.light?.[token.var] || ''"
-                  @input="e => setVariantColor(idx, 'light', token.var, e.target.value)"
-                  :placeholder="token.default"
-                  class="flex-1 px-2 py-1.5 bg-muted border border-border rounded-lg text-xs font-mono focus:outline-none focus:border-primary" />
+            <button v-for="preset in colorPresets" :key="preset.name"
+              @click="addPresetVariant(preset)"
+              class="flex items-center gap-3 p-3 rounded-xl border border-border hover:border-primary/40 hover:bg-primary/5 transition-all text-left group">
+              <!-- Swatches da paleta -->
+              <div class="flex gap-1 shrink-0">
+                <div class="w-8 h-8 rounded-lg shadow-sm border border-white/20" :style="{ background: preset.colors.light['--color-primary'] }" />
+                <div class="flex flex-col gap-1">
+                  <div class="w-4 h-3.5 rounded" :style="{ background: preset.colors.light['--color-background'] }" />
+                  <div class="w-4 h-3.5 rounded" :style="{ background: preset.colors.dark['--color-background'] }" />
+                </div>
+                <div class="w-8 h-8 rounded-lg shadow-sm border border-white/20" :style="{ background: preset.colors.dark['--color-primary'] }" />
+              </div>
+              <!-- Info -->
+              <div class="flex-1 min-w-0">
+                <p class="text-xs font-semibold text-foreground">{{ preset.label }}</p>
+                <p class="text-[10px] text-muted-foreground mt-0.5 truncate">{{ preset.description }}</p>
+              </div>
+              <PlusIcon class="w-3.5 h-3.5 text-muted-foreground group-hover:text-primary shrink-0 transition-colors" />
+            </button>
+          </div>
+        </div>
+
+        <!-- Variantes activas -->
+        <div class="space-y-3">
+          <div class="flex items-center justify-between">
+            <h3 class="text-sm font-semibold text-foreground">
+              Variantes activas
+              <span class="ml-1.5 text-xs font-normal text-muted-foreground">({{ form.variants.length }})</span>
+            </h3>
+            <btn-save v-if="form.variants.length" @click="save" :saving="saving" label="Guardar Variantes" />
+          </div>
+
+          <div v-if="!form.variants.length"
+            class="bg-card border border-dashed border-border rounded-2xl p-10 text-center">
+            <PaletteIcon class="w-8 h-8 text-muted-foreground opacity-30 mx-auto mb-3" />
+            <p class="text-sm font-semibold text-foreground mb-1">Sem variantes activas</p>
+            <p class="text-xs text-muted-foreground">Adiciona uma paleta pré-definida acima ou cria uma variante em branco.</p>
+          </div>
+
+          <!-- Cards de variantes -->
+          <div v-for="(variant, idx) in form.variants" :key="idx"
+            class="bg-card border border-border rounded-2xl overflow-hidden">
+
+            <!-- Header com swatches e controlos -->
+            <div class="flex items-center gap-3 px-4 py-3 border-b border-border bg-muted/30">
+              <!-- Swatch preview -->
+              <div class="flex gap-1 shrink-0">
+                <div v-for="tok in ['--color-primary','--color-secondary','--color-accent']" :key="tok"
+                  class="w-5 h-5 rounded-full border border-border shadow-sm"
+                  :style="{ background: variant.colors?.light?.[tok] || '#888' }"
+                  :title="tok + ' (light)'" />
+                <div class="w-px bg-border mx-1" />
+                <div v-for="tok in ['--color-primary','--color-secondary','--color-accent']" :key="'d'+tok"
+                  class="w-5 h-5 rounded-full border border-border shadow-sm"
+                  :style="{ background: variant.colors?.dark?.[tok] || '#555' }"
+                  :title="tok + ' (dark)'" />
+              </div>
+              <!-- Nome e label -->
+              <div class="flex-1 grid grid-cols-2 gap-2">
+                <input v-model="variant.name" placeholder="slug-da-variante" class="field-input font-mono text-xs py-1.5" />
+                <input v-model="variant.label" placeholder="Nome da variante" class="field-input text-xs py-1.5" />
+              </div>
+              <!-- Toggle editor -->
+              <button @click="variant._open = !variant._open"
+                class="text-xs text-muted-foreground hover:text-foreground px-2 py-1 rounded bg-muted hover:bg-border transition-colors shrink-0">
+                {{ variant._open ? '▲ Fechar' : '▼ Editar cores' }}
+              </button>
+              <!-- Remover -->
+              <button @click="form.variants.splice(idx, 1)"
+                class="w-6 h-6 flex items-center justify-center rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors text-xs font-bold shrink-0">✕</button>
+            </div>
+
+            <!-- Editor de cores (colapsável) -->
+            <div v-show="variant._open" class="p-4 space-y-4">
+
+              <!-- Tabs light/dark -->
+              <div class="flex gap-1 bg-muted p-0.5 rounded-lg w-fit">
+                <button @click="variant._mode = 'light'"
+                  class="px-3 py-1 rounded-md text-xs font-semibold transition-colors"
+                  :class="(!variant._mode || variant._mode==='light') ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground'">
+                  ☀️ Light
+                </button>
+                <button @click="variant._mode = 'dark'"
+                  class="px-3 py-1 rounded-md text-xs font-semibold transition-colors"
+                  :class="variant._mode==='dark' ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground'">
+                  🌙 Dark
+                </button>
+              </div>
+
+              <!-- Tokens de cor -->
+              <div class="grid grid-cols-2 gap-3">
+                <div v-for="token in fullVariantTokens" :key="token.var">
+                  <div class="flex items-center gap-1.5 mb-1">
+                    <div class="w-2.5 h-2.5 rounded-full border border-border"
+                      :style="{ background: variant.colors?.[(variant._mode||'light')]?.[token.var] || token[(variant._mode||'light')] }" />
+                    <label class="text-[10px] font-mono text-muted-foreground leading-none">{{ token.var }}</label>
+                  </div>
+                  <p class="text-[10px] text-muted-foreground mb-1.5">{{ token.hint }}</p>
+                  <div class="flex gap-2 items-center">
+                    <input type="color"
+                      :value="hexFallback(variant.colors?.[(variant._mode||'light')]?.[token.var] || token[(variant._mode||'light')])"
+                      @input="e => setVariantColor(idx, variant._mode||'light', token.var, e.target.value)"
+                      class="w-8 h-7 rounded border border-border cursor-pointer bg-transparent p-0.5 shrink-0" />
+                    <input
+                      :value="variant.colors?.[(variant._mode||'light')]?.[token.var] || ''"
+                      @input="e => setVariantColor(idx, variant._mode||'light', token.var, e.target.value)"
+                      :placeholder="token[(variant._mode||'light')]"
+                      class="flex-1 px-2 py-1.5 bg-muted border border-border rounded-lg text-xs font-mono focus:outline-none focus:border-primary" />
+                  </div>
+                </div>
+              </div>
+
+              <!-- Preview rápido da variante -->
+              <div class="rounded-xl overflow-hidden border border-border">
+                <div class="px-4 py-2 text-xs font-semibold text-muted-foreground bg-muted/50 border-b border-border">Pré-visualização da variante</div>
+                <div class="p-4 flex gap-3 flex-wrap"
+                  :style="{
+                    background: variant.colors?.[(variant._mode||'light')]?.['--color-background'] || '#ffffff',
+                    color: variant.colors?.[(variant._mode||'light')]?.['--color-foreground'] || '#111111',
+                  }">
+                  <span class="px-3 py-1.5 rounded-lg text-xs font-semibold text-white"
+                    :style="{ background: variant.colors?.[(variant._mode||'light')]?.['--color-primary'] || '#6366f1' }">
+                    Botão Primary
+                  </span>
+                  <span class="px-3 py-1.5 rounded-lg text-xs font-semibold text-white"
+                    :style="{ background: variant.colors?.[(variant._mode||'light')]?.['--color-secondary'] || '#8b5cf6' }">
+                    Secondary
+                  </span>
+                  <span class="px-3 py-1.5 rounded-lg text-xs font-semibold text-white"
+                    :style="{ background: variant.colors?.[(variant._mode||'light')]?.['--color-accent'] || '#f59e0b' }">
+                    Accent
+                  </span>
+                  <span class="px-3 py-1.5 rounded-lg text-xs border"
+                    :style="{
+                      background: variant.colors?.[(variant._mode||'light')]?.['--color-card'] || '#ffffff',
+                      borderColor: variant.colors?.[(variant._mode||'light')]?.['--color-border'] || '#e5e7eb',
+                    }">
+                    Card
+                  </span>
+                  <span class="text-xs font-semibold self-center">Texto normal</span>
+                  <span class="text-xs self-center opacity-60">Texto secundário</span>
+                </div>
               </div>
             </div>
           </div>
         </div>
-
-        <btn-save v-if="form.variants.length" @click="save" :saving="saving" label="Guardar Variantes" />
       </div>
 
       <!-- ════════════════════ TAB: Preview ════════════════════ -->
@@ -1422,16 +1519,169 @@ function onCompDragEnd() {
 }
 
 // ── Variants ──────────────────────────────────────────────────────
-const variantTokens = [
-  { var: '--color-primary',    default: 'oklch(0.55 0.22 265)' },
-  { var: '--color-background', default: 'oklch(0.99 0.003 265)' },
-  { var: '--color-card',       default: 'oklch(1 0 0)' },
-  { var: '--color-foreground', default: 'oklch(0.13 0.02 265)' },
+
+// Todos os tokens de cor por variante (light + dark)
+const fullVariantTokens = [
+  { var: '--color-primary',    hint: 'Cor principal — botões, links, destaques',              light: '#6366f1', dark: '#818cf8' },
+  { var: '--color-secondary',  hint: 'Cor secundária — badges, tags, botões ghost',            light: '#8b5cf6', dark: '#a78bfa' },
+  { var: '--color-accent',     hint: 'Cor de destaque — hover states, ícones especiais',       light: '#f59e0b', dark: '#fbbf24' },
+  { var: '--color-background', hint: 'Fundo geral da página',                                  light: '#ffffff', dark: '#0f172a' },
+  { var: '--color-foreground', hint: 'Cor do texto principal',                                 light: '#0f172a', dark: '#f1f5f9' },
+  { var: '--color-card',       hint: 'Fundo de cards, painéis e modais',                      light: '#ffffff', dark: '#1e293b' },
+  { var: '--color-muted',      hint: 'Fundo de inputs, áreas secundárias',                    light: '#f1f5f9', dark: '#1e293b' },
+  { var: '--color-border',     hint: 'Cor das linhas divisórias e bordas',                    light: '#e2e8f0', dark: '#334155' },
+  { var: '--color-success',    hint: 'Mensagens de sucesso, estados positivos',                light: '#10b981', dark: '#34d399' },
+  { var: '--color-warning',    hint: 'Alertas e avisos',                                       light: '#f59e0b', dark: '#fbbf24' },
+  { var: '--color-destructive',hint: 'Erros, acções destrutivas',                              light: '#ef4444', dark: '#f87171' },
+];
+
+// Paletas pré-definidas (18 paletas)
+const colorPresets = [
+  {
+    name: 'indigo-night', label: 'Indigo Night', description: 'Elegante roxo índigo com fundos escuros',
+    colors: {
+      light: { '--color-primary':'#6366f1','--color-secondary':'#8b5cf6','--color-accent':'#f59e0b','--color-background':'#ffffff','--color-foreground':'#0f172a','--color-card':'#f8fafc','--color-muted':'#f1f5f9','--color-border':'#e2e8f0','--color-success':'#10b981','--color-warning':'#f59e0b','--color-destructive':'#ef4444' },
+      dark:  { '--color-primary':'#818cf8','--color-secondary':'#a78bfa','--color-accent':'#fbbf24','--color-background':'#0f172a','--color-foreground':'#f1f5f9','--color-card':'#1e293b','--color-muted':'#1e293b','--color-border':'#334155','--color-success':'#34d399','--color-warning':'#fbbf24','--color-destructive':'#f87171' },
+    },
+  },
+  {
+    name: 'ocean-blue', label: 'Ocean Blue', description: 'Azul oceano fresco e profissional',
+    colors: {
+      light: { '--color-primary':'#0ea5e9','--color-secondary':'#38bdf8','--color-accent':'#f97316','--color-background':'#f0f9ff','--color-foreground':'#0c4a6e','--color-card':'#ffffff','--color-muted':'#e0f2fe','--color-border':'#bae6fd','--color-success':'#10b981','--color-warning':'#f59e0b','--color-destructive':'#ef4444' },
+      dark:  { '--color-primary':'#38bdf8','--color-secondary':'#7dd3fc','--color-accent':'#fb923c','--color-background':'#082f49','--color-foreground':'#e0f2fe','--color-card':'#0c4a6e','--color-muted':'#0c4a6e','--color-border':'#075985','--color-success':'#34d399','--color-warning':'#fbbf24','--color-destructive':'#f87171' },
+    },
+  },
+  {
+    name: 'emerald-nature', label: 'Emerald Nature', description: 'Verde esmeralda natural e orgânico',
+    colors: {
+      light: { '--color-primary':'#10b981','--color-secondary':'#34d399','--color-accent':'#f59e0b','--color-background':'#f0fdf4','--color-foreground':'#064e3b','--color-card':'#ffffff','--color-muted':'#dcfce7','--color-border':'#bbf7d0','--color-success':'#10b981','--color-warning':'#f59e0b','--color-destructive':'#ef4444' },
+      dark:  { '--color-primary':'#34d399','--color-secondary':'#6ee7b7','--color-accent':'#fbbf24','--color-background':'#022c22','--color-foreground':'#d1fae5','--color-card':'#064e3b','--color-muted':'#064e3b','--color-border':'#065f46','--color-success':'#34d399','--color-warning':'#fbbf24','--color-destructive':'#f87171' },
+    },
+  },
+  {
+    name: 'sunset-orange', label: 'Sunset Orange', description: 'Laranja vibrante com energia mediterrânica',
+    colors: {
+      light: { '--color-primary':'#f97316','--color-secondary':'#fb923c','--color-accent':'#8b5cf6','--color-background':'#fff7ed','--color-foreground':'#431407','--color-card':'#ffffff','--color-muted':'#ffedd5','--color-border':'#fed7aa','--color-success':'#10b981','--color-warning':'#f59e0b','--color-destructive':'#ef4444' },
+      dark:  { '--color-primary':'#fb923c','--color-secondary':'#fdba74','--color-accent':'#a78bfa','--color-background':'#1c0a00','--color-foreground':'#ffedd5','--color-card':'#431407','--color-muted':'#431407','--color-border':'#7c2d12','--color-success':'#34d399','--color-warning':'#fbbf24','--color-destructive':'#f87171' },
+    },
+  },
+  {
+    name: 'rose-luxury', label: 'Rose Luxury', description: 'Rosa sofisticado para marcas premium',
+    colors: {
+      light: { '--color-primary':'#f43f5e','--color-secondary':'#fb7185','--color-accent':'#fbbf24','--color-background':'#fff1f2','--color-foreground':'#4c0519','--color-card':'#ffffff','--color-muted':'#ffe4e6','--color-border':'#fecdd3','--color-success':'#10b981','--color-warning':'#f59e0b','--color-destructive':'#ef4444' },
+      dark:  { '--color-primary':'#fb7185','--color-secondary':'#fda4af','--color-accent':'#fcd34d','--color-background':'#1a000a','--color-foreground':'#ffe4e6','--color-card':'#4c0519','--color-muted':'#4c0519','--color-border':'#881337','--color-success':'#34d399','--color-warning':'#fbbf24','--color-destructive':'#f87171' },
+    },
+  },
+  {
+    name: 'slate-minimal', label: 'Slate Minimal', description: 'Cinzento neutro ultra-minimalista',
+    colors: {
+      light: { '--color-primary':'#475569','--color-secondary':'#64748b','--color-accent':'#0ea5e9','--color-background':'#f8fafc','--color-foreground':'#0f172a','--color-card':'#ffffff','--color-muted':'#f1f5f9','--color-border':'#e2e8f0','--color-success':'#10b981','--color-warning':'#f59e0b','--color-destructive':'#ef4444' },
+      dark:  { '--color-primary':'#94a3b8','--color-secondary':'#cbd5e1','--color-accent':'#38bdf8','--color-background':'#020617','--color-foreground':'#f1f5f9','--color-card':'#0f172a','--color-muted':'#0f172a','--color-border':'#1e293b','--color-success':'#34d399','--color-warning':'#fbbf24','--color-destructive':'#f87171' },
+    },
+  },
+  {
+    name: 'purple-galaxy', label: 'Purple Galaxy', description: 'Roxo galáxia para tech & criatividade',
+    colors: {
+      light: { '--color-primary':'#9333ea','--color-secondary':'#a855f7','--color-accent':'#06b6d4','--color-background':'#faf5ff','--color-foreground':'#3b0764','--color-card':'#ffffff','--color-muted':'#f3e8ff','--color-border':'#e9d5ff','--color-success':'#10b981','--color-warning':'#f59e0b','--color-destructive':'#ef4444' },
+      dark:  { '--color-primary':'#c084fc','--color-secondary':'#d8b4fe','--color-accent':'#22d3ee','--color-background':'#0d0019','--color-foreground':'#f3e8ff','--color-card':'#1e0038','--color-muted':'#1e0038','--color-border':'#3b0764','--color-success':'#34d399','--color-warning':'#fbbf24','--color-destructive':'#f87171' },
+    },
+  },
+  {
+    name: 'teal-corporate', label: 'Teal Corporate', description: 'Verde-azulado profissional para empresas',
+    colors: {
+      light: { '--color-primary':'#0d9488','--color-secondary':'#14b8a6','--color-accent':'#f97316','--color-background':'#f0fdfa','--color-foreground':'#042f2e','--color-card':'#ffffff','--color-muted':'#ccfbf1','--color-border':'#99f6e4','--color-success':'#10b981','--color-warning':'#f59e0b','--color-destructive':'#ef4444' },
+      dark:  { '--color-primary':'#2dd4bf','--color-secondary':'#5eead4','--color-accent':'#fb923c','--color-background':'#011a18','--color-foreground':'#ccfbf1','--color-card':'#042f2e','--color-muted':'#042f2e','--color-border':'#134e4a','--color-success':'#34d399','--color-warning':'#fbbf24','--color-destructive':'#f87171' },
+    },
+  },
+  {
+    name: 'gold-premium', label: 'Gold Premium', description: 'Dourado luxuoso para marcas de topo',
+    colors: {
+      light: { '--color-primary':'#d97706','--color-secondary':'#f59e0b','--color-accent':'#0f172a','--color-background':'#fffbeb','--color-foreground':'#451a03','--color-card':'#ffffff','--color-muted':'#fef3c7','--color-border':'#fde68a','--color-success':'#10b981','--color-warning':'#f59e0b','--color-destructive':'#ef4444' },
+      dark:  { '--color-primary':'#f59e0b','--color-secondary':'#fbbf24','--color-accent':'#f1f5f9','--color-background':'#0d0800','--color-foreground':'#fef3c7','--color-card':'#1c1000','--color-muted':'#1c1000','--color-border':'#451a03','--color-success':'#34d399','--color-warning':'#fbbf24','--color-destructive':'#f87171' },
+    },
+  },
+  {
+    name: 'crimson-bold', label: 'Crimson Bold', description: 'Vermelho intenso para marcas assertivas',
+    colors: {
+      light: { '--color-primary':'#dc2626','--color-secondary':'#ef4444','--color-accent':'#1d4ed8','--color-background':'#fff5f5','--color-foreground':'#450a0a','--color-card':'#ffffff','--color-muted':'#fee2e2','--color-border':'#fecaca','--color-success':'#10b981','--color-warning':'#f59e0b','--color-destructive':'#ef4444' },
+      dark:  { '--color-primary':'#f87171','--color-secondary':'#fca5a5','--color-accent':'#60a5fa','--color-background':'#0f0000','--color-foreground':'#fee2e2','--color-card':'#450a0a','--color-muted':'#450a0a','--color-border':'#7f1d1d','--color-success':'#34d399','--color-warning':'#fbbf24','--color-destructive':'#f87171' },
+    },
+  },
+  {
+    name: 'midnight-blue', label: 'Midnight Blue', description: 'Azul meia-noite elegante e sério',
+    colors: {
+      light: { '--color-primary':'#1d4ed8','--color-secondary':'#3b82f6','--color-accent':'#f59e0b','--color-background':'#eff6ff','--color-foreground':'#1e3a5f','--color-card':'#ffffff','--color-muted':'#dbeafe','--color-border':'#bfdbfe','--color-success':'#10b981','--color-warning':'#f59e0b','--color-destructive':'#ef4444' },
+      dark:  { '--color-primary':'#60a5fa','--color-secondary':'#93c5fd','--color-accent':'#fbbf24','--color-background':'#030712','--color-foreground':'#dbeafe','--color-card':'#0f172a','--color-muted':'#0f172a','--color-border':'#1e3a5f','--color-success':'#34d399','--color-warning':'#fbbf24','--color-destructive':'#f87171' },
+    },
+  },
+  {
+    name: 'forest-dark', label: 'Forest Dark', description: 'Verde floresta para temas naturais e ecológicos',
+    colors: {
+      light: { '--color-primary':'#15803d','--color-secondary':'#16a34a','--color-accent':'#ca8a04','--color-background':'#f7fee7','--color-foreground':'#14532d','--color-card':'#ffffff','--color-muted':'#ecfccb','--color-border':'#d9f99d','--color-success':'#10b981','--color-warning':'#f59e0b','--color-destructive':'#ef4444' },
+      dark:  { '--color-primary':'#4ade80','--color-secondary':'#86efac','--color-accent':'#fde047','--color-background':'#020c02','--color-foreground':'#dcfce7','--color-card':'#052e16','--color-muted':'#052e16','--color-border':'#14532d','--color-success':'#34d399','--color-warning':'#fbbf24','--color-destructive':'#f87171' },
+    },
+  },
+  {
+    name: 'neon-cyber', label: 'Neon Cyber', description: 'Neón cyberpunk para gaming e tech',
+    colors: {
+      light: { '--color-primary':'#06b6d4','--color-secondary':'#22d3ee','--color-accent':'#a855f7','--color-background':'#ecfeff','--color-foreground':'#083344','--color-card':'#ffffff','--color-muted':'#cffafe','--color-border':'#a5f3fc','--color-success':'#10b981','--color-warning':'#f59e0b','--color-destructive':'#ef4444' },
+      dark:  { '--color-primary':'#22d3ee','--color-secondary':'#67e8f9','--color-accent':'#c084fc','--color-background':'#000d10','--color-foreground':'#cffafe','--color-card':'#001a1f','--color-muted':'#001a1f','--color-border':'#083344','--color-success':'#34d399','--color-warning':'#fbbf24','--color-destructive':'#f87171' },
+    },
+  },
+  {
+    name: 'warm-earth', label: 'Warm Earth', description: 'Tons terra quentes para lifestyle e moda',
+    colors: {
+      light: { '--color-primary':'#92400e','--color-secondary':'#b45309','--color-accent':'#065f46','--color-background':'#fffbf5','--color-foreground':'#1c0a00','--color-card':'#ffffff','--color-muted':'#fef3c7','--color-border':'#fde68a','--color-success':'#10b981','--color-warning':'#f59e0b','--color-destructive':'#ef4444' },
+      dark:  { '--color-primary':'#fbbf24','--color-secondary':'#fcd34d','--color-accent':'#34d399','--color-background':'#0c0500','--color-foreground':'#fef3c7','--color-card':'#1c0a00','--color-muted':'#1c0a00','--color-border':'#451a03','--color-success':'#34d399','--color-warning':'#fbbf24','--color-destructive':'#f87171' },
+    },
+  },
+  {
+    name: 'pink-candy', label: 'Pink Candy', description: 'Rosa doce e divertido para marcas jovens',
+    colors: {
+      light: { '--color-primary':'#ec4899','--color-secondary':'#f472b6','--color-accent':'#818cf8','--color-background':'#fdf2f8','--color-foreground':'#500724','--color-card':'#ffffff','--color-muted':'#fce7f3','--color-border':'#fbcfe8','--color-success':'#10b981','--color-warning':'#f59e0b','--color-destructive':'#ef4444' },
+      dark:  { '--color-primary':'#f472b6','--color-secondary':'#f9a8d4','--color-accent':'#a5b4fc','--color-background':'#12000a','--color-foreground':'#fce7f3','--color-card':'#1f0011','--color-muted':'#1f0011','--color-border':'#500724','--color-success':'#34d399','--color-warning':'#fbbf24','--color-destructive':'#f87171' },
+    },
+  },
+  {
+    name: 'mono-black', label: 'Mono Black', description: 'Preto e branco puro — elegância absoluta',
+    colors: {
+      light: { '--color-primary':'#000000','--color-secondary':'#171717','--color-accent':'#525252','--color-background':'#ffffff','--color-foreground':'#000000','--color-card':'#fafafa','--color-muted':'#f5f5f5','--color-border':'#e5e5e5','--color-success':'#10b981','--color-warning':'#f59e0b','--color-destructive':'#ef4444' },
+      dark:  { '--color-primary':'#ffffff','--color-secondary':'#e5e5e5','--color-accent':'#a3a3a3','--color-background':'#000000','--color-foreground':'#ffffff','--color-card':'#0a0a0a','--color-muted':'#171717','--color-border':'#262626','--color-success':'#34d399','--color-warning':'#fbbf24','--color-destructive':'#f87171' },
+    },
+  },
+  {
+    name: 'lavender-soft', label: 'Lavender Soft', description: 'Lavanda suave para wellness e saúde',
+    colors: {
+      light: { '--color-primary':'#7c3aed','--color-secondary':'#8b5cf6','--color-accent':'#db2777','--color-background':'#faf5ff','--color-foreground':'#2e1065','--color-card':'#ffffff','--color-muted':'#ede9fe','--color-border':'#ddd6fe','--color-success':'#10b981','--color-warning':'#f59e0b','--color-destructive':'#ef4444' },
+      dark:  { '--color-primary':'#a78bfa','--color-secondary':'#c4b5fd','--color-accent':'#f472b6','--color-background':'#0c0014','--color-foreground':'#ede9fe','--color-card':'#1a0033','--color-muted':'#1a0033','--color-border':'#2e1065','--color-success':'#34d399','--color-warning':'#fbbf24','--color-destructive':'#f87171' },
+    },
+  },
+  {
+    name: 'autumn-rust', label: 'Autumn Rust', description: 'Ferrugem outonal para marcas artesanais',
+    colors: {
+      light: { '--color-primary':'#c2410c','--color-secondary':'#ea580c','--color-accent':'#a16207','--color-background':'#fff8f5','--color-foreground':'#431407','--color-card':'#ffffff','--color-muted':'#ffedd5','--color-border':'#fed7aa','--color-success':'#10b981','--color-warning':'#f59e0b','--color-destructive':'#ef4444' },
+      dark:  { '--color-primary':'#fb923c','--color-secondary':'#fdba74','--color-accent':'#fde047','--color-background':'#0d0400','--color-foreground':'#ffedd5','--color-card':'#1c0a00','--color-muted':'#1c0a00','--color-border':'#7c2d12','--color-success':'#34d399','--color-warning':'#fbbf24','--color-destructive':'#f87171' },
+    },
+  },
 ];
 
 function addVariant() {
-  form.variants.push({ name: '', label: '', colors: { light: {}, dark: {} } });
+  form.variants.push({ name: '', label: '', _open: true, _mode: 'light', colors: { light: {}, dark: {} } });
 }
+
+function addPresetVariant(preset) {
+  form.variants.push({
+    name: preset.name,
+    label: preset.label,
+    _open: false,
+    _mode: 'light',
+    colors: {
+      light: { ...preset.colors.light },
+      dark:  { ...preset.colors.dark  },
+    },
+  });
+}
+
 function setVariantColor(idx, mode, varName, val) {
   if (!form.variants[idx].colors) form.variants[idx].colors = { light: {}, dark: {} };
   if (!form.variants[idx].colors[mode]) form.variants[idx].colors[mode] = {};
