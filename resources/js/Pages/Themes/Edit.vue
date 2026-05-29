@@ -475,35 +475,108 @@
       </div>
 
       <!-- ════════════════════ TAB: Secções ════════════════════ -->
-      <div v-show="activeTab === 'sections'" class="max-w-4xl space-y-4">
-        <div class="flex items-center justify-between">
-          <p class="text-sm text-muted-foreground">{{ t('themes.sections_hint') }}</p>
-          <button @click="addSection"
-            class="px-3 py-1.5 bg-muted text-foreground rounded-lg text-xs font-semibold hover:bg-border transition-colors flex items-center gap-1">
-            <PlusIcon class="w-3.5 h-3.5" /> {{ t('themes.add_section') }}
-          </button>
-        </div>
-        <div v-if="!Object.keys(form.sections).length"
-          class="bg-card border border-border border-dashed rounded-2xl p-12 text-center">
-          <CodeIcon class="w-10 h-10 text-muted-foreground opacity-30 mx-auto mb-3" />
-          <p class="text-sm text-muted-foreground">{{ t('themes.no_sections') }}</p>
-        </div>
-        <div v-for="(blade, sectionType) in form.sections" :key="sectionType"
-          class="bg-card border border-border rounded-2xl overflow-hidden">
-          <div class="flex items-center justify-between px-4 py-3 border-b border-border bg-muted/50">
-            <span class="text-sm font-semibold font-mono">{{ sectionType }}</span>
-            <div class="flex gap-2 items-center">
-              <span class="text-xs text-muted-foreground">{{ (blade||'').length }} chars</span>
-              <button @click="removeSection(sectionType)"
-                class="text-xs text-destructive/60 hover:text-destructive px-2 py-0.5 rounded hover:bg-destructive/10">
-                {{ t('common.delete') }}
+      <div v-show="activeTab === 'sections'" class="max-w-5xl space-y-5">
+
+        <!-- Layout: painel esquerdo (biblioteca) + direita (activas) -->
+        <div class="grid grid-cols-[260px_1fr] gap-5 items-start">
+
+          <!-- ── Biblioteca de blocos ── -->
+          <div class="bg-card border border-border rounded-2xl overflow-hidden sticky top-4">
+            <div class="px-4 py-3 border-b border-border bg-muted/50">
+              <p class="text-xs font-semibold text-foreground">📚 Biblioteca de Blocos</p>
+              <p class="text-xs text-muted-foreground mt-0.5">Clica para adicionar ao tema</p>
+            </div>
+
+            <!-- Filtro de categorias -->
+            <div class="flex flex-wrap gap-1 px-3 py-2 border-b border-border">
+              <button v-for="cat in sectionCategories" :key="cat.id"
+                @click="activeSectionCat = cat.id"
+                class="px-2 py-0.5 rounded-md text-xs font-semibold transition-colors"
+                :class="activeSectionCat === cat.id
+                  ? 'bg-primary text-primary-foreground'
+                  : 'bg-muted text-muted-foreground hover:text-foreground'">
+                {{ cat.icon }} {{ cat.label }}
+              </button>
+            </div>
+
+            <!-- Blocos da categoria activa -->
+            <div class="p-3 space-y-1.5 max-h-[520px] overflow-y-auto">
+              <button v-for="block in filteredSectionBlocks" :key="block.id"
+                @click="toggleSection(block)"
+                class="w-full flex items-start gap-3 p-2.5 rounded-xl border text-left transition-all"
+                :class="form.sections[block.id] !== undefined
+                  ? 'border-primary/40 bg-primary/5 text-primary'
+                  : 'border-transparent bg-muted/50 hover:bg-muted text-foreground'">
+                <span class="text-lg leading-none mt-0.5">{{ block.icon }}</span>
+                <div class="min-w-0">
+                  <p class="text-xs font-semibold leading-tight">{{ block.label }}</p>
+                  <p class="text-xs text-muted-foreground leading-tight mt-0.5 truncate">{{ block.hint }}</p>
+                </div>
+                <span v-if="form.sections[block.id] !== undefined"
+                  class="ml-auto text-xs text-primary font-bold shrink-0">✓</span>
               </button>
             </div>
           </div>
-          <textarea v-model="form.sections[sectionType]" rows="12" spellcheck="false"
-            class="w-full px-4 py-3 bg-muted/30 text-xs font-mono focus:outline-none resize-y border-0" />
+
+          <!-- ── Secções activas ── -->
+          <div class="space-y-3">
+            <div class="flex items-center justify-between">
+              <p class="text-sm font-semibold text-foreground">
+                Secções activas
+                <span class="ml-1.5 text-xs font-normal text-muted-foreground">({{ Object.keys(form.sections).length }} blocos)</span>
+              </p>
+              <btn-save @click="save" :saving="saving" label="Guardar Secções" />
+            </div>
+
+            <!-- Vazio -->
+            <div v-if="!Object.keys(form.sections).length"
+              class="bg-card border border-dashed border-border rounded-2xl p-12 text-center">
+              <p class="text-2xl mb-2">🧩</p>
+              <p class="text-sm font-semibold text-foreground mb-1">Sem blocos activos</p>
+              <p class="text-xs text-muted-foreground">Selecciona blocos na biblioteca à esquerda</p>
+            </div>
+
+            <!-- Blocos activos com editor Blade -->
+            <div v-for="(blade, sectionType) in form.sections" :key="sectionType"
+              class="bg-card border border-border rounded-2xl overflow-hidden">
+
+              <!-- Header do bloco -->
+              <div class="flex items-center gap-3 px-4 py-2.5 border-b border-border bg-muted/40">
+                <span class="text-base">{{ getSectionBlock(sectionType)?.icon ?? '🧩' }}</span>
+                <div class="flex-1 min-w-0">
+                  <p class="text-sm font-semibold text-foreground leading-tight">{{ getSectionBlock(sectionType)?.label ?? sectionType }}</p>
+                  <p class="text-xs text-muted-foreground font-mono">{{ sectionType }}</p>
+                </div>
+                <!-- Variante do bloco -->
+                <select v-if="getSectionBlock(sectionType)?.variants?.length"
+                  v-model="sectionVariants[sectionType]"
+                  class="text-xs bg-muted border border-border rounded-lg px-2 py-1 focus:outline-none">
+                  <option v-for="v in getSectionBlock(sectionType).variants" :key="v.id" :value="v.id">{{ v.label }}</option>
+                </select>
+                <button @click="toggleSectionEditor(sectionType)"
+                  class="text-xs text-muted-foreground hover:text-foreground px-2 py-1 rounded bg-muted hover:bg-border transition-colors">
+                  {{ openSectionEditors[sectionType] ? '▲ Fechar' : '▼ Editar Blade' }}
+                </button>
+                <button @click="removeSection(sectionType)"
+                  class="w-6 h-6 flex items-center justify-center rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors text-xs font-bold">✕</button>
+              </div>
+
+              <!-- Editor Blade (colapsável) -->
+              <div v-show="openSectionEditors[sectionType]">
+                <div class="px-4 py-2 bg-muted/20 border-b border-border flex items-center gap-2">
+                  <span class="text-xs text-muted-foreground">Blade personalizado — sobrepõe o template gerado pelo AnimusFlow</span>
+                  <button @click="form.sections[sectionType] = ''"
+                    class="ml-auto text-xs text-muted-foreground hover:text-destructive px-2 py-0.5 rounded hover:bg-destructive/10">
+                    Limpar
+                  </button>
+                </div>
+                <textarea v-model="form.sections[sectionType]" rows="10" spellcheck="false"
+                  placeholder="Blade personalizado da secção — deixa vazio para usar o template padrão do AnimusFlow"
+                  class="w-full px-4 py-3 bg-muted/10 text-xs font-mono focus:outline-none resize-y border-0" />
+              </div>
+            </div>
+          </div>
         </div>
-        <btn-save v-if="Object.keys(form.sections).length" @click="save" :saving="saving" label="Guardar Secções" />
       </div>
 
       <!-- ════════════════════ TAB: Componentes ════════════════════ -->
@@ -890,28 +963,112 @@ async function handleAssetDelete({ slotId }) {
   feedback.success = `Asset "${slotId}" removido.`;
 }
 
-// ── Sections ──────────────────────────────────────────────────────
-const showAddSection    = ref(false);
-const newSectionType    = ref('hero');
-const customSectionType = ref('');
-const availableSectionTypes = [
-  'hero','features','text','cta','testimonials','pricing','gallery',
-  'faq','contact','newsletter','columns','stats','team','steps',
-  'timeline','cards','quote','banner',
+// ── Sections — biblioteca de blocos ──────────────────────────────
+const activeSectionCat   = ref('all');
+const sectionVariants    = reactive({});
+const openSectionEditors = reactive({});
+
+const sectionCategories = [
+  { id: 'all',        icon: '🔠', label: 'Todos'       },
+  { id: 'hero',       icon: '🌅', label: 'Hero'        },
+  { id: 'content',    icon: '📄', label: 'Conteúdo'    },
+  { id: 'media',      icon: '🎬', label: 'Media'       },
+  { id: 'social',     icon: '💬', label: 'Social'      },
+  { id: 'conversion', icon: '🎯', label: 'Conversão'   },
+  { id: 'layout',     icon: '📐', label: 'Layout'      },
+  { id: 'ecommerce',  icon: '🛒', label: 'E-commerce'  },
 ];
-function addSection() { showAddSection.value = true; }
-function confirmAddSection() {
-  const type = newSectionType.value === '__custom__' ? customSectionType.value.trim() : newSectionType.value;
-  if (!type) return;
-  if (!form.sections[type]) {
-    form.sections[type] = `{{-- ${type} section --}}\n<section class="af-${type}" style="padding:5rem 2rem;">\n  <div style="max-width:1100px;margin:0 auto;">\n    <h2>{{ $content['heading'] ?? '${type}' }}</h2>\n  </div>\n</section>\n`;
-  }
-  showAddSection.value = false; newSectionType.value = 'hero'; customSectionType.value = '';
-  activeTab.value = 'sections';
+
+const sectionBlocks = [
+  // Hero
+  { id: 'hero',              cat: 'hero',       icon: '🌅', label: 'Hero Principal',        hint: 'Secção de topo com título, subtítulo e CTA',
+    variants: [{ id: 'centered', label: 'Centrado' }, { id: 'split', label: 'Split (img/texto)' }, { id: 'fullscreen', label: 'Ecrã completo' }, { id: 'video', label: 'Com vídeo' }] },
+  { id: 'hero_slider',       cat: 'hero',       icon: '🎠', label: 'Hero Slider',           hint: 'Carrossel de banners no topo',
+    variants: [{ id: 'fade', label: 'Fade' }, { id: 'slide', label: 'Deslizar' }] },
+  { id: 'hero_minimal',      cat: 'hero',       icon: '✨', label: 'Hero Minimalista',      hint: 'Header limpo com apenas texto e CTA' },
+  { id: 'hero_parallax',     cat: 'hero',       icon: '🌊', label: 'Hero com Parallax',     hint: 'Efeito parallax no fundo',
+    variants: [{ id: 'light', label: 'Light' }, { id: 'dark', label: 'Dark' }] },
+  // Conteúdo
+  { id: 'about',             cat: 'content',    icon: '👋', label: 'Sobre Nós',             hint: 'Apresentação da empresa ou produto' },
+  { id: 'features',          cat: 'content',    icon: '⚡', label: 'Funcionalidades',       hint: 'Grid de features com ícones e descrição',
+    variants: [{ id: 'grid', label: 'Grid 3 col' }, { id: 'list', label: 'Lista' }, { id: 'tabs', label: 'Com tabs' }] },
+  { id: 'services',          cat: 'content',    icon: '🔧', label: 'Serviços',              hint: 'Cards de serviços oferecidos',
+    variants: [{ id: 'cards', label: 'Cards' }, { id: 'icons', label: 'Ícones' }] },
+  { id: 'text',              cat: 'content',    icon: '📝', label: 'Texto Livre',           hint: 'Bloco de texto genérico (rich text)' },
+  { id: 'columns',           cat: 'content',    icon: '▦',  label: 'Colunas',              hint: 'Layout multi-coluna configurável',
+    variants: [{ id: 'two', label: '2 Colunas' }, { id: 'three', label: '3 Colunas' }, { id: 'four', label: '4 Colunas' }] },
+  { id: 'stats',             cat: 'content',    icon: '📊', label: 'Estatísticas',          hint: 'Números e métricas animados' },
+  { id: 'team',              cat: 'content',    icon: '👥', label: 'Equipa',               hint: 'Cards dos membros da equipa' },
+  { id: 'timeline',          cat: 'content',    icon: '📅', label: 'Linha do Tempo',        hint: 'Histórico ou processo em timeline' },
+  { id: 'steps',             cat: 'content',    icon: '🪜', label: 'Passos / How it Works', hint: 'Processo numerado passo a passo' },
+  { id: 'faq',               cat: 'content',    icon: '❓', label: 'FAQ',                  hint: 'Perguntas frequentes em acordeão' },
+  // Media
+  { id: 'gallery',           cat: 'media',      icon: '🖼️',  label: 'Galeria',             hint: 'Grid de imagens com lightbox',
+    variants: [{ id: 'masonry', label: 'Masonry' }, { id: 'grid', label: 'Grid uniforme' }, { id: 'carousel', label: 'Carrossel' }] },
+  { id: 'video_section',     cat: 'media',      icon: '🎬', label: 'Secção Vídeo',          hint: 'Vídeo embed ou de fundo com overlay' },
+  { id: 'portfolio',         cat: 'media',      icon: '🎨', label: 'Portfólio',             hint: 'Trabalhos/projectos com filtro por categoria',
+    variants: [{ id: 'grid', label: 'Grid' }, { id: 'masonry', label: 'Masonry' }] },
+  { id: 'logos',             cat: 'media',      icon: '🤝', label: 'Parceiros / Logos',     hint: 'Carousel de logos de clientes/parceiros' },
+  // Social
+  { id: 'testimonials',      cat: 'social',     icon: '💬', label: 'Testemunhos',           hint: 'Avaliações e depoimentos de clientes',
+    variants: [{ id: 'cards', label: 'Cards' }, { id: 'carousel', label: 'Carrossel' }, { id: 'masonry', label: 'Masonry' }] },
+  { id: 'reviews',           cat: 'social',     icon: '⭐', label: 'Avaliações',            hint: 'Reviews com estrelas e rating médio' },
+  { id: 'social_feed',       cat: 'social',     icon: '📱', label: 'Feed Social',           hint: 'Posts do Instagram, Twitter, etc.' },
+  { id: 'blog',              cat: 'social',     icon: '✏️',  label: 'Blog / Artigos',       hint: 'Últimos posts do blog em cards' },
+  // Conversão
+  { id: 'cta',               cat: 'conversion', icon: '🎯', label: 'Call to Action',        hint: 'Secção de chamada à acção com botão',
+    variants: [{ id: 'simple', label: 'Simples' }, { id: 'banner', label: 'Banner' }, { id: 'split', label: 'Split' }] },
+  { id: 'pricing',           cat: 'conversion', icon: '💰', label: 'Preços / Planos',       hint: 'Tabela de planos com toggle mensal/anual',
+    variants: [{ id: 'cards', label: 'Cards' }, { id: 'table', label: 'Tabela' }] },
+  { id: 'newsletter',        cat: 'conversion', icon: '📧', label: 'Newsletter',            hint: 'Subscrição de email com campo + botão' },
+  { id: 'contact',           cat: 'conversion', icon: '📩', label: 'Contacto',              hint: 'Formulário de contacto',
+    variants: [{ id: 'simple', label: 'Simples' }, { id: 'split', label: 'Split (mapa)' }] },
+  { id: 'countdown',         cat: 'conversion', icon: '⏱️',  label: 'Countdown',           hint: 'Temporizador de contagem decrescente' },
+  { id: 'popup',             cat: 'conversion', icon: '🪟', label: 'Popup / Modal',         hint: 'Popup de exit-intent ou temporizado' },
+  // Layout
+  { id: 'banner',            cat: 'layout',     icon: '📢', label: 'Banner / Anúncio',      hint: 'Faixa de anúncio acima do header' },
+  { id: 'breadcrumb',        cat: 'layout',     icon: '🗺️',  label: 'Breadcrumb',          hint: 'Navegação em migalhas de pão' },
+  { id: 'cards',             cat: 'layout',     icon: '🃏', label: 'Cards Genéricos',       hint: 'Grid de cards configuráveis' },
+  { id: 'divider',           cat: 'layout',     icon: '➖', label: 'Separador / Divider',   hint: 'Separador visual entre secções' },
+  { id: 'quote',             cat: 'layout',     icon: '💡', label: 'Citação / Quote',       hint: 'Bloco de citação destacado' },
+  { id: 'map',               cat: 'layout',     icon: '📍', label: 'Mapa',                  hint: 'Google Maps embed' },
+  // E-commerce
+  { id: 'products',          cat: 'ecommerce',  icon: '📦', label: 'Produtos em Destaque',  hint: 'Grid de produtos do catálogo',
+    variants: [{ id: 'grid', label: 'Grid' }, { id: 'carousel', label: 'Carrossel' }] },
+  { id: 'cart',              cat: 'ecommerce',  icon: '🛒', label: 'Mini Carrinho',         hint: 'Widget de carrinho lateral' },
+  { id: 'checkout',          cat: 'ecommerce',  icon: '💳', label: 'Checkout',             hint: 'Página de checkout integrada' },
+];
+
+const filteredSectionBlocks = computed(() =>
+  activeSectionCat.value === 'all'
+    ? sectionBlocks
+    : sectionBlocks.filter(b => b.cat === activeSectionCat.value)
+);
+
+function getSectionBlock(id) {
+  return sectionBlocks.find(b => b.id === id);
 }
+
+function toggleSection(block) {
+  if (form.sections[block.id] !== undefined) {
+    if (!confirm(`Remover bloco "${block.label}"?`)) return;
+    delete form.sections[block.id];
+    delete openSectionEditors[block.id];
+  } else {
+    form.sections[block.id] = '';
+    openSectionEditors[block.id] = false;
+    if (block.variants?.length) sectionVariants[block.id] = block.variants[0].id;
+  }
+}
+
+function toggleSectionEditor(type) {
+  openSectionEditors[type] = !openSectionEditors[type];
+}
+
 function removeSection(type) {
-  if (!confirm(`Remover secção "${type}"?`)) return;
+  if (!confirm(`Remover bloco "${type}"?`)) return;
   delete form.sections[type];
+  delete openSectionEditors[type];
 }
 
 // ── Components ────────────────────────────────────────────────────
