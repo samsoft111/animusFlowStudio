@@ -268,7 +268,8 @@ class ThemeController extends Controller
 
     private function animusFlowDefaultPath(string $relative): string
     {
-        return base_path("../animusFlow/core/resources/views/theme/default/{$relative}");
+        $corePath = rtrim((string) StudioSetting::get('theme_animusflow_path', '../animusFlow/core'), '/\\');
+        return base_path("{$corePath}/resources/views/theme/default/{$relative}");
     }
 
     private function allBlockTypes(): array

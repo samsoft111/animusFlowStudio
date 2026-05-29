@@ -131,9 +131,17 @@ SYSTEM;
 
     private static function call(string $system, string $user, int $maxTokens = 2048): string
     {
-        $provider = StudioSetting::get('ai_provider', 'claude');
-        $model    = StudioSetting::get('ai_model', '');
-        $rawKey   = StudioSetting::get('ai_api_key', '');
+        $provider    = StudioSetting::get('ai_provider', 'claude');
+        $model       = StudioSetting::get('ai_model', '');
+        $rawKey      = StudioSetting::get('ai_api_key', '');
+        $temperature = (float) StudioSetting::get('ai_temperature', '0.7');
+        $maxTok      = (int) StudioSetting::get('ai_max_tokens', (string) $maxTokens);
+        $customInstr = StudioSetting::get('ai_custom_instructions', '');
+
+        // Prepend custom instructions to system prompt
+        if (!empty($customInstr)) {
+            $system = trim($customInstr) . "\n\n" . $system;
+        }
 
         // Decrypt if stored encrypted
         $apiKey = '';
@@ -150,9 +158,9 @@ SYSTEM;
         }
 
         return match ($provider) {
-            'openai'  => self::callOpenAI($apiKey, $model ?: 'gpt-4o', $system, $user, $maxTokens),
-            'gemini'  => self::callGemini($apiKey, $model ?: 'gemini-1.5-flash', $system, $user, $maxTokens),
-            default   => self::callClaude($apiKey, $model ?: 'claude-sonnet-4-5', $system, $user, $maxTokens),
+            'openai'  => self::callOpenAI($apiKey, $model ?: 'gpt-4o', $system, $user, $maxTok, $temperature),
+            'gemini'  => self::callGemini($apiKey, $model ?: 'gemini-1.5-flash', $system, $user, $maxTok),
+            default   => self::callClaude($apiKey, $model ?: 'claude-sonnet-4-5', $system, $user, $maxTok),
         };
     }
 
@@ -176,13 +184,14 @@ SYSTEM;
         return $response->json('content.0.text', '');
     }
 
-    private static function callOpenAI(string $key, string $model, string $system, string $user, int $maxTokens): string
+    private static function callOpenAI(string $key, string $model, string $system, string $user, int $maxTokens, float $temperature = 0.7): string
     {
         $response = Http::withToken($key)
             ->post('https://api.openai.com/v1/chat/completions', [
-                'model'      => $model,
-                'max_tokens' => $maxTokens,
-                'messages'   => [
+                'model'       => $model,
+                'max_tokens'  => $maxTokens,
+                'temperature' => $temperature,
+                'messages'    => [
                     ['role' => 'system', 'content' => $system],
                     ['role' => 'user',   'content' => $user],
                 ],
