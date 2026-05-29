@@ -5,17 +5,30 @@ declare(strict_types=1);
 namespace App\Http\Controllers;
 
 use App\Models\StudioPlugin;
+use App\Models\StudioSetting;
+use App\Services\AIEngine;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Http;
 use Inertia\Inertia;
 use Inertia\Response;
+use ZipArchive;
 
 class PluginController extends Controller
 {
+    // ──────────────────────────────────────────────
+    //  CRUD
+    // ──────────────────────────────────────────────
+
     public function index(): Response
     {
         return Inertia::render('Plugins/Index', [
-            'plugins' => StudioPlugin::latest()->get(['id', 'uuid', 'name', 'label', 'version', 'status', 'is_published', 'hooks', 'created_at']),
+            'plugins' => StudioPlugin::latest()->get([
+                'id', 'uuid', 'name', 'label', 'version',
+                'status', 'is_published', 'hooks', 'created_at',
+            ]),
         ]);
     }
 
@@ -73,11 +86,103 @@ class PluginController extends Controller
         return redirect()->route('plugins.index')->with('success', 'Plugin deleted.');
     }
 
-    public function export(string $uuid)
+    // ──────────────────────────────────────────────
+    //  AI Generation
+    // ──────────────────────────────────────────────
+
+    public function generateAi(Request $request, string $uuid): JsonResponse
     {
         $plugin = StudioPlugin::where('uuid', $uuid)->firstOrFail();
 
-        $zip = $this->buildPluginZip($plugin);
+        $request->validate(['prompt' => 'required|string|min:5|max:500']);
+
+        try {
+            $result = AIEngine::generatePlugin(
+                $request->input('prompt'),
+                $plugin->hooks ?? ['page.render'],
+                $plugin->label
+            );
+        } catch (\Throwable $e) {
+            return response()->json(['error' => $e->getMessage()], 422);
+        }
+
+        $plugin->update([
+            'plugin_php'      => $result['plugin_php']      ?? $plugin->plugin_php,
+            'widget_blade'    => $result['widget_blade']    ?? $plugin->widget_blade,
+            'widget_js'       => $result['widget_js']       ?? $plugin->widget_js,
+            'settings_schema' => $result['settings_schema'] ?? $plugin->settings_schema,
+        ]);
+
+        $fresh = $plugin->fresh();
+
+        return response()->json([
+            'success'         => true,
+            'plugin_php'      => $fresh->plugin_php,
+            'widget_blade'    => $fresh->widget_blade,
+            'widget_js'       => $fresh->widget_js,
+            'settings_schema' => $fresh->settings_schema,
+        ]);
+    }
+
+    // ──────────────────────────────────────────────
+    //  Publish to Marketplace (Phase 2)
+    // ──────────────────────────────────────────────
+
+    public function publish(string $uuid): JsonResponse
+    {
+        $plugin = StudioPlugin::where('uuid', $uuid)->firstOrFail();
+
+        $animusUrl = rtrim((string) StudioSetting::get('animus_api_url', 'https://animus.kwantoe.com'), '/');
+        $animusKey = StudioSetting::get('animusflow_api_key', '');
+
+        if (empty($animusKey)) {
+            return response()->json(['error' => 'AnimusFlow API key not configured in Settings.'], 422);
+        }
+
+        $zipPath = $this->buildPluginZip($plugin);
+
+        try {
+            $response = Http::withToken($animusKey)
+                ->attach('package', file_get_contents($zipPath), "{$plugin->name}.zip")
+                ->post("{$animusUrl}/api/marketplace/publish", [
+                    'type'        => 'plugin',
+                    'name'        => $plugin->name,
+                    'label'       => $plugin->label,
+                    'version'     => $plugin->version ?? '1.0.0',
+                    'description' => $plugin->description ?? '',
+                ]);
+
+            @unlink($zipPath);
+
+            if ($response->successful()) {
+                $packageUuid = $response->json('uuid') ?? $response->json('id');
+                $plugin->update([
+                    'is_published'        => true,
+                    'status'              => 'published',
+                    'animus_package_uuid' => $packageUuid,
+                ]);
+
+                return response()->json(['success' => true, 'package_uuid' => $packageUuid]);
+            }
+
+            return response()->json([
+                'error' => "Marketplace error {$response->status()}: " . substr($response->body(), 0, 200),
+            ], 422);
+
+        } catch (\Throwable $e) {
+            @unlink($zipPath);
+            return response()->json(['error' => $e->getMessage()], 422);
+        }
+    }
+
+    // ──────────────────────────────────────────────
+    //  Export ZIP
+    // ──────────────────────────────────────────────
+
+    public function export(string $uuid)
+    {
+        $plugin = StudioPlugin::where('uuid', $uuid)->firstOrFail();
+        $zip    = $this->buildPluginZip($plugin);
 
         return response()->streamDownload(
             fn () => print(file_get_contents($zip)),
@@ -86,13 +191,17 @@ class PluginController extends Controller
         );
     }
 
+    // ──────────────────────────────────────────────
+    //  ZIP builder
+    // ──────────────────────────────────────────────
+
     private function buildPluginZip(StudioPlugin $plugin): string
     {
-        $tmpDir = storage_path("app/export-plugin-{$plugin->uuid}");
+        $tmpDir    = storage_path("app/export-plugin-{$plugin->uuid}");
         $pluginDir = "{$tmpDir}/{$plugin->name}";
-        \Illuminate\Support\Facades\File::ensureDirectoryExists($pluginDir);
+        File::ensureDirectoryExists($pluginDir);
 
-        // animusflow-plugin.json manifest
+        // animusflow-plugin.json
         file_put_contents("{$pluginDir}/animusflow-plugin.json", json_encode([
             'name'        => $plugin->name,
             'label'       => $plugin->label,
@@ -106,31 +215,37 @@ class PluginController extends Controller
         if (!empty($plugin->plugin_php)) {
             file_put_contents("{$pluginDir}/Plugin.php", $plugin->plugin_php);
         } else {
-            $class = str_replace(['-', ' '], '', ucwords(str_replace('-', ' ', $plugin->name)));
-            file_put_contents("{$pluginDir}/Plugin.php", "<?php\n\ndeclare(strict_types=1);\n\nclass {$class}Plugin\n{\n    public function register(): void {}\n}\n");
+            $class = str_replace(['-', ' ', '_'], '', ucwords(str_replace(['-', '_'], ' ', $plugin->name)));
+            file_put_contents(
+                "{$pluginDir}/Plugin.php",
+                "<?php\n\ndeclare(strict_types=1);\n\nclass {$class}Plugin\n{\n    public function register(): void {}\n}\n"
+            );
         }
 
-        // Optional files
         if (!empty($plugin->widget_blade)) {
-            \Illuminate\Support\Facades\File::ensureDirectoryExists("{$pluginDir}/views");
+            File::ensureDirectoryExists("{$pluginDir}/views");
             file_put_contents("{$pluginDir}/views/widget.blade.php", $plugin->widget_blade);
         }
+
         if (!empty($plugin->widget_js)) {
-            \Illuminate\Support\Facades\File::ensureDirectoryExists("{$pluginDir}/assets");
+            File::ensureDirectoryExists("{$pluginDir}/assets");
             file_put_contents("{$pluginDir}/assets/widget.js", $plugin->widget_js);
         }
 
         // Build ZIP
         $zipPath = storage_path("app/{$plugin->name}.zip");
-        $zip = new \ZipArchive();
-        $zip->open($zipPath, \ZipArchive::CREATE | \ZipArchive::OVERWRITE);
+        $zip     = new ZipArchive();
+        $zip->open($zipPath, ZipArchive::CREATE | ZipArchive::OVERWRITE);
         foreach (new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($tmpDir)) as $file) {
             if (!$file->isDir()) {
-                $zip->addFile($file->getPathname(), str_replace($tmpDir . DIRECTORY_SEPARATOR, '', $file->getPathname()));
+                $zip->addFile(
+                    $file->getPathname(),
+                    str_replace($tmpDir . DIRECTORY_SEPARATOR, '', $file->getPathname())
+                );
             }
         }
         $zip->close();
-        \Illuminate\Support\Facades\File::deleteDirectory($tmpDir);
+        File::deleteDirectory($tmpDir);
 
         return $zipPath;
     }
