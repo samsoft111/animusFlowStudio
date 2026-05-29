@@ -312,23 +312,166 @@
       </div>
 
       <!-- ════════════════════ TAB: Assets ════════════════════ -->
-      <div v-show="activeTab === 'assets'" class="max-w-3xl">
-        <div class="bg-card border border-border rounded-2xl p-6 space-y-6">
-          <h2 class="font-semibold text-foreground">🖼️ Assets do Tema</h2>
-          <p class="text-xs text-muted-foreground -mt-2">Faz upload dos ficheiros de media do tema. Serão incluídos na pasta <code class="bg-muted px-1 rounded">assets/</code> do ZIP.</p>
+      <div v-show="activeTab === 'assets'" class="max-w-4xl space-y-5">
 
-          <div class="grid grid-cols-2 gap-5">
-            <asset-slot v-for="slot in assetSlots" :key="slot.id"
-              :slot-id="slot.id"
-              :label="slot.label"
-              :hint="slot.hint"
-              :accept="slot.accept"
-              :current-url="form.assets[slot.id]"
-              :uploading="uploadingSlot === slot.id"
-              @upload="handleAssetUpload"
-              @delete="handleAssetDelete" />
+        <div class="bg-muted/50 border border-border rounded-xl px-4 py-3 text-xs text-muted-foreground">
+          📦 Todos os ficheiros são incluídos na pasta <code class="bg-muted px-1 rounded">assets/</code> do ZIP exportado.
+        </div>
+
+        <!-- Identidade -->
+        <div class="bg-card border border-border rounded-2xl p-5 space-y-4">
+          <h3 class="text-sm font-semibold text-foreground">🏷️ Identidade</h3>
+          <div class="grid grid-cols-3 gap-4">
+            <asset-slot v-for="slot in assetGroups.identity" :key="slot.id"
+              :slot-id="slot.id" :label="slot.label" :hint="slot.hint" :accept="slot.accept"
+              :current-url="form.assets[slot.id]" :uploading="uploadingSlot === slot.id"
+              @upload="handleAssetUpload" @delete="handleAssetDelete" />
           </div>
         </div>
+
+        <!-- Fundo global -->
+        <div class="bg-card border border-border rounded-2xl p-5 space-y-4">
+          <div class="flex items-start justify-between gap-4">
+            <div>
+              <h3 class="text-sm font-semibold text-foreground">🎞️ Fundo Global</h3>
+              <p class="text-xs text-muted-foreground mt-0.5">Fundo aplicado a toda a página. Vídeo tem prioridade sobre imagem quando ambos existem.</p>
+            </div>
+            <!-- Tipo de fundo -->
+            <div class="shrink-0 w-44">
+              <label class="field-label">Tipo de fundo</label>
+              <select v-model="form.assets.bg_type" class="field-input text-xs">
+                <option value="">Nenhum</option>
+                <option value="color">Cor sólida (CSS)</option>
+                <option value="image">Imagem</option>
+                <option value="video">Vídeo</option>
+                <option value="gradient">Gradiente</option>
+                <option value="pattern">Padrão / textura</option>
+              </select>
+            </div>
+          </div>
+          <div class="grid grid-cols-3 gap-4">
+            <asset-slot v-for="slot in assetGroups.background" :key="slot.id"
+              :slot-id="slot.id" :label="slot.label" :hint="slot.hint" :accept="slot.accept"
+              :current-url="form.assets[slot.id]" :uploading="uploadingSlot === slot.id"
+              @upload="handleAssetUpload" @delete="handleAssetDelete" />
+          </div>
+          <!-- Gradiente CSS (quando tipo = gradient) -->
+          <div v-if="form.assets.bg_type === 'gradient'" class="space-y-1">
+            <label class="field-label">CSS do Gradiente</label>
+            <input v-model="form.assets.bg_gradient" class="field-input font-mono text-xs"
+              placeholder="linear-gradient(135deg, #667eea 0%, #764ba2 100%)" />
+          </div>
+          <!-- Opções de vídeo -->
+          <div v-if="form.assets.bg_type === 'video'" class="grid grid-cols-3 gap-4">
+            <div>
+              <label class="field-label">Velocidade</label>
+              <select v-model="form.assets.bg_video_speed" class="field-input text-xs">
+                <option value="0.5">0.5× — Muito lento</option>
+                <option value="1">1× — Normal</option>
+                <option value="1.5">1.5× — Rápido</option>
+              </select>
+            </div>
+            <div>
+              <label class="field-label">Overlay opacidade</label>
+              <input type="range" min="0" max="1" step="0.05"
+                v-model="form.assets.bg_video_overlay"
+                class="w-full mt-2 accent-primary" />
+              <span class="text-xs text-muted-foreground">{{ form.assets.bg_video_overlay ?? 0.4 }}</span>
+            </div>
+            <div class="flex flex-col gap-2 pt-5">
+              <toggle-field v-model="form.assets.bg_video_muted" label="Muted (sem som)" />
+              <toggle-field v-model="form.assets.bg_video_loop" label="Loop automático" />
+            </div>
+          </div>
+        </div>
+
+        <!-- Hero Section -->
+        <div class="bg-card border border-border rounded-2xl p-5 space-y-4">
+          <div class="flex items-start justify-between gap-4">
+            <div>
+              <h3 class="text-sm font-semibold text-foreground">🌅 Hero / Banner</h3>
+              <p class="text-xs text-muted-foreground mt-0.5">Media da secção principal (primeira secção visível).</p>
+            </div>
+            <div class="shrink-0 w-44">
+              <label class="field-label">Tipo de hero</label>
+              <select v-model="form.assets.hero_type" class="field-input text-xs">
+                <option value="image">Imagem estática</option>
+                <option value="video">Vídeo de fundo</option>
+                <option value="slideshow">Slideshow / Carrossel</option>
+                <option value="particles">Partículas animadas</option>
+                <option value="none">Sem media</option>
+              </select>
+            </div>
+          </div>
+          <div class="grid grid-cols-3 gap-4">
+            <asset-slot v-for="slot in assetGroups.hero" :key="slot.id"
+              :slot-id="slot.id" :label="slot.label" :hint="slot.hint" :accept="slot.accept"
+              :current-url="form.assets[slot.id]" :uploading="uploadingSlot === slot.id"
+              @upload="handleAssetUpload" @delete="handleAssetDelete" />
+          </div>
+          <!-- Slideshow extra -->
+          <div v-if="form.assets.hero_type === 'slideshow'" class="grid grid-cols-3 gap-4">
+            <asset-slot v-for="slot in assetGroups.slideshow" :key="slot.id"
+              :slot-id="slot.id" :label="slot.label" :hint="slot.hint" :accept="slot.accept"
+              :current-url="form.assets[slot.id]" :uploading="uploadingSlot === slot.id"
+              @upload="handleAssetUpload" @delete="handleAssetDelete" />
+          </div>
+          <!-- Opções de posição -->
+          <div class="grid grid-cols-3 gap-4">
+            <div>
+              <label class="field-label">Posição da imagem</label>
+              <select v-model="form.assets.hero_position" class="field-input text-xs">
+                <option value="center">Centro</option>
+                <option value="top">Topo</option>
+                <option value="bottom">Rodapé</option>
+                <option value="left">Esquerda</option>
+                <option value="right">Direita</option>
+              </select>
+            </div>
+            <div>
+              <label class="field-label">Tamanho (object-fit)</label>
+              <select v-model="form.assets.hero_fit" class="field-input text-xs">
+                <option value="cover">Cover (preenche)</option>
+                <option value="contain">Contain (mostra tudo)</option>
+                <option value="fill">Fill (estica)</option>
+              </select>
+            </div>
+            <div>
+              <label class="field-label">Altura mínima</label>
+              <select v-model="form.assets.hero_height" class="field-input text-xs">
+                <option value="50vh">50vh — Médio</option>
+                <option value="70vh">70vh — Alto</option>
+                <option value="100vh">100vh — Ecrã completo</option>
+                <option value="auto">Auto</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- Secções específicas -->
+        <div class="bg-card border border-border rounded-2xl p-5 space-y-4">
+          <h3 class="text-sm font-semibold text-foreground">📐 Fundos de Secções</h3>
+          <p class="text-xs text-muted-foreground -mt-1">Imagens de fundo para secções específicas do tema.</p>
+          <div class="grid grid-cols-3 gap-4">
+            <asset-slot v-for="slot in assetGroups.sections" :key="slot.id"
+              :slot-id="slot.id" :label="slot.label" :hint="slot.hint" :accept="slot.accept"
+              :current-url="form.assets[slot.id]" :uploading="uploadingSlot === slot.id"
+              @upload="handleAssetUpload" @delete="handleAssetDelete" />
+          </div>
+        </div>
+
+        <!-- Social / SEO -->
+        <div class="bg-card border border-border rounded-2xl p-5 space-y-4">
+          <h3 class="text-sm font-semibold text-foreground">📤 Social &amp; SEO</h3>
+          <div class="grid grid-cols-3 gap-4">
+            <asset-slot v-for="slot in assetGroups.social" :key="slot.id"
+              :slot-id="slot.id" :label="slot.label" :hint="slot.hint" :accept="slot.accept"
+              :current-url="form.assets[slot.id]" :uploading="uploadingSlot === slot.id"
+              @upload="handleAssetUpload" @delete="handleAssetDelete" />
+          </div>
+        </div>
+
+        <btn-save @click="save" :saving="saving" label="Guardar Assets" />
       </div>
 
       <!-- ════════════════════ TAB: Secções ════════════════════ -->
@@ -680,14 +823,41 @@ async function generateAi() {
 
 // ── Assets ────────────────────────────────────────────────────────
 const uploadingSlot = ref('');
-const assetSlots = [
-  { id: 'logo',       label: '🏷️ Logótipo',          hint: 'SVG/PNG recomendado',   accept: 'image/*' },
-  { id: 'logo_dark',  label: '🏷️ Logótipo (dark)',    hint: 'Versão para fundo escuro', accept: 'image/*' },
-  { id: 'favicon',    label: '🔖 Favicon',            hint: 'ICO ou PNG 32×32',      accept: 'image/*,.ico' },
-  { id: 'hero_image', label: '🌅 Hero — Imagem',      hint: 'JPG/PNG/WebP, min 1920px', accept: 'image/*' },
-  { id: 'hero_video', label: '🎬 Hero — Vídeo',       hint: 'MP4/WebM, máx 20MB',    accept: 'video/*' },
-  { id: 'og_image',   label: '📤 OG Image',           hint: '1200×630px para redes sociais', accept: 'image/*' },
-];
+const assetGroups = {
+  identity: [
+    { id: 'logo',        label: '🏷️ Logótipo',         hint: 'SVG/PNG recomendado',       accept: 'image/*,.svg' },
+    { id: 'logo_dark',   label: '🏷️ Logo (dark)',       hint: 'Versão para fundo escuro',  accept: 'image/*,.svg' },
+    { id: 'favicon',     label: '🔖 Favicon',           hint: 'ICO ou PNG 32×32 / 64×64', accept: 'image/*,.ico' },
+  ],
+  background: [
+    { id: 'bg_image',    label: '🖼️ Imagem de fundo',   hint: 'JPG/PNG/WebP, min 1920px',  accept: 'image/*' },
+    { id: 'bg_video',    label: '🎬 Vídeo de fundo',    hint: 'MP4/WebM, máx 50MB',        accept: 'video/*' },
+    { id: 'bg_pattern',  label: '🔲 Padrão / textura',  hint: 'PNG transparente, tileable', accept: 'image/*' },
+  ],
+  hero: [
+    { id: 'hero_image',  label: '🌅 Hero — Imagem',     hint: 'JPG/PNG/WebP, min 1920px',  accept: 'image/*' },
+    { id: 'hero_video',  label: '🎬 Hero — Vídeo',      hint: 'MP4/WebM, máx 30MB',        accept: 'video/*' },
+    { id: 'hero_poster', label: '🖼️ Hero — Poster',     hint: 'Thumbnail do vídeo (fallback)', accept: 'image/*' },
+  ],
+  slideshow: [
+    { id: 'slide_1',     label: '🖼️ Slide 1',           hint: 'JPG/PNG/WebP',              accept: 'image/*' },
+    { id: 'slide_2',     label: '🖼️ Slide 2',           hint: 'JPG/PNG/WebP',              accept: 'image/*' },
+    { id: 'slide_3',     label: '🖼️ Slide 3',           hint: 'JPG/PNG/WebP',              accept: 'image/*' },
+  ],
+  sections: [
+    { id: 'about_bg',    label: '📖 About — Fundo',     hint: 'Fundo da secção About',     accept: 'image/*' },
+    { id: 'features_bg', label: '⚡ Features — Fundo',  hint: 'Fundo da secção Features',  accept: 'image/*' },
+    { id: 'cta_bg',      label: '📢 CTA — Fundo',       hint: 'Fundo da secção CTA',       accept: 'image/*' },
+    { id: 'testimonials_bg', label: '💬 Testemunhos — Fundo', hint: 'Fundo dos testemunhos', accept: 'image/*' },
+    { id: 'pricing_bg',  label: '💰 Preços — Fundo',    hint: 'Fundo da secção de preços', accept: 'image/*' },
+    { id: 'footer_bg',   label: '🔻 Footer — Fundo',    hint: 'Fundo do rodapé',           accept: 'image/*' },
+  ],
+  social: [
+    { id: 'og_image',    label: '📤 OG Image',          hint: '1200×630px — redes sociais', accept: 'image/*' },
+    { id: 'twitter_card',label: '🐦 Twitter Card',      hint: '1200×600px — Twitter/X',    accept: 'image/*' },
+    { id: 'apple_touch', label: '🍎 Apple Touch Icon',  hint: '180×180px — iOS',           accept: 'image/*' },
+  ],
+};
 
 async function handleAssetUpload({ slotId, file }) {
   uploadingSlot.value = slotId;

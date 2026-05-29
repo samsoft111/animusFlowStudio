@@ -110,9 +110,24 @@ class ThemeController extends Controller
     {
         $theme = StudioTheme::where('uuid', $uuid)->firstOrFail();
 
+        $allowedSlots = [
+            // Identidade
+            'logo', 'logo_dark', 'favicon',
+            // Fundo global
+            'bg_image', 'bg_video', 'bg_pattern',
+            // Hero
+            'hero_image', 'hero_video', 'hero_poster',
+            // Slideshow
+            'slide_1', 'slide_2', 'slide_3',
+            // Fundos de secções
+            'about_bg', 'features_bg', 'cta_bg', 'testimonials_bg', 'pricing_bg', 'footer_bg',
+            // Social / SEO
+            'og_image', 'twitter_card', 'apple_touch',
+        ];
+
         $request->validate([
-            'file' => 'required|file|max:20480', // 20 MB
-            'slot' => 'required|in:logo,logo_dark,favicon,hero_image,hero_video,og_image',
+            'file' => 'required|file|max:51200', // 50 MB (vídeos)
+            'slot' => 'required|in:' . implode(',', $allowedSlots),
         ]);
 
         $slot = $request->input('slot');
