@@ -126,6 +126,81 @@ SYSTEM;
     }
 
     // ──────────────────────────────────────────────
+    //  Plugin Documentation Generator
+    // ──────────────────────────────────────────────
+
+    /**
+     * Generate a comprehensive README.md for a plugin using AI.
+     * Returns the Markdown string.
+     */
+    public static function generatePluginDocs(array $pluginData): string
+    {
+        $name          = $pluginData['name']        ?? '';
+        $label         = $pluginData['label']       ?? $name;
+        $description   = $pluginData['description'] ?? '';
+        $version       = $pluginData['version']     ?? '1.0.0';
+        $author        = $pluginData['author']       ?? '';
+        $authorUrl     = $pluginData['author_url']   ?? '';
+        $category      = $pluginData['category']     ?? '';
+        $license       = $pluginData['license']      ?? 'MIT';
+        $requires      = $pluginData['requires']     ?? '1.0.0';
+        $hooks         = implode(', ', $pluginData['hooks'] ?? []);
+        $schemaJson    = json_encode($pluginData['settings_schema'] ?? [], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
+        $pluginPhp     = $pluginData['plugin_php']   ?? '';
+        $widgetBlade   = $pluginData['widget_blade'] ?? '';
+
+        $systemPrompt = <<<'SYSTEM'
+Você é um technical writer especialista em documentação de plugins para CMS.
+Gera documentação README.md profissional e completa em Markdown para plugins AnimusFlow.
+
+A documentação deve incluir TODAS as secções seguintes:
+1. Cabeçalho com badges (versão, licença, categoria)
+2. Descrição detalhada do que o plugin faz
+3. Funcionalidades principais (lista com ícones emoji)
+4. Requisitos do sistema
+5. Instalação passo-a-passo
+6. Configuração (com tabela de todos os campos de configuração)
+7. Referência de Hooks (como o plugin se integra com o CMS)
+8. Utilização e exemplos práticos
+9. Personalização (CSS, JS)
+10. Perguntas Frequentes (FAQ) — mínimo 3 perguntas relevantes
+11. Changelog (v{versão} — data actual)
+12. Licença e Autor
+
+Usa Markdown rico: tabelas, code blocks com syntax highlighting, badges, listas com emojis.
+Escreve em português (PT-PT), de forma profissional mas acessível.
+SYSTEM;
+
+        $userPrompt = <<<PROMPT
+Gera documentação README.md completa para este plugin:
+
+**Nome:** {$label} ({$name})
+**Versão:** {$version}
+**Descrição:** {$description}
+**Categoria:** {$category}
+**Licença:** {$license}
+**Hooks activos:** {$hooks}
+**AnimusFlow mínimo:** {$requires}
+**Autor:** {$author} {$authorUrl}
+
+**Campos de Configuração:**
+{$schemaJson}
+
+**Plugin.php (resumo):**
+```php
+{$pluginPhp}
+```
+
+**Widget HTML:**
+```html
+{$widgetBlade}
+```
+PROMPT;
+
+        return self::call($systemPrompt, $userPrompt, 6144);
+    }
+
+    // ──────────────────────────────────────────────
     //  Plugin Inspiration (category-based examples)
     // ──────────────────────────────────────────────
 

@@ -55,6 +55,9 @@ Route::middleware('auth')->group(function () {
     Route::get('/plugins/{uuid}/export',        [PluginController::class, 'export'])->name('plugins.export');
     Route::get('/plugins/{uuid}/export-prompt', [PluginController::class, 'exportPrompt'])->name('plugins.export-prompt');
 
+    Route::get('/plugins/{uuid}/preview-widget',   [PluginController::class, 'previewWidget'])->name('plugins.preview-widget');
+    Route::get('/plugins/{uuid}/export-doc',       [PluginController::class, 'exportDoc'])->name('plugins.export-doc');
+    Route::post('/plugins/{uuid}/generate-docs',   [PluginController::class, 'generateDocs'])->name('plugins.generate-docs');
     Route::post('/plugins/{uuid}/inspire',         [PluginController::class, 'inspire'])->name('plugins.inspire');
     Route::post('/plugins/{uuid}/chat',           [PluginController::class, 'chat'])->name('plugins.chat');
     Route::post('/plugins/{uuid}/generate-ai',   [PluginController::class, 'generateAi'])->name('plugins.generate-ai');

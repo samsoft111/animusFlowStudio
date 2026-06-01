@@ -453,6 +453,467 @@ PROMPT;
     }
 
     // ──────────────────────────────────────────────
+    //  Preview widget (iframe srcdoc server-side)
+    // ──────────────────────────────────────────────
+
+    public function previewWidget(string $uuid)
+    {
+        $plugin = StudioPlugin::where('uuid', $uuid)->firstOrFail();
+
+        $css    = e($plugin->custom_css   ?? '');
+        $widget = $plugin->widget_blade   ?? '';
+        $js     = $plugin->widget_js      ?? '';
+        $label  = e($plugin->label);
+
+        // Strip Blade directives for raw preview — keep HTML structure intact
+        $widgetHtml = preg_replace('/\{\{--.*?--\}\}/s', '', $widget);
+        $widgetHtml = preg_replace('/@\w+(\(.*?\))?/', '', $widgetHtml);
+        $widgetHtml = preg_replace('/\{!!\s*(.*?)\s*!!\}/s', '$1', $widgetHtml);
+        $widgetHtml = preg_replace('/\{\{\s*(.*?)\s*\}\}/s', '<span class="af-preview-var">{{ $1 }}</span>', $widgetHtml);
+
+        $hooks = $plugin->hooks ?? [];
+
+        $html = <<<HTML
+<!DOCTYPE html>
+<html lang="pt" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Preview — {$label}</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f8f9fa; color: #1a1a2e; line-height: 1.6; }
+
+    /* ── Mock site ── */
+    .mock-nav { background:#fff; border-bottom:1px solid #e5e7eb; padding:0 2rem; display:flex; align-items:center; justify-content:space-between; height:60px; position:sticky; top:0; z-index:50; box-shadow:0 1px 3px rgba(0,0,0,.06); }
+    .mock-nav-logo { font-weight:700; font-size:1.1rem; color:#4f46e5; display:flex; align-items:center; gap:.5rem; }
+    .mock-nav-links { display:flex; gap:1.5rem; }
+    .mock-nav-links a { color:#6b7280; text-decoration:none; font-size:.875rem; }
+    .mock-nav-btn { background:#4f46e5; color:#fff; border:none; padding:.45rem 1.1rem; border-radius:.5rem; font-size:.875rem; font-weight:600; cursor:pointer; }
+
+    .mock-hero { background:linear-gradient(135deg,#4f46e5 0%,#7c3aed 100%); color:#fff; padding:5rem 2rem; text-align:center; }
+    .mock-hero h1 { font-size:2.5rem; font-weight:800; margin-bottom:1rem; }
+    .mock-hero p { font-size:1.125rem; opacity:.85; max-width:600px; margin:0 auto 2rem; }
+    .mock-hero-cta { display:inline-flex; gap:1rem; }
+    .mock-btn-primary { background:#fff; color:#4f46e5; padding:.65rem 1.75rem; border-radius:.5rem; font-weight:700; text-decoration:none; font-size:.95rem; }
+    .mock-btn-outline { border:2px solid rgba(255,255,255,.6); color:#fff; padding:.65rem 1.75rem; border-radius:.5rem; font-weight:600; text-decoration:none; font-size:.95rem; }
+
+    .mock-content { max-width:1100px; margin:0 auto; padding:4rem 2rem; display:grid; grid-template-columns:2fr 1fr; gap:3rem; }
+    .mock-article h2 { font-size:1.5rem; font-weight:700; margin-bottom:1rem; color:#111827; }
+    .mock-article p { color:#4b5563; margin-bottom:1rem; }
+    .mock-article-meta { display:flex; gap:1rem; font-size:.8rem; color:#9ca3af; margin-bottom:1.5rem; }
+    .mock-sidebar h3 { font-size:1rem; font-weight:700; margin-bottom:.75rem; color:#111827; }
+    .mock-sidebar-card { background:#fff; border:1px solid #e5e7eb; border-radius:.75rem; padding:1.25rem; margin-bottom:1rem; }
+    .mock-sidebar-card p { font-size:.875rem; color:#4b5563; margin-bottom:.75rem; }
+
+    .mock-footer { background:#1f2937; color:#9ca3af; padding:2rem; text-align:center; font-size:.875rem; }
+
+    /* ── Preview helpers ── */
+    .af-preview-banner { background:rgba(79,70,229,.08); border:1px dashed rgba(79,70,229,.3); border-radius:.5rem; padding:.5rem .75rem; font-size:.7rem; color:rgba(79,70,229,.7); font-family:monospace; text-align:center; margin:.5rem 1rem; }
+    .af-preview-var { background:rgba(245,158,11,.15); color:#d97706; border-radius:.2rem; padding:0 .25rem; font-size:.85em; font-family:monospace; }
+
+    /* ── Plugin custom CSS ── */
+    {$css}
+  </style>
+</head>
+<body>
+
+  <!-- Mock Navigation -->
+  <nav class="mock-nav">
+    <div class="mock-nav-logo">🌐 MySite</div>
+    <div class="mock-nav-links">
+      <a href="#">Início</a>
+      <a href="#">Blog</a>
+      <a href="#">Sobre</a>
+      <a href="#">Contacto</a>
+    </div>
+    <button class="mock-nav-btn">Começar</button>
+  </nav>
+
+  <!-- Mock Hero -->
+  <section class="mock-hero">
+    <h1>Bem-vindo ao MySite</h1>
+    <p>Uma plataforma moderna para o teu negócio digital. Rápida, segura e personalizável.</p>
+    <div class="mock-hero-cta">
+      <a href="#" class="mock-btn-primary">Explorar</a>
+      <a href="#" class="mock-btn-outline">Saber mais</a>
+    </div>
+  </section>
+
+  <!-- Mock Content -->
+  <div class="mock-content">
+    <main class="mock-article">
+      <div class="mock-article-meta">
+        <span>📅 1 Jun 2025</span><span>👤 Admin</span><span>🏷️ Tutorial</span>
+      </div>
+      <h2>Como optimizar o teu site para SEO</h2>
+      <p>O Search Engine Optimization (SEO) é fundamental para qualquer negócio online. Com as técnicas correctas, podes aumentar significativamente o tráfego orgânico do teu site e alcançar mais potenciais clientes.</p>
+      <p>Existem várias estratégias eficazes: desde a optimização de conteúdo até à melhoria da velocidade de carregamento das páginas. Cada detalhe conta quando se trata de rankings nos motores de busca.</p>
+      <p>Neste artigo, exploramos as melhores práticas para 2025 e como implementá-las rapidamente no teu site AnimusFlow.</p>
+    </main>
+    <aside>
+      <div class="mock-sidebar-card">
+        <h3>📌 Destaques</h3>
+        <p>Descobre os artigos mais lidos desta semana na nossa plataforma.</p>
+        <button class="mock-nav-btn" style="width:100%">Ver todos</button>
+      </div>
+      <div class="mock-sidebar-card">
+        <h3>📧 Newsletter</h3>
+        <p>Subscreve e recebe conteúdo exclusivo directamente na tua caixa.</p>
+        <input type="email" placeholder="email@exemplo.com" style="width:100%;padding:.5rem;border:1px solid #e5e7eb;border-radius:.375rem;margin-bottom:.5rem;font-size:.875rem;">
+        <button class="mock-nav-btn" style="width:100%">Subscrever</button>
+      </div>
+    </aside>
+  </div>
+
+  <!-- Mock Footer -->
+  <footer class="mock-footer">
+    <p>© 2025 MySite · Desenvolvido com AnimusFlow · Todos os direitos reservados</p>
+  </footer>
+
+  <!-- ─────────────────────────────────────────────
+       PLUGIN WIDGET INJECTED HERE (hook: page.render)
+       ───────────────────────────────────────────── -->
+  <div class="af-preview-banner">⬇ Plugin «{$label}» injectado via hook page.render ⬇</div>
+
+HTML;
+
+        if (!empty($widgetHtml)) {
+            $html .= "\n  <!-- Plugin widget HTML -->\n  {$widgetHtml}\n";
+        } else {
+            $html .= <<<EMPTY
+  <div style="margin:1rem;padding:1.5rem;background:#f3f4f6;border:2px dashed #d1d5db;border-radius:.75rem;text-align:center;color:#9ca3af;font-size:.875rem;">
+    <div style="font-size:2rem;margin-bottom:.5rem;">🔌</div>
+    <strong style="display:block;margin-bottom:.25rem;">Widget ainda vazio</strong>
+    Preenche o conteúdo na tab <em>Widget Blade</em> para ver o preview aqui.
+  </div>
+EMPTY;
+        }
+
+        if (!empty($js)) {
+            $html .= "\n  <!-- Plugin JavaScript -->\n  <script>\n" . htmlspecialchars($js, ENT_NOQUOTES) . "\n  </script>\n";
+        }
+
+        $html .= "\n</body>\n</html>";
+
+        return response($html, 200, ['Content-Type' => 'text/html; charset=utf-8']);
+    }
+
+    // ──────────────────────────────────────────────
+    //  Export Documentation (standalone HTML)
+    // ──────────────────────────────────────────────
+
+    public function exportDoc(string $uuid)
+    {
+        $plugin    = StudioPlugin::where('uuid', $uuid)->firstOrFail();
+        $author    = $plugin->author     ?? StudioSetting::get('studio_author', '');
+        $authorUrl = $plugin->author_url ?? StudioSetting::get('studio_author_url', '');
+        $minVer    = $plugin->min_animusflow_version ?? '1.0.0';
+        $hooks     = $plugin->hooks ?? [];
+        $schema    = $plugin->settings_schema ?? [];
+        $tags      = $plugin->tags ?? [];
+
+        $schemaRows = '';
+        foreach ($schema as $f) {
+            $type    = htmlspecialchars($f['type']        ?? 'text');
+            $key     = htmlspecialchars($f['key']         ?? '');
+            $lbl     = htmlspecialchars($f['label']       ?? '');
+            $default = htmlspecialchars((string)($f['default'] ?? ''));
+            $hint    = htmlspecialchars($f['hint']        ?? $f['placeholder'] ?? '');
+            $schemaRows .= "<tr><td><code>{$key}</code></td><td>{$lbl}</td><td><span class=\"badge\">{$type}</span></td><td><code>{$default}</code></td><td>{$hint}</td></tr>\n";
+        }
+
+        $hooksRows = '';
+        $hookMeta  = [
+            'page.render'     => ['onPageRender($page): string',  'Retorna HTML injectado antes de </body> em todas as páginas'],
+            'content.publish' => ['onContentPublish($page): void','Disparado quando uma página é publicada'],
+            'admin.sidebar'   => ['onAdminSidebar(): array',      'Adiciona link ao sidebar do painel de administração'],
+        ];
+        foreach ($hooks as $h) {
+            $sig  = htmlspecialchars($hookMeta[$h][0] ?? $h);
+            $desc = htmlspecialchars($hookMeta[$h][1] ?? '');
+            $hooksRows .= "<tr><td><code>{$h}</code></td><td><code>{$sig}</code></td><td>{$desc}</td></tr>\n";
+        }
+
+        $tagsHtml = implode(' ', array_map(fn($t) => '<span class="badge">' . e($t) . '</span>', $tags));
+
+        $phpCode    = e($plugin->plugin_php   ?? '');
+        $widgetCode = e($plugin->widget_blade ?? '');
+        $jsCode     = e($plugin->widget_js    ?? '');
+        $cssCode    = e($plugin->custom_css   ?? '');
+        $readmeHtml = nl2br(e($plugin->readme ?? ''));
+
+        $generatedAt = now()->format('d/m/Y H:i');
+        $authorLink  = $authorUrl ? "<a href=\"{$authorUrl}\" target=\"_blank\">" . e($author) . "</a>" : e($author);
+
+        $doc = <<<HTML
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Documentação — {$plugin->label}</title>
+  <style>
+    :root {
+      --primary: #4f46e5; --primary-light: #eef2ff; --success: #10b981;
+      --text: #111827; --muted: #6b7280; --border: #e5e7eb; --bg: #f9fafb;
+      --code-bg: #1e1e2e; --code-fg: #cdd6f4;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); line-height: 1.7; }
+
+    /* Layout */
+    .wrap { max-width: 960px; margin: 0 auto; padding: 2.5rem 1.5rem 4rem; }
+
+    /* Header */
+    .doc-header { background: linear-gradient(135deg, var(--primary) 0%, #7c3aed 100%); color: #fff; border-radius: 1.25rem; padding: 2.5rem; margin-bottom: 2.5rem; }
+    .doc-header h1 { font-size: 2rem; font-weight: 800; margin-bottom: .5rem; }
+    .doc-header .sub { opacity: .8; font-size: 1rem; margin-bottom: 1.25rem; }
+    .doc-header .meta-row { display: flex; flex-wrap: wrap; gap: .75rem; font-size: .85rem; }
+    .meta-item { background: rgba(255,255,255,.15); border-radius: .375rem; padding: .25rem .75rem; display:flex; align-items:center; gap:.35rem; }
+
+    /* Sections */
+    .section { background: #fff; border: 1px solid var(--border); border-radius: 1rem; padding: 1.75rem; margin-bottom: 1.5rem; }
+    .section h2 { font-size: 1.15rem; font-weight: 700; color: var(--text); margin-bottom: 1.25rem; display:flex; align-items:center; gap:.5rem; border-bottom: 2px solid var(--primary-light); padding-bottom:.75rem; }
+    .section h3 { font-size: .95rem; font-weight: 600; margin: 1.25rem 0 .5rem; color: var(--text); }
+    .section p { color: #374151; margin-bottom: .75rem; }
+    .section ul, .section ol { padding-left: 1.5rem; margin-bottom: .75rem; }
+    .section li { margin-bottom: .3rem; color: #374151; }
+
+    /* Badges */
+    .badge { display:inline-block; background: var(--primary-light); color: var(--primary); font-size: .75rem; font-weight: 600; padding: .2rem .6rem; border-radius: .375rem; }
+    .badge.green { background: #d1fae5; color: #065f46; }
+    .badge.orange { background: #fef3c7; color: #92400e; }
+
+    /* Tables */
+    table { width:100%; border-collapse:collapse; font-size:.875rem; margin: .75rem 0; }
+    th { background: var(--bg); font-weight:600; text-align:left; padding:.6rem .9rem; border:1px solid var(--border); color: var(--muted); text-transform:uppercase; font-size:.75rem; letter-spacing:.05em; }
+    td { padding:.6rem .9rem; border:1px solid var(--border); vertical-align:top; }
+    tr:nth-child(even) td { background: #fafafa; }
+    td code { background: var(--bg); border:1px solid var(--border); padding:.15rem .4rem; border-radius:.25rem; font-size:.8rem; font-family:monospace; color: var(--primary); }
+
+    /* Code blocks */
+    .code-block { position:relative; background: var(--code-bg); border-radius: .75rem; overflow:hidden; margin: .75rem 0; }
+    .code-block-header { background: rgba(255,255,255,.07); padding: .5rem 1rem; font-size:.75rem; color: rgba(255,255,255,.5); display:flex; align-items:center; justify-content:space-between; font-family:monospace; }
+    .code-block pre { padding: 1rem 1.25rem; overflow-x:auto; color: var(--code-fg); font-size:.8rem; font-family:'JetBrains Mono','Fira Code',monospace; line-height:1.6; white-space:pre-wrap; word-break:break-all; }
+    .code-block.empty { background: var(--bg); border: 2px dashed var(--border); }
+    .code-block.empty pre { color: var(--muted); font-style:italic; text-align:center; padding: 2rem; }
+
+    /* Steps */
+    .steps { counter-reset: step; list-style:none; padding:0; }
+    .steps li { counter-increment: step; display:flex; gap:1rem; margin-bottom:1rem; padding:1rem 1.25rem; background: var(--bg); border-radius:.75rem; border:1px solid var(--border); align-items:flex-start; }
+    .steps li::before { content: counter(step); min-width:2rem; height:2rem; background: var(--primary); color:#fff; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:.85rem; flex-shrink:0; margin-top:-.1rem; }
+    .steps li .step-content strong { display:block; font-size:.9rem; margin-bottom:.2rem; }
+    .steps li .step-content p { font-size:.875rem; color: var(--muted); margin:0; }
+
+    /* Footer */
+    .doc-footer { text-align:center; padding:2rem 0 0; color: var(--muted); font-size:.8rem; border-top:1px solid var(--border); margin-top:2rem; }
+    .doc-footer strong { color: var(--primary); }
+
+    @media print { body { background:#fff; } .section { box-shadow:none; } }
+    @media (max-width:640px) { .doc-header { padding:1.5rem; } .doc-header h1 { font-size:1.5rem; } }
+  </style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- Header -->
+  <div class="doc-header">
+    <div style="font-size:2.5rem;margin-bottom:.75rem;">🔌</div>
+    <h1>{$plugin->label}</h1>
+    <p class="sub">{$plugin->description}</p>
+    <div class="meta-row">
+      <div class="meta-item">📦 v{$plugin->version}</div>
+      <div class="meta-item">⚖️ {$plugin->license}</div>
+      <div class="meta-item">🗂️ {$plugin->category}</div>
+      <div class="meta-item">🔧 AnimusFlow &geq; {$minVer}</div>
+      {$tagsHtml}
+    </div>
+  </div>
+
+  <!-- Description -->
+  <div class="section">
+    <h2>📝 Descrição</h2>
+    <p>{$plugin->description}</p>
+    <p><strong>Slug:</strong> <code>{$plugin->name}</code> &nbsp;|&nbsp; <strong>Autor:</strong> {$authorLink}</p>
+  </div>
+
+  <!-- Installation -->
+  <div class="section">
+    <h2>🚀 Instalação</h2>
+    <h3>Método 1 — Upload ZIP (recomendado)</h3>
+    <ol class="steps">
+      <li><div class="step-content"><strong>Descarrega o ZIP</strong><p>Vai ao AnimusFlowStudio → Plugin → Exportar → Descarregar ZIP</p></div></li>
+      <li><div class="step-content"><strong>Acede ao painel AnimusFlow</strong><p>Admin → Extensões → Plugins → Carregar Plugin</p></div></li>
+      <li><div class="step-content"><strong>Faz upload do ficheiro</strong><p>Selecciona o ficheiro <code>{$plugin->name}.zip</code></p></div></li>
+      <li><div class="step-content"><strong>Activa o plugin</strong><p>Clica em "Activar" na lista de plugins</p></div></li>
+      <li><div class="step-content"><strong>Configura</strong><p>Vai a Extensões → {$plugin->label} → Definições e configura conforme necessário</p></div></li>
+    </ol>
+    <h3>Método 2 — Instalar via Studio</h3>
+    <ol class="steps">
+      <li><div class="step-content"><strong>Configura a ligação ao CMS</strong><p>Studio → Definições → CMS URL e API Key</p></div></li>
+      <li><div class="step-content"><strong>Clica em "Instalar no CMS"</strong><p>No editor do plugin, botão ⚡ no topo</p></div></li>
+    </ol>
+  </div>
+
+  <!-- Hooks -->
+  <div class="section">
+    <h2>🪝 Hooks Activos</h2>
+    <p>Este plugin responde aos seguintes eventos do AnimusFlow CMS:</p>
+    <table>
+      <thead><tr><th>Hook</th><th>Método</th><th>Descrição</th></tr></thead>
+      <tbody>{$hooksRows}</tbody>
+    </table>
+  </div>
+
+  <!-- Settings -->
+  <div class="section">
+    <h2>⚙️ Campos de Configuração</h2>
+HTML;
+
+        if (empty($schema)) {
+            $doc .= '<p class="text-muted" style="color:#9ca3af;font-style:italic">Este plugin não tem campos de configuração configuráveis.</p>';
+        } else {
+            $doc .= <<<TABLE
+    <table>
+      <thead><tr><th>Key</th><th>Label</th><th>Tipo</th><th>Padrão</th><th>Descrição</th></tr></thead>
+      <tbody>{$schemaRows}</tbody>
+    </table>
+    <p style="font-size:.8rem;color:#9ca3af;margin-top:.5rem">Acede a estes valores no PHP com <code>Setting::get('{$plugin->name}.key')</code></p>
+TABLE;
+        }
+
+        $doc .= <<<HTML
+
+  </div>
+
+  <!-- Plugin.php -->
+  <div class="section">
+    <h2>🐘 Plugin.php</h2>
+    <p>Classe principal do plugin. Instalada em <code>plugins/{$plugin->name}/Plugin.php</code>.</p>
+HTML;
+
+        if (!empty($phpCode)) {
+            $doc .= "<div class=\"code-block\"><div class=\"code-block-header\"><span>PHP</span><span>Plugin.php</span></div><pre>{$phpCode}</pre></div>";
+        } else {
+            $doc .= "<div class=\"code-block empty\"><pre>// Plugin.php ainda não foi definido</pre></div>";
+        }
+
+        $doc .= <<<HTML
+  </div>
+
+  <!-- Widget -->
+  <div class="section">
+    <h2>🖼️ Widget Blade (page.render)</h2>
+    <p>Template HTML injectado antes de <code>&lt;/body&gt;</code> em todas as páginas. Guardado em <code>plugins/{$plugin->name}/views/widget.blade.php</code>.</p>
+HTML;
+
+        if (!empty($widgetCode)) {
+            $doc .= "<div class=\"code-block\"><div class=\"code-block-header\"><span>HTML / Blade</span><span>views/widget.blade.php</span></div><pre>{$widgetCode}</pre></div>";
+        } else {
+            $doc .= "<div class=\"code-block empty\"><pre>// Widget ainda não foi definido</pre></div>";
+        }
+
+        $doc .= <<<HTML
+  </div>
+
+  <!-- JavaScript -->
+  <div class="section">
+    <h2>⚡ JavaScript</h2>
+    <p>Script carregado automaticamente nas páginas onde o plugin está activo. Guardado em <code>plugins/{$plugin->name}/assets/widget.js</code>.</p>
+HTML;
+
+        if (!empty($jsCode)) {
+            $doc .= "<div class=\"code-block\"><div class=\"code-block-header\"><span>JavaScript</span><span>assets/widget.js</span></div><pre>{$jsCode}</pre></div>";
+        } else {
+            $doc .= "<div class=\"code-block empty\"><pre>// JavaScript ainda não foi definido</pre></div>";
+        }
+
+        $doc .= <<<HTML
+  </div>
+
+  <!-- CSS -->
+  <div class="section">
+    <h2>🎨 CSS Personalizado</h2>
+    <p>Estilos do plugin injectados globalmente. Guardado em <code>plugins/{$plugin->name}/assets/plugin.css</code>.</p>
+HTML;
+
+        if (!empty($cssCode)) {
+            $doc .= "<div class=\"code-block\"><div class=\"code-block-header\"><span>CSS</span><span>assets/plugin.css</span></div><pre>{$cssCode}</pre></div>";
+        } else {
+            $doc .= "<div class=\"code-block empty\"><pre>/* CSS ainda não foi definido */</pre></div>";
+        }
+
+        $doc .= <<<HTML
+  </div>
+
+  <!-- ZIP Structure -->
+  <div class="section">
+    <h2>📁 Estrutura do ZIP</h2>
+    <div class="code-block"><div class="code-block-header"><span>Directórios</span><span>{$plugin->name}.zip</span></div>
+<pre>{$plugin->name}/
+├── animusflow-plugin.json   ← Manifesto (nome, versão, hooks, settings)
+├── Plugin.php               ← Classe principal do plugin
+├── views/
+│   └── widget.blade.php     ← Template HTML do widget
+├── assets/
+│   ├── widget.js            ← JavaScript do widget
+│   └── plugin.css           ← Estilos do plugin
+└── README.md                ← Esta documentação</pre>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div class="doc-footer">
+    <p>Documentação gerada em <strong>{$generatedAt}</strong> por <strong>AnimusFlowStudio</strong></p>
+    <p style="margin-top:.35rem">Plugin <strong>{$plugin->name}</strong> v{$plugin->version} · {$plugin->license}</p>
+  </div>
+
+</div>
+</body>
+</html>
+HTML;
+
+        return response($doc, 200, [
+            'Content-Type'        => 'text/html; charset=utf-8',
+            'Content-Disposition' => "attachment; filename=\"{$plugin->name}-docs.html\"",
+        ]);
+    }
+
+    // ──────────────────────────────────────────────
+    //  AI Documentation Generator
+    // ──────────────────────────────────────────────
+
+    public function generateDocs(Request $request, string $uuid): JsonResponse
+    {
+        $plugin = StudioPlugin::where('uuid', $uuid)->firstOrFail();
+
+        try {
+            $readme = AIEngine::generatePluginDocs([
+                'name'            => $plugin->name,
+                'label'           => $plugin->label,
+                'description'     => $plugin->description ?? '',
+                'version'         => $plugin->version ?? '1.0.0',
+                'author'          => $plugin->author ?? StudioSetting::get('studio_author', ''),
+                'author_url'      => $plugin->author_url ?? StudioSetting::get('studio_author_url', ''),
+                'category'        => $plugin->category ?? '',
+                'license'         => $plugin->license ?? 'MIT',
+                'requires'        => $plugin->min_animusflow_version ?? '1.0.0',
+                'hooks'           => $plugin->hooks ?? [],
+                'settings_schema' => $plugin->settings_schema ?? [],
+                'plugin_php'      => $plugin->plugin_php ?? '',
+                'widget_blade'    => $plugin->widget_blade ?? '',
+            ]);
+        } catch (\Throwable $e) {
+            return response()->json(['error' => $e->getMessage()], 422);
+        }
+
+        $plugin->update(['readme' => $readme]);
+
+        return response()->json(['readme' => $readme, 'success' => true]);
+    }
+
+    // ──────────────────────────────────────────────
     //  Export ZIP
     // ──────────────────────────────────────────────
 
@@ -520,6 +981,13 @@ PROMPT;
             File::ensureDirectoryExists("{$pluginDir}/assets");
             file_put_contents("{$pluginDir}/assets/plugin.css", $plugin->custom_css);
         }
+
+        // DOCS.html — inject the same HTML doc into the ZIP
+        ob_start();
+        $docResponse = $this->exportDoc($plugin->uuid);
+        ob_end_clean();
+        $docHtml = $docResponse->getContent();
+        file_put_contents("{$pluginDir}/DOCS.html", $docHtml);
 
         // README.md
         $readmeContent = $plugin->readme;

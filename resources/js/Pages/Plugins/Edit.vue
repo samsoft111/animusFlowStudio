@@ -451,21 +451,114 @@
 
       <!-- ══════════ Tab: Documentação ══════════ -->
       <div v-show="activeTab === 'docs'" class="max-w-4xl space-y-4">
+
+        <!-- AI generate banner -->
+        <div class="flex items-center gap-4 px-5 py-4 bg-gradient-to-r from-violet-500/8 via-purple-500/5 to-transparent border border-violet-500/20 rounded-2xl">
+          <div class="w-9 h-9 bg-violet-500/15 rounded-xl flex items-center justify-center text-lg shrink-0">📝</div>
+          <div class="flex-1 min-w-0">
+            <p class="text-sm font-semibold text-foreground">Gerar Documentação Completa com IA</p>
+            <p class="text-xs text-muted-foreground mt-0.5">A IA analisa o teu plugin (hooks, configurações, código) e gera um README.md profissional com instalação, referência de campos, exemplos e FAQ</p>
+          </div>
+          <button @click="generateDocs" :disabled="docsLoading"
+            class="shrink-0 flex items-center gap-1.5 px-4 py-2 bg-violet-600 hover:bg-violet-500 text-white rounded-xl text-sm font-semibold transition-colors disabled:opacity-50">
+            <span v-if="docsLoading" class="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin inline-block"></span>
+            <span v-else>✨</span>
+            {{ docsLoading ? 'A gerar…' : 'Gerar com IA' }}
+          </button>
+        </div>
+
         <div class="bg-card border border-border rounded-2xl overflow-hidden">
           <div class="flex items-center justify-between px-4 py-3 border-b border-border bg-muted/50">
             <div>
               <span class="text-sm font-semibold text-foreground">README.md</span>
-              <span class="text-xs text-muted-foreground ml-2">Documentação incluída no ZIP</span>
+              <span class="text-xs text-muted-foreground ml-2">Incluído no ZIP e na documentação HTML</span>
             </div>
             <span class="text-xs text-muted-foreground font-mono">{{ (form.readme || '').length }} chars</span>
           </div>
-          <textarea v-model="form.readme" rows="20" spellcheck="false"
+          <textarea v-model="form.readme" rows="22" spellcheck="false"
             placeholder="# Nome do Plugin&#10;&#10;Descrição do plugin...&#10;&#10;## Instalação&#10;&#10;## Utilização"
             class="w-full px-4 py-3 bg-muted/30 text-foreground text-sm font-mono focus:outline-none resize-y border-0" />
         </div>
-        <button @click="save" :disabled="saving" class="px-5 py-2.5 bg-primary text-primary-foreground rounded-xl text-sm font-semibold disabled:opacity-50">
-          {{ saving ? t('common.loading') : 'Guardar README' }}
-        </button>
+        <div class="flex items-center gap-3">
+          <button @click="save" :disabled="saving" class="px-5 py-2.5 bg-primary text-primary-foreground rounded-xl text-sm font-semibold disabled:opacity-50">
+            {{ saving ? t('common.loading') : 'Guardar README' }}
+          </button>
+          <a :href="`/plugins/${plugin.uuid}/export-doc`"
+            class="flex items-center gap-1.5 px-5 py-2.5 bg-muted text-foreground border border-border rounded-xl text-sm font-semibold hover:bg-border transition-colors">
+            📄 Pré-visualizar Documentação HTML
+          </a>
+        </div>
+      </div>
+
+      <!-- ══════════ Tab: Preview ══════════ -->
+      <div v-show="activeTab === 'preview'" class="space-y-3">
+
+        <!-- Toolbar -->
+        <div class="flex flex-wrap items-center gap-3">
+          <!-- Device switcher -->
+          <div class="flex bg-muted p-1 rounded-xl gap-1">
+            <button v-for="d in previewDevices" :key="d.id" @click="previewDevice = d.id"
+              class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors"
+              :class="previewDevice === d.id ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'">
+              <span>{{ d.icon }}</span> {{ d.label }}
+            </button>
+          </div>
+
+          <button @click="refreshPreview"
+            class="flex items-center gap-1.5 px-3.5 py-2 bg-primary text-primary-foreground rounded-xl text-xs font-semibold hover:opacity-90 transition-opacity">
+            🔄 Actualizar Preview
+          </button>
+
+          <a :href="`/plugins/${plugin.uuid}/preview-widget`" target="_blank"
+            class="flex items-center gap-1.5 px-3.5 py-2 bg-muted text-foreground border border-border rounded-xl text-xs font-semibold hover:bg-border transition-colors">
+            🔗 Abrir em nova janela
+          </a>
+
+          <!-- Notes -->
+          <div class="ml-auto flex items-center gap-1.5 text-xs text-muted-foreground">
+            <span class="text-amber-500">⚠️</span>
+            Variáveis Blade <code class="bg-muted px-1 py-0.5 rounded text-xs">&#123;&#123; var &#125;&#125;</code> não são processadas no preview
+          </div>
+        </div>
+
+        <!-- iframe wrapper with device frame -->
+        <div class="flex justify-center">
+          <div class="transition-all duration-300 overflow-hidden rounded-2xl shadow-xl border border-border bg-white"
+            :style="previewWrapStyle">
+            <!-- Device chrome for mobile/tablet -->
+            <div v-if="previewDevice !== 'desktop'" class="bg-muted/80 px-4 py-2 border-b border-border flex items-center justify-between">
+              <div class="flex gap-1.5">
+                <div class="w-2.5 h-2.5 rounded-full bg-red-400"></div>
+                <div class="w-2.5 h-2.5 rounded-full bg-yellow-400"></div>
+                <div class="w-2.5 h-2.5 rounded-full bg-green-400"></div>
+              </div>
+              <div class="text-xs text-muted-foreground font-mono">{{ previewDevices.find(d=>d.id===previewDevice)?.label }}</div>
+              <div></div>
+            </div>
+            <iframe ref="previewFrame"
+              :src="`/plugins/${plugin.uuid}/preview-widget`"
+              :style="previewFrameStyle"
+              class="w-full border-0 block"
+              sandbox="allow-scripts allow-same-origin">
+            </iframe>
+          </div>
+        </div>
+
+        <!-- Info cards below preview -->
+        <div class="grid grid-cols-3 gap-3 max-w-2xl">
+          <div class="bg-card border border-border rounded-xl p-3 text-center">
+            <div class="text-lg font-bold text-foreground">{{ (form.widget_blade || '').length }}</div>
+            <div class="text-xs text-muted-foreground mt-0.5">Widget HTML chars</div>
+          </div>
+          <div class="bg-card border border-border rounded-xl p-3 text-center">
+            <div class="text-lg font-bold text-foreground">{{ (form.custom_css || '').length }}</div>
+            <div class="text-xs text-muted-foreground mt-0.5">CSS chars</div>
+          </div>
+          <div class="bg-card border border-border rounded-xl p-3 text-center">
+            <div class="text-lg font-bold text-foreground">{{ (form.widget_js || '').length }}</div>
+            <div class="text-xs text-muted-foreground mt-0.5">JS chars</div>
+          </div>
+        </div>
       </div>
 
       <!-- ══════════ Tab: IA ══════════ -->
@@ -537,9 +630,15 @@
 
           <!-- Actions -->
           <div class="flex flex-col gap-3 pt-2 border-t border-border">
+            <!-- ZIP -->
             <a :href="`/plugins/${plugin.uuid}/export`"
               class="flex items-center justify-center gap-2 px-4 py-3 bg-muted text-foreground rounded-xl text-sm font-semibold hover:bg-border transition-colors">
-              <DownloadIcon class="w-4 h-4" /> Descarregar ZIP
+              <DownloadIcon class="w-4 h-4" /> Descarregar ZIP (inclui DOCS.html + README.md)
+            </a>
+            <!-- Docs HTML -->
+            <a :href="`/plugins/${plugin.uuid}/export-doc`"
+              class="flex items-center justify-center gap-2 px-4 py-3 bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 rounded-xl text-sm font-semibold hover:bg-blue-500/20 transition-colors">
+              📄 Exportar Documentação Completa (.html)
             </a>
             <button @click="showPromptModal = true"
               class="flex items-center justify-center gap-2 px-4 py-3 bg-violet-500/10 text-violet-600 dark:text-violet-400 border border-violet-500/20 rounded-xl text-sm font-semibold hover:bg-violet-500/20 transition-colors">
@@ -836,6 +935,7 @@ const tabs = [
   { id: 'css',     label: 'CSS'      },
   { id: 'schema',  label: 'Configurações' },
   { id: 'docs',    label: 'Docs'     },
+  { id: 'preview', label: '👁️ Preview' },
   { id: 'ai',      label: '✨ IA'    },
   { id: 'chat',    label: '💬 Chat IA' },
   { id: 'export',  label: 'Exportar' },
@@ -956,6 +1056,62 @@ async function copyInspireCode() {
     inspireCopied.value = true;
     setTimeout(() => { inspireCopied.value = false; }, 2000);
   } catch {}
+}
+
+// ── Preview ──
+const previewFrame  = ref(null);
+const previewDevice = ref('desktop');
+const previewDevices = [
+  { id: 'desktop', label: 'Desktop',  icon: '🖥️',  width: '100%',  height: '680px' },
+  { id: 'tablet',  label: 'Tablet',   icon: '📱',  width: '768px', height: '600px' },
+  { id: 'mobile',  label: 'Mobile',   icon: '📲',  width: '375px', height: '700px' },
+];
+
+const previewWrapStyle = computed(() => {
+  const d = previewDevices.find(d => d.id === previewDevice.value) ?? previewDevices[0];
+  return {
+    width:    d.id === 'desktop' ? '100%' : d.width,
+    maxWidth: d.id === 'desktop' ? '100%' : d.width,
+  };
+});
+
+const previewFrameStyle = computed(() => {
+  const d = previewDevices.find(d => d.id === previewDevice.value) ?? previewDevices[0];
+  return {
+    height: d.height,
+    width:  d.id === 'desktop' ? '100%' : d.width,
+  };
+});
+
+function refreshPreview() {
+  if (previewFrame.value) {
+    const src = previewFrame.value.src;
+    previewFrame.value.src = '';
+    nextTick(() => { previewFrame.value.src = src; });
+  }
+}
+
+// ── Docs generation ──
+const docsLoading = ref(false);
+
+async function generateDocs() {
+  if (docsLoading.value) return;
+  docsLoading.value = true;
+  try {
+    const res = await fetch(`/plugins/${props.plugin.uuid}/generate-docs`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content ?? '' },
+      body: JSON.stringify({}),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error ?? 'Erro desconhecido');
+    form.readme = data.readme ?? '';
+    feedback.success = '✅ Documentação gerada! Revê e guarda.';
+  } catch (e) {
+    feedback.error = '❌ ' + (e.message ?? 'Erro ao gerar documentação.');
+  } finally {
+    docsLoading.value = false;
+  }
 }
 
 // ── Hooks ──
