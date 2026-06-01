@@ -3335,19 +3335,22 @@ async function sendChatMessage() {
       });
 
       if (data.applied && data.theme) {
-        Object.assign(form, {
-          colors:       data.theme.colors       ?? form.colors,
-          fonts:        data.theme.fonts        ?? form.fonts,
-          layout_config:data.theme.layout_config?? form.layout_config,
-          capabilities: data.theme.capabilities ?? form.capabilities,
-          sections:     data.theme.sections     ?? form.sections,
-          components:   data.theme.components   ?? form.components,
-          custom_css:   data.theme.custom_css   ?? form.custom_css,
-          custom_js:    data.theme.custom_js    ?? form.custom_js,
-          variants:     data.theme.variants     ?? form.variants,
-          label:        data.theme.label        ?? form.label,
-          description:  data.theme.description  ?? form.description,
-        });
+        const t = data.theme;
+        // Deep-merge nested objects so manual edits to untouched keys are preserved
+        if (t.colors)        { form.colors        = { ...(form.colors ?? {}),        ...t.colors,        light: { ...(form.colors?.light ?? {}), ...(t.colors.light ?? {}) }, dark: { ...(form.colors?.dark ?? {}), ...(t.colors.dark ?? {}) } }; }
+        if (t.fonts)         { form.fonts         = { ...(form.fonts ?? {}),         ...t.fonts }; }
+        if (t.layout_config) { form.layout_config = { ...(form.layout_config ?? {}), ...t.layout_config }; }
+        if (t.capabilities)  { form.capabilities  = { ...(form.capabilities ?? {}),  ...t.capabilities }; }
+        if (t.assets)        { form.assets        = { ...(form.assets ?? {}),        ...t.assets }; }
+        if (t.sections)      form.sections   = t.sections;
+        if (t.components)    form.components = t.components;
+        if (t.variants)      form.variants   = t.variants;
+        if (t.custom_css !== undefined) form.custom_css = t.custom_css;
+        if (t.custom_js  !== undefined) form.custom_js  = t.custom_js;
+        if (t.label)         form.label       = t.label;
+        if (t.description)   form.description = t.description;
+        if (t.version)       form.version     = t.version;
+        if (t.status)        form.status      = t.status;
       }
     }
   } catch (e) {
@@ -3361,11 +3364,21 @@ async function sendChatMessage() {
 
 function applyChatUpdates(updates, msgIdx) {
   if (!updates) return;
-  const allowed = ['label','description','version','status','colors','fonts',
-    'layout_config','capabilities','sections','components','custom_css','custom_js','variants','assets'];
-  allowed.forEach(k => {
-    if (updates[k] !== undefined) form[k] = updates[k];
-  });
+  // Deep-merge nested fields — preserve untouched manual edits
+  if (updates.colors)        { form.colors        = { ...(form.colors ?? {}), ...updates.colors, light: { ...(form.colors?.light ?? {}), ...(updates.colors.light ?? {}) }, dark: { ...(form.colors?.dark ?? {}), ...(updates.colors.dark ?? {}) } }; }
+  if (updates.fonts)         { form.fonts         = { ...(form.fonts ?? {}),         ...updates.fonts }; }
+  if (updates.layout_config) { form.layout_config = { ...(form.layout_config ?? {}), ...updates.layout_config }; }
+  if (updates.capabilities)  { form.capabilities  = { ...(form.capabilities ?? {}),  ...updates.capabilities }; }
+  if (updates.assets)        { form.assets        = { ...(form.assets ?? {}),        ...updates.assets }; }
+  if (updates.sections)      form.sections   = updates.sections;
+  if (updates.components)    form.components = updates.components;
+  if (updates.variants)      form.variants   = updates.variants;
+  if (updates.custom_css !== undefined) form.custom_css = updates.custom_css;
+  if (updates.custom_js  !== undefined) form.custom_js  = updates.custom_js;
+  if (updates.label)         form.label       = updates.label;
+  if (updates.description)   form.description = updates.description;
+  if (updates.version)       form.version     = updates.version;
+  if (updates.status)        form.status      = updates.status;
   chatMessages.value[msgIdx] = { ...chatMessages.value[msgIdx], applied: true };
   feedback.success = 'Alterações do chat aplicadas! Guarda para persistir.';
 }

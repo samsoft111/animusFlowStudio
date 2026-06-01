@@ -279,7 +279,7 @@ class ThemeController extends Controller
             return response()->json(['error' => $e->getMessage()], 422);
         }
 
-        // If AI returned theme updates, apply them immediately
+        // If AI returned theme updates, apply them with deep-merge for nested fields
         $applied = false;
         if (!empty($result['updates'])) {
             $allowed = [
@@ -289,6 +289,15 @@ class ThemeController extends Controller
                 'variants', 'assets',
             ];
             $updates = array_intersect_key($result['updates'], array_flip($allowed));
+
+            // Deep-merge nested array fields so AI only needs to specify changed keys
+            foreach (['colors', 'layout_config', 'capabilities', 'fonts', 'assets'] as $field) {
+                if (isset($updates[$field]) && is_array($updates[$field])) {
+                    $existing = is_array($theme->$field) ? $theme->$field : [];
+                    $updates[$field] = array_replace_recursive($existing, $updates[$field]);
+                }
+            }
+
             if (!empty($updates)) {
                 $theme->update($updates);
                 $applied = true;
