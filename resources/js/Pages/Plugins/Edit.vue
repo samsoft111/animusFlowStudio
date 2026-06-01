@@ -6,6 +6,10 @@
           class="px-3 py-2 bg-muted text-foreground rounded-lg text-sm font-semibold hover:bg-border transition-colors flex items-center gap-1.5">
           <DownloadIcon class="w-3.5 h-3.5" /> {{ t('common.export') }}
         </a>
+        <button @click="showPromptModal = true"
+          class="px-3 py-2 bg-violet-500/10 text-violet-600 dark:text-violet-400 border border-violet-500/20 rounded-lg text-sm font-semibold hover:bg-violet-500/20 transition-colors flex items-center gap-1.5">
+          <SparklesIcon class="w-3.5 h-3.5" /> .afprompt
+        </button>
         <button @click="installInCms" :disabled="installingCms"
           class="px-3 py-2 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 rounded-lg text-sm font-semibold hover:bg-emerald-500/20 transition-colors flex items-center gap-1.5 disabled:opacity-50">
           <template v-if="installingCms"><span class="w-3.5 h-3.5 border-2 border-emerald-500/30 border-t-emerald-500 rounded-full animate-spin inline-block"></span></template>
@@ -406,6 +410,10 @@
               class="flex items-center justify-center gap-2 px-4 py-3 bg-muted text-foreground rounded-xl text-sm font-semibold hover:bg-border transition-colors">
               <DownloadIcon class="w-4 h-4" /> Descarregar ZIP
             </a>
+            <button @click="showPromptModal = true"
+              class="flex items-center justify-center gap-2 px-4 py-3 bg-violet-500/10 text-violet-600 dark:text-violet-400 border border-violet-500/20 rounded-xl text-sm font-semibold hover:bg-violet-500/20 transition-colors">
+              <SparklesIcon class="w-4 h-4" /> Exportar Plugin Prompt (.afprompt)
+            </button>
             <button @click="installInCms" :disabled="installingCms"
               class="flex items-center justify-center gap-2 px-4 py-3 bg-emerald-500/10 text-emerald-600 border border-emerald-500/20 rounded-xl text-sm font-semibold hover:bg-emerald-500/20 disabled:opacity-50">
               <template v-if="installingCms"><span class="w-4 h-4 border-2 border-emerald-500/30 border-t-emerald-500 rounded-full animate-spin inline-block"></span></template>
@@ -571,6 +579,104 @@
       </div>
 
     </div>
+
+  <!-- ════════════════════ MODAL: Exportar Plugin Prompt ════════════════════ -->
+  <transition name="fade">
+    <div v-if="showPromptModal"
+      class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4"
+      @click.self="showPromptModal = false">
+
+      <div class="bg-card border border-border rounded-2xl w-full max-w-2xl shadow-2xl flex flex-col max-h-[90vh]">
+
+        <!-- Header -->
+        <div class="flex items-center justify-between px-6 py-4 border-b border-border shrink-0">
+          <div class="flex items-center gap-3">
+            <div class="w-8 h-8 rounded-lg bg-violet-500/15 flex items-center justify-center">
+              <SparklesIcon class="w-4 h-4 text-violet-500" />
+            </div>
+            <div>
+              <h2 class="font-bold text-foreground text-sm">Exportar Plugin Prompt</h2>
+              <p class="text-[10px] text-muted-foreground">Formato <code>.afprompt</code> — lido pelo AnimusFlow para instalar o plugin</p>
+            </div>
+          </div>
+          <button @click="showPromptModal = false" class="w-7 h-7 rounded-lg bg-muted hover:bg-border flex items-center justify-center text-muted-foreground transition-colors">✕</button>
+        </div>
+
+        <!-- Conteúdo -->
+        <div class="overflow-y-auto flex-1 p-6 space-y-5">
+
+          <!-- O que é -->
+          <div class="bg-violet-500/10 border border-violet-500/20 rounded-xl px-4 py-3 text-xs text-violet-600 dark:text-violet-400 space-y-2">
+            <p class="font-semibold">✦ O que é um Plugin Prompt?</p>
+            <p>É um ficheiro de texto estruturado (<code>.afprompt</code>) que contém <strong>todo o plugin num único bloco</strong> — manifest, PHP, Blade, JavaScript, CSS e schema de configurações. O AnimusFlow lê este ficheiro e instala o plugin automaticamente.</p>
+          </div>
+
+          <!-- Resumo do plugin -->
+          <div class="bg-muted rounded-xl p-4 space-y-3">
+            <p class="text-xs font-semibold text-muted-foreground uppercase tracking-wider">📦 Conteúdo que será exportado</p>
+            <div class="grid grid-cols-2 gap-2">
+              <div v-for="item in promptSummary" :key="item.label"
+                class="flex items-center gap-2 bg-card rounded-lg px-3 py-2 border border-border">
+                <span class="text-base">{{ item.icon }}</span>
+                <div>
+                  <p class="text-[10px] font-semibold text-foreground">{{ item.label }}</p>
+                  <p class="text-[9px] text-muted-foreground">{{ item.value }}</p>
+                </div>
+                <span class="ml-auto text-xs" :class="item.ok ? 'text-success' : 'text-muted-foreground'">
+                  {{ item.ok ? '✓' : '—' }}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Fluxo de instalação -->
+          <div class="space-y-2">
+            <p class="text-xs font-semibold text-muted-foreground uppercase tracking-wider">🔄 Como instalar no AnimusFlow</p>
+            <div class="flex flex-col gap-1.5">
+              <div v-for="(step, i) in installSteps" :key="i"
+                class="flex items-start gap-3 p-3 bg-muted rounded-xl">
+                <div class="w-5 h-5 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-[10px] font-bold shrink-0 mt-0.5">{{ i + 1 }}</div>
+                <p class="text-xs text-foreground">{{ step }}</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Pré-visualização do formato -->
+          <div class="bg-muted rounded-xl overflow-hidden">
+            <div class="flex items-center justify-between px-4 py-2 border-b border-border">
+              <span class="text-xs font-semibold text-muted-foreground">Pré-visualização do formato</span>
+              <span class="text-[10px] text-muted-foreground font-mono">{{ plugin.name }}.afprompt</span>
+            </div>
+            <pre class="text-[10px] text-muted-foreground p-4 overflow-x-auto leading-relaxed font-mono">{{ promptPreview }}</pre>
+          </div>
+
+        </div>
+
+        <!-- Acções -->
+        <div class="flex items-center gap-3 px-6 py-4 border-t border-border shrink-0 bg-muted/50">
+          <div class="flex-1 min-w-0">
+            <p class="text-xs text-muted-foreground truncate">
+              Checksum SHA-256 gerado automaticamente para verificação de integridade.
+            </p>
+          </div>
+          <button @click="showPromptModal = false"
+            class="px-4 py-2 bg-muted text-foreground rounded-xl text-sm font-semibold hover:bg-border transition-colors">
+            Cancelar
+          </button>
+          <button @click="copyPromptToClipboard"
+            class="px-4 py-2 bg-muted border border-border text-foreground rounded-xl text-sm font-semibold hover:bg-border transition-colors flex items-center gap-2">
+            <span>📋</span> Copiar
+          </button>
+          <a :href="`/plugins/${plugin.uuid}/export-prompt`"
+            class="px-5 py-2 bg-violet-600 text-white rounded-xl text-sm font-bold hover:bg-violet-700 transition-colors flex items-center gap-2">
+            <SparklesIcon class="w-4 h-4" /> Descarregar .afprompt
+          </a>
+        </div>
+
+      </div>
+    </div>
+  </transition>
+
   </AppLayout>
 </template>
 
@@ -870,6 +976,78 @@ function applyChatUpdates(updates, msgIdx) {
   if (updates.version)                     form.version       = updates.version;
   if (updates.status)                      form.status        = updates.status;
   chatMessages.value[msgIdx].applied = true;
+}
+
+// ── Plugin Prompt Modal ──────────────────────────────────────────────
+const showPromptModal = ref(false);
+
+const promptSummary = computed(() => {
+  const f = form;
+  const hooksCount = (f.hooks ?? []).length;
+  return [
+    { icon: '📋', label: 'Metadados',       value: `${f.label} v${f.version}`,                                            ok: !!f.label },
+    { icon: '🪝', label: 'Hooks',           value: hooksCount ? (f.hooks ?? []).join(', ') : 'Nenhum',                   ok: hooksCount > 0 },
+    { icon: '🐘', label: 'Plugin.php',      value: f.plugin_php?.trim() ? `${f.plugin_php.split('\n').length} linhas` : 'Vazio', ok: !!f.plugin_php?.trim() },
+    { icon: '🌐', label: 'Widget Blade',    value: f.widget_blade?.trim() ? `${f.widget_blade.split('\n').length} linhas` : 'Vazio', ok: !!f.widget_blade?.trim() },
+    { icon: '⚡', label: 'Widget JS',       value: f.widget_js?.trim() ? `${f.widget_js.split('\n').length} linhas` : 'Vazio',     ok: !!f.widget_js?.trim() },
+    { icon: '🎨', label: 'CSS Custom',      value: f.custom_css?.trim() ? `${f.custom_css.split('\n').length} linhas` : 'Vazio',   ok: !!f.custom_css?.trim() },
+    { icon: '⚙️',  label: 'Configurações',  value: `${(f.settings_schema ?? []).length} campo(s)`,                                ok: (f.settings_schema ?? []).length > 0 },
+    { icon: '📄', label: 'Manifest',        value: `animusflow-plugin.json`,                                                      ok: true },
+  ];
+});
+
+const installSteps = [
+  'Descarrega o ficheiro .afprompt ou copia o conteúdo para o clipboard.',
+  'Abre o AnimusFlow Admin → Extensões → Plugins → Importar Prompt.',
+  'Cola o bloco completo (incluindo as marcações [AF:PLUGIN:BEGIN] e [AF:PLUGIN:END]).',
+  'Clica em "Instalar Plugin" — o AnimusFlow valida o checksum e instala tudo automaticamente.',
+  'Activa o plugin em AnimusFlow Admin → Extensões → Plugins.',
+];
+
+const promptPreview = computed(() => {
+  const divider = '━'.repeat(50);
+  const hooks = (form.hooks ?? []).join(', ') || '—';
+  const schema = (form.settings_schema ?? []).length;
+  return `${divider}
+ ANIMUSFLOW PLUGIN PROMPT  v1.0
+ Plugin: ${form.label}  (${plugin.name})
+ Versão: ${form.version}
+${divider}
+
+[AF:PLUGIN:BEGIN]
+{
+  "af_prompt_version": "1.0",
+  "type": "plugin",
+  "meta": { "name": "${plugin.name}", "label": "${form.label}", ... },
+  "code": {
+    "plugin_php":   "<?php ...",
+    "widget_blade": "<div class=\\"af-widget\\">...</div>",
+    "widget_js":    "// widget JS",
+    "custom_css":   "/* CSS */"
+  },
+  "settings_schema": [ /* ${schema} campo(s) */ ],
+  "af_install": {
+    "manifest": { "hooks": ["${hooks}"], ... },
+    ...
+  }
+}
+[AF:PLUGIN:END]
+${divider}
+CHECKSUM: sha256:<gerado no servidor>
+${divider}`;
+});
+
+async function copyPromptToClipboard() {
+  try {
+    const res  = await fetch(`/plugins/${props.plugin.uuid}/export-prompt`);
+    const text = await res.text();
+    await navigator.clipboard.writeText(text);
+    feedback.success = '📋 Plugin Prompt copiado para o clipboard!';
+    setTimeout(() => { feedback.success = ''; }, 3000);
+    showPromptModal.value = false;
+  } catch {
+    feedback.error = 'Não foi possível copiar. Usa o botão Descarregar.';
+  }
 }
 
 // ── Install in CMS ──

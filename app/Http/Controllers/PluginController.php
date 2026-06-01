@@ -310,6 +310,122 @@ class PluginController extends Controller
     }
 
     // ──────────────────────────────────────────────
+    //  Plugin Prompt Export (.afprompt)
+    // ──────────────────────────────────────────────
+
+    public function exportPrompt(string $uuid)
+    {
+        $plugin = StudioPlugin::where('uuid', $uuid)->firstOrFail();
+
+        $author    = $plugin->author     ?? StudioSetting::get('studio_author', '');
+        $authorUrl = $plugin->author_url ?? StudioSetting::get('studio_author_url', '');
+        $minVer    = $plugin->min_animusflow_version ?? StudioSetting::get('export_animusflow_min_ver', '1.0.0');
+
+        // Build the full plugin payload
+        $payload = [
+            'af_prompt_version' => '1.0',
+            'generated_at'      => now()->toIso8601String(),
+            'generator'         => 'AnimusFlowStudio',
+            'type'              => 'plugin',
+            // Studio-native metadata (for Studio re-import)
+            'meta' => [
+                'uuid'        => $plugin->uuid,
+                'name'        => $plugin->name,
+                'label'       => $plugin->label,
+                'description' => $plugin->description ?? '',
+                'version'     => $plugin->version ?? '1.0.0',
+                'status'      => $plugin->status,
+                'requires'    => $minVer,
+                'author'      => $author,
+                'author_url'  => $authorUrl,
+                'category'    => $plugin->category ?? '',
+                'tags'        => $plugin->tags ?? [],
+                'license'     => $plugin->license ?? 'MIT',
+                'homepage'    => $plugin->homepage_url ?? '',
+                'hooks'       => $plugin->hooks ?? [],
+            ],
+            'code' => [
+                'plugin_php'   => $plugin->plugin_php   ?? '',
+                'widget_blade' => $plugin->widget_blade ?? '',
+                'widget_js'    => $plugin->widget_js    ?? '',
+                'custom_css'   => $plugin->custom_css   ?? '',
+            ],
+            'settings_schema' => $plugin->settings_schema ?? [],
+            // AnimusFlow-native format (for direct installation via CMS import)
+            'af_install' => [
+                'manifest' => [
+                    'name'        => $plugin->name,
+                    'label'       => $plugin->label,
+                    'description' => $plugin->description ?? '',
+                    'version'     => $plugin->version ?? '1.0.0',
+                    'author'      => $author,
+                    'author_url'  => $authorUrl,
+                    'category'    => $plugin->category ?? '',
+                    'tags'        => $plugin->tags ?? [],
+                    'license'     => $plugin->license ?? 'MIT',
+                    'requires'    => $minVer,
+                    'homepage'    => $plugin->homepage_url ?? '',
+                    'hooks'       => $plugin->hooks ?? [],
+                    'settings'    => $plugin->settings_schema ?? [],
+                ],
+                'plugin_php'   => $plugin->plugin_php   ?? '',
+                'widget_blade' => $plugin->widget_blade ?? '',
+                'widget_js'    => $plugin->widget_js    ?? '',
+                'custom_css'   => $plugin->custom_css   ?? '',
+            ],
+        ];
+
+        $json     = json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        $checksum = hash('sha256', $json);
+
+        // Human-readable header
+        $hooks      = implode(', ', $plugin->hooks ?? []) ?: '—';
+        $schemaCount = count($plugin->settings_schema ?? []);
+        $hasPhp     = !empty($plugin->plugin_php)   ? '✓' : '✗';
+        $hasBlade   = !empty($plugin->widget_blade) ? '✓' : '✗';
+        $hasJs      = !empty($plugin->widget_js)    ? '✓' : '✗';
+        $hasCss     = !empty($plugin->custom_css)   ? '✓' : '✗';
+
+        $divider = str_repeat('━', 60);
+
+        $prompt = <<<PROMPT
+{$divider}
+ ANIMUSFLOW PLUGIN PROMPT  v1.0
+ Gerado por: AnimusFlowStudio
+ Plugin: {$plugin->label}  ({$plugin->name})
+ Versão: {$plugin->version}   |   AnimusFlow >= {$minVer}
+ Gerado em: {$payload['generated_at']}
+{$divider}
+
+Para instalar este plugin no AnimusFlow:
+  1. Vai a AnimusFlow Admin → Extensões → Plugins → Importar Prompt
+  2. Cola este bloco completo (incluindo as marcações [AF:PLUGIN:BEGIN] e [AF:PLUGIN:END])
+  3. Clica em "Instalar Plugin"
+
+O AnimusFlow irá:
+  {$hasPhp}   Instalar a classe Plugin.php
+  {$hasBlade} Registar o widget Blade (hook: page.render)
+  {$hasJs}    Carregar o JavaScript do widget
+  {$hasCss}   Injectar o CSS personalizado
+  ✓   Registar os hooks: {$hooks}
+  ✓   Configurar {$schemaCount} campo(s) de configuração
+
+{$divider}
+[AF:PLUGIN:BEGIN]
+{$json}
+[AF:PLUGIN:END]
+{$divider}
+CHECKSUM: sha256:{$checksum}
+{$divider}
+PROMPT;
+
+        return response($prompt, 200, [
+            'Content-Type'        => 'text/plain; charset=utf-8',
+            'Content-Disposition' => "attachment; filename=\"{$plugin->name}.afprompt\"",
+        ]);
+    }
+
+    // ──────────────────────────────────────────────
     //  Export ZIP
     // ──────────────────────────────────────────────
 

@@ -52,7 +52,8 @@ Route::middleware('auth')->group(function () {
     Route::get('/plugins/{uuid}/edit',   [PluginController::class, 'edit'])->name('plugins.edit');
     Route::put('/plugins/{uuid}',        [PluginController::class, 'update'])->name('plugins.update');
     Route::delete('/plugins/{uuid}',     [PluginController::class, 'destroy'])->name('plugins.destroy');
-    Route::get('/plugins/{uuid}/export', [PluginController::class, 'export'])->name('plugins.export');
+    Route::get('/plugins/{uuid}/export',        [PluginController::class, 'export'])->name('plugins.export');
+    Route::get('/plugins/{uuid}/export-prompt', [PluginController::class, 'exportPrompt'])->name('plugins.export-prompt');
 
     Route::post('/plugins/{uuid}/chat',           [PluginController::class, 'chat'])->name('plugins.chat');
     Route::post('/plugins/{uuid}/generate-ai',   [PluginController::class, 'generateAi'])->name('plugins.generate-ai');
