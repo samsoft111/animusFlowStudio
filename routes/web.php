@@ -46,6 +46,12 @@ Route::middleware('auth')->group(function () {
     Route::post('/themes/{uuid}/upload-asset',  [ThemeController::class, 'uploadAsset'])->name('themes.upload-asset');
     Route::delete('/themes/{uuid}/asset',       [ThemeController::class, 'deleteAsset'])->name('themes.delete-asset');
 
+    // Versionamento
+    Route::get('/themes/{uuid}/versions',                          [ThemeController::class, 'listVersions'])->name('themes.versions.list');
+    Route::post('/themes/{uuid}/versions',                         [ThemeController::class, 'createVersion'])->name('themes.versions.create');
+    Route::post('/themes/{uuid}/versions/{versionUuid}/restore',   [ThemeController::class, 'restoreVersion'])->name('themes.versions.restore');
+    Route::delete('/themes/{uuid}/versions/{versionUuid}',         [ThemeController::class, 'deleteVersion'])->name('themes.versions.delete');
+
     /* ── Plugins ── */
     Route::get('/plugins',               [PluginController::class, 'index'])->name('plugins.index');
     Route::get('/plugins/create',        [PluginController::class, 'create'])->name('plugins.create');

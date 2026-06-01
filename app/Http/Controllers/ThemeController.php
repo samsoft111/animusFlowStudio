@@ -6,6 +6,7 @@ namespace App\Http\Controllers;
 
 use App\Models\StudioSetting;
 use App\Models\StudioTheme;
+use App\Models\StudioThemeVersion;
 use App\Services\AIEngine;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -253,6 +254,99 @@ class ThemeController extends Controller
     }
 
     // ──────────────────────────────────────────────
+    //  Versionamento
+    // ──────────────────────────────────────────────
+
+    /** Lista todas as versões de um tema */
+    public function listVersions(string $uuid): JsonResponse
+    {
+        $theme    = StudioTheme::where('uuid', $uuid)->firstOrFail();
+        $versions = $theme->versions()
+            ->select(['id', 'uuid', 'version', 'label', 'changelog', 'snapshot_type', 'created_at'])
+            ->get();
+
+        return response()->json(['versions' => $versions]);
+    }
+
+    /** Cria um snapshot manual da versão actual */
+    public function createVersion(Request $request, string $uuid): JsonResponse
+    {
+        $theme = StudioTheme::where('uuid', $uuid)->firstOrFail();
+
+        $data = $request->validate([
+            'changelog' => 'nullable|string|max:1000',
+        ]);
+
+        $version = StudioThemeVersion::snapshot(
+            $theme,
+            $data['changelog'] ?? '',
+            'manual'
+        );
+
+        return response()->json([
+            'success' => true,
+            'version' => [
+                'uuid'          => $version->uuid,
+                'version'       => $version->version,
+                'label'         => $version->label,
+                'changelog'     => $version->changelog,
+                'snapshot_type' => $version->snapshot_type,
+                'created_at'    => $version->created_at,
+            ],
+        ]);
+    }
+
+    /** Restaura o tema para o estado de uma versão anterior */
+    public function restoreVersion(Request $request, string $uuid, string $versionUuid): JsonResponse
+    {
+        $theme   = StudioTheme::where('uuid', $uuid)->firstOrFail();
+        $version = StudioThemeVersion::where('uuid', $versionUuid)
+            ->where('studio_theme_id', $theme->id)
+            ->firstOrFail();
+
+        // Guardar snapshot automático do estado actual antes de restaurar
+        StudioThemeVersion::snapshot($theme, 'Antes de restaurar v' . $version->version, 'auto');
+
+        // Restaurar campos
+        $theme->update([
+            'version'       => $version->version,
+            'label'         => $version->label,
+            'description'   => $version->description,
+            'colors'        => $version->colors,
+            'fonts'         => $version->fonts,
+            'sections'      => $version->sections,
+            'layout_config' => $version->layout_config,
+            'capabilities'  => $version->capabilities,
+            'assets'        => $version->assets,
+            'components'    => $version->components,
+            'variants'      => $version->variants,
+            'custom_css'    => $version->custom_css,
+            'custom_js'     => $version->custom_js,
+        ]);
+
+        $theme->refresh();
+
+        return response()->json([
+            'success' => true,
+            'message' => "Tema restaurado para v{$version->version}",
+            'theme'   => $theme->toArray(),
+        ]);
+    }
+
+    /** Elimina uma versão específica */
+    public function deleteVersion(string $uuid, string $versionUuid): JsonResponse
+    {
+        $theme   = StudioTheme::where('uuid', $uuid)->firstOrFail();
+        $version = StudioThemeVersion::where('uuid', $versionUuid)
+            ->where('studio_theme_id', $theme->id)
+            ->firstOrFail();
+
+        $version->delete();
+
+        return response()->json(['success' => true]);
+    }
+
+    // ──────────────────────────────────────────────
     //  Multimodal Chat
     // ──────────────────────────────────────────────
 
@@ -451,6 +545,9 @@ class ThemeController extends Controller
                     'status'              => 'published',
                     'animus_package_uuid' => $packageUuid,
                 ]);
+
+                // Snapshot automático ao publicar
+                StudioThemeVersion::snapshot($theme, 'Publicado no Marketplace', 'publish');
 
                 return response()->json(['success' => true, 'package_uuid' => $packageUuid]);
             }

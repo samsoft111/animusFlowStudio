@@ -1562,6 +1562,99 @@
 
       </div>
 
+      <!-- ══════════════════════════════════════════════════ -->
+      <!-- TAB: VERSÕES                                      -->
+      <!-- ══════════════════════════════════════════════════ -->
+      <div v-show="activeTab === 'versions'" class="max-w-3xl space-y-5">
+
+        <!-- Header + criar versão -->
+        <div class="bg-card border border-border rounded-2xl p-5">
+          <div class="flex items-center justify-between mb-4">
+            <div class="flex items-center gap-2">
+              <HistoryIcon class="w-4 h-4 text-muted-foreground" />
+              <h2 class="font-semibold text-foreground text-sm">Histórico de Versões</h2>
+              <span class="px-2 py-0.5 rounded-full bg-muted text-muted-foreground text-[10px] font-semibold">
+                {{ themeVersions.length }} {{ themeVersions.length === 1 ? 'versão' : 'versões' }}
+              </span>
+            </div>
+            <button @click="showCreateVersionModal = true"
+              class="px-3 py-1.5 bg-primary text-primary-foreground rounded-lg text-xs font-semibold hover:opacity-90 flex items-center gap-1.5">
+              <PlusCircleIcon class="w-3.5 h-3.5" /> Guardar versão
+            </button>
+          </div>
+
+          <!-- Versão actual -->
+          <div class="flex items-center gap-3 p-3 bg-primary/5 border border-primary/20 rounded-xl mb-4">
+            <div class="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+              <TagIcon class="w-4 h-4 text-primary" />
+            </div>
+            <div class="flex-1 min-w-0">
+              <p class="text-xs font-semibold text-foreground">v{{ form.version || '1.0.0' }} — <span class="text-primary">Versão actual</span></p>
+              <p class="text-[10px] text-muted-foreground truncate">{{ form.label }}</p>
+            </div>
+            <span class="text-[10px] px-2 py-0.5 rounded-full bg-primary/10 text-primary font-semibold">Actual</span>
+          </div>
+
+          <!-- Lista de versões -->
+          <div v-if="loadingVersions" class="flex items-center justify-center py-10">
+            <div class="w-5 h-5 border-2 border-primary/30 border-t-primary rounded-full animate-spin"></div>
+          </div>
+
+          <div v-else-if="themeVersions.length === 0" class="flex flex-col items-center justify-center py-10 text-center">
+            <HistoryIcon class="w-8 h-8 text-muted-foreground opacity-30 mb-2" />
+            <p class="text-sm text-muted-foreground">Ainda não há versões guardadas.</p>
+            <p class="text-xs text-muted-foreground mt-1">Clica em "Guardar versão" para criar um snapshot do estado actual.</p>
+          </div>
+
+          <div v-else class="space-y-2">
+            <div v-for="ver in themeVersions" :key="ver.uuid"
+              class="flex items-start gap-3 p-3 bg-muted/40 border border-border rounded-xl hover:border-border/80 transition-colors group">
+
+              <!-- Badge tipo -->
+              <div class="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 mt-0.5"
+                :class="ver.snapshot_type === 'publish' ? 'bg-success/10' : ver.snapshot_type === 'auto' ? 'bg-warning/10' : 'bg-muted'">
+                <span class="text-sm">
+                  {{ ver.snapshot_type === 'publish' ? '🚀' : ver.snapshot_type === 'auto' ? '⚡' : '📌' }}
+                </span>
+              </div>
+
+              <div class="flex-1 min-w-0">
+                <div class="flex items-center gap-2 flex-wrap">
+                  <span class="text-xs font-bold text-foreground">v{{ ver.version }}</span>
+                  <span class="text-[10px] px-1.5 py-0.5 rounded-full font-semibold"
+                    :class="ver.snapshot_type === 'publish' ? 'bg-success/15 text-success' : ver.snapshot_type === 'auto' ? 'bg-warning/15 text-warning' : 'bg-muted text-muted-foreground'">
+                    {{ ver.snapshot_type === 'publish' ? 'Publicação' : ver.snapshot_type === 'auto' ? 'Automático' : 'Manual' }}
+                  </span>
+                </div>
+                <p v-if="ver.changelog" class="text-[11px] text-muted-foreground mt-0.5 line-clamp-2">{{ ver.changelog }}</p>
+                <p class="text-[10px] text-muted-foreground/60 mt-1">{{ formatVersionDate(ver.created_at) }}</p>
+              </div>
+
+              <!-- Acções -->
+              <div class="flex gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+                <button @click="restoreVersion(ver)"
+                  :disabled="restoringVersion === ver.uuid"
+                  class="px-2 py-1.5 bg-primary/10 text-primary rounded-lg text-[10px] font-semibold hover:bg-primary/20 transition-colors flex items-center gap-1 disabled:opacity-50">
+                  <RotateCcwIcon class="w-3 h-3" />
+                  {{ restoringVersion === ver.uuid ? '…' : 'Restaurar' }}
+                </button>
+                <button @click="deleteVersion(ver)"
+                  class="px-2 py-1.5 bg-destructive/10 text-destructive rounded-lg text-[10px] font-semibold hover:bg-destructive/20 transition-colors">
+                  <Trash2Icon class="w-3 h-3" />
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Info auto-snapshot -->
+        <div class="flex items-start gap-2 px-4 py-3 bg-muted/50 border border-border rounded-xl text-xs text-muted-foreground">
+          <span class="mt-0.5">ℹ️</span>
+          <p>As versões são snapshots completos do tema. Um snapshot <strong>automático ⚡</strong> é criado antes de cada restauro. Um snapshot de <strong>Publicação 🚀</strong> é criado automaticamente ao publicar no Marketplace. Os snapshots <strong>Manuais 📌</strong> são criados por ti.</p>
+        </div>
+
+      </div>
+
     </div>
 
     <!-- Add section modal -->
@@ -1684,11 +1777,47 @@
     </div>
   </transition>
 
+  <!-- ── Modal: Guardar Versão ────────────────────────────── -->
+  <Teleport to="body">
+    <Transition name="modal">
+      <div v-if="showCreateVersionModal" class="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" @click="showCreateVersionModal = false" />
+        <div class="relative w-full max-w-md bg-card border border-border rounded-2xl shadow-2xl p-6 space-y-4">
+          <div class="flex items-center gap-2 mb-1">
+            <HistoryIcon class="w-5 h-5 text-primary" />
+            <h3 class="font-bold text-foreground">Guardar versão</h3>
+          </div>
+          <p class="text-xs text-muted-foreground">Vai ser criado um snapshot da versão <strong>v{{ form.version || '1.0.0' }}</strong> do tema. Podes adicionar uma nota do que mudou.</p>
+
+          <div>
+            <label class="field-label">Nota da versão <span class="text-muted-foreground font-normal">(opcional)</span></label>
+            <textarea v-model="newVersionChangelog" rows="3"
+              placeholder="Ex: Ajustei as cores primárias e adicionei nova secção de testemunhos…"
+              class="field-input resize-none text-sm" />
+          </div>
+
+          <div class="flex gap-2 justify-end pt-1">
+            <button @click="showCreateVersionModal = false"
+              class="px-4 py-2 bg-muted text-foreground rounded-xl text-sm font-semibold hover:bg-border transition-colors">
+              Cancelar
+            </button>
+            <button @click="saveVersion" :disabled="savingVersion"
+              class="px-5 py-2 bg-primary text-primary-foreground rounded-xl text-sm font-semibold hover:opacity-90 disabled:opacity-50 flex items-center gap-2">
+              <span v-if="savingVersion" class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin inline-block"></span>
+              <HistoryIcon v-else class="w-4 h-4" />
+              {{ savingVersion ? 'A guardar…' : 'Guardar versão' }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </Transition>
+  </Teleport>
+
   </AppLayout>
 </template>
 
 <script setup>
-import { ref, reactive, computed, nextTick, onMounted, onUnmounted } from 'vue';
+import { ref, reactive, computed, watch, nextTick, onMounted, onUnmounted } from 'vue';
 import { router } from '@inertiajs/vue3';
 import { useI18n } from 'vue-i18n';
 import AppLayout from '@/Layouts/AppLayout.vue';
@@ -1697,6 +1826,7 @@ import {
   EyeIcon, DownloadIcon, UploadIcon, SparklesIcon,
   CheckCircleIcon, XCircleIcon, PlusIcon, CodeIcon,
   RefreshCwIcon, ExternalLinkIcon, PaletteIcon, SearchIcon,
+  HistoryIcon, RotateCcwIcon, Trash2Icon, TagIcon, PlusCircleIcon,
 } from 'lucide-vue-next';
 
 const { t } = useI18n();
@@ -1718,6 +1848,7 @@ const tabs = [
   { id: 'demo',         icon: '🎭', label: 'Demo Data'   },
   { id: 'preview',      icon: '👁️',  label: 'Preview'     },
   { id: 'chat',         icon: '💬', label: 'Chat IA'     },
+  { id: 'versions',     icon: '🕐', label: 'Versões'     },
 ];
 
 // ── Workflow stepper ──────────────────────────────────────────────
@@ -3214,6 +3345,101 @@ async function copyIcon(name, type) {
     }
   }
 }
+
+// ── Versionamento ────────────────────────────────────────────────
+const themeVersions         = ref([]);
+const loadingVersions       = ref(false);
+const showCreateVersionModal = ref(false);
+const newVersionChangelog   = ref('');
+const savingVersion         = ref(false);
+const restoringVersion      = ref(null);
+
+async function loadVersions() {
+  loadingVersions.value = true;
+  try {
+    const res = await axios.get(`/themes/${props.theme.uuid}/versions`);
+    themeVersions.value = res.data.versions ?? [];
+  } catch {
+    themeVersions.value = [];
+  } finally {
+    loadingVersions.value = false;
+  }
+}
+
+async function saveVersion() {
+  savingVersion.value = true;
+  try {
+    const res = await axios.post(`/themes/${props.theme.uuid}/versions`, {
+      changelog: newVersionChangelog.value,
+    });
+    if (res.data.success) {
+      themeVersions.value.unshift(res.data.version);
+      showCreateVersionModal.value = false;
+      newVersionChangelog.value = '';
+      feedback.success = `Versão v${res.data.version.version} guardada com sucesso.`;
+    }
+  } catch (e) {
+    feedback.error = e.response?.data?.error ?? 'Erro ao guardar versão.';
+  } finally {
+    savingVersion.value = false;
+  }
+}
+
+async function restoreVersion(ver) {
+  if (!confirm(`Restaurar para v${ver.version}?\n\nO estado actual será guardado automaticamente antes do restauro.`)) return;
+  restoringVersion.value = ver.uuid;
+  try {
+    const res = await axios.post(`/themes/${props.theme.uuid}/versions/${ver.uuid}/restore`);
+    if (res.data.success) {
+      // Actualizar o form com os dados restaurados
+      const t = res.data.theme;
+      Object.assign(form, {
+        label:         t.label         ?? form.label,
+        description:   t.description   ?? form.description,
+        version:       t.version       ?? form.version,
+        colors:        t.colors        ?? form.colors,
+        fonts:         t.fonts         ?? form.fonts,
+        sections:      t.sections      ?? form.sections,
+        layout_config: t.layout_config ?? form.layout_config,
+        capabilities:  t.capabilities  ?? form.capabilities,
+        assets:        t.assets        ?? form.assets,
+        components:    t.components    ?? form.components,
+        variants:      t.variants      ?? form.variants,
+        custom_css:    t.custom_css    ?? form.custom_css,
+        custom_js:     t.custom_js     ?? form.custom_js,
+      });
+      await loadVersions();
+      feedback.success = res.data.message;
+    }
+  } catch (e) {
+    feedback.error = e.response?.data?.error ?? 'Erro ao restaurar versão.';
+  } finally {
+    restoringVersion.value = null;
+  }
+}
+
+async function deleteVersion(ver) {
+  if (!confirm(`Eliminar snapshot v${ver.version} de ${formatVersionDate(ver.created_at)}?`)) return;
+  try {
+    await axios.delete(`/themes/${props.theme.uuid}/versions/${ver.uuid}`);
+    themeVersions.value = themeVersions.value.filter(v => v.uuid !== ver.uuid);
+  } catch (e) {
+    feedback.error = e.response?.data?.error ?? 'Erro ao eliminar versão.';
+  }
+}
+
+function formatVersionDate(dateStr) {
+  if (!dateStr) return '';
+  const d = new Date(dateStr);
+  return d.toLocaleDateString('pt-PT', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+}
+
+// Carrega versões ao activar o tab
+watch(activeTab, (tab) => {
+  if (tab === 'versions' && themeVersions.value.length === 0 && !loadingVersions.value) {
+    loadVersions();
+  }
+});
 
 // ── Preview ───────────────────────────────────────────────────────
 const previewKey      = ref(0);

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Str;
 
@@ -50,6 +51,11 @@ class StudioTheme extends Model
     {
         parent::boot();
         static::creating(fn ($m) => $m->uuid ??= (string) Str::uuid());
+    }
+
+    public function versions(): HasMany
+    {
+        return $this->hasMany(StudioThemeVersion::class, 'studio_theme_id')->latest();
     }
 
     // ── Defaults merged automatically ──────────────────────────────────
