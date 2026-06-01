@@ -98,7 +98,7 @@
             <div v-if="inspireStep === 'select'" class="flex-1 overflow-y-auto p-6">
               <!-- Category grid -->
               <p class="text-sm font-semibold text-foreground mb-3">Categoria do site</p>
-              <div class="grid grid-cols-3 sm:grid-cols-5 gap-2 mb-6">
+              <div class="grid grid-cols-4 sm:grid-cols-5 gap-2 mb-6 max-h-64 overflow-y-auto pr-1">
                 <button v-for="cat in categories" :key="cat.id"
                   @click="selectedCategory = cat.id"
                   :class="[
@@ -245,6 +245,16 @@ const categories = [
   { id: 'Fotografia',        emoji: '📸', label: 'Fotografia'    },
   { id: 'Gaming',            emoji: '🎮', label: 'Gaming'        },
   { id: 'Beleza',            emoji: '💄', label: 'Beleza/Moda'   },
+  { id: 'Tecnologia',        emoji: '💻', label: 'Tecnologia'    },
+  { id: 'Seguros',           emoji: '🛡️', label: 'Seguros'       },
+  { id: 'Jurídico',          emoji: '⚖️', label: 'Jurídico'      },
+  { id: 'Consultoria',       emoji: '📊', label: 'Consultoria'   },
+  { id: 'Construção',        emoji: '🏗️', label: 'Construção'    },
+  { id: 'Transporte',        emoji: '🚚', label: 'Transporte'    },
+  { id: 'Viagens',           emoji: '✈️', label: 'Viagens'       },
+  { id: 'ONG',               emoji: '🤝', label: 'ONG/Social'    },
+  { id: 'Moda',              emoji: '👗', label: 'Moda'          },
+  { id: 'Gastronomia',       emoji: '🍳', label: 'Gastronomia'   },
 ];
 
 const styles = [
