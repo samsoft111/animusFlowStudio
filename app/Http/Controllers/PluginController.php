@@ -63,15 +63,24 @@ class PluginController extends Controller
         $plugin = StudioPlugin::where('uuid', $uuid)->firstOrFail();
 
         $data = $request->validate([
-            'label'           => 'sometimes|string|max:200',
-            'description'     => 'nullable|string|max:1000',
-            'version'         => 'nullable|string|max:20',
-            'hooks'           => 'nullable|array',
-            'settings_schema' => 'nullable|array',
-            'plugin_php'      => 'nullable|string',
-            'widget_blade'    => 'nullable|string',
-            'widget_js'       => 'nullable|string',
-            'status'          => 'nullable|in:draft,ready,published',
+            'label'                  => 'sometimes|string|max:200',
+            'description'            => 'nullable|string|max:1000',
+            'version'                => 'nullable|string|max:20',
+            'author'                 => 'nullable|string|max:200',
+            'author_url'             => 'nullable|url|max:500',
+            'category'               => 'nullable|string|max:100',
+            'tags'                   => 'nullable|array',
+            'license'                => 'nullable|string|max:100',
+            'min_animusflow_version' => 'nullable|string|max:20',
+            'homepage_url'           => 'nullable|url|max:500',
+            'hooks'                  => 'nullable|array',
+            'settings_schema'        => 'nullable|array',
+            'plugin_php'             => 'nullable|string',
+            'widget_blade'           => 'nullable|string',
+            'widget_js'              => 'nullable|string',
+            'custom_css'             => 'nullable|string',
+            'readme'                 => 'nullable|string',
+            'status'                 => 'nullable|in:draft,ready,published',
         ]);
 
         $plugin->update($data);
@@ -122,6 +131,48 @@ class PluginController extends Controller
             'widget_js'       => $fresh->widget_js,
             'settings_schema' => $fresh->settings_schema,
         ]);
+    }
+
+    // ──────────────────────────────────────────────
+    //  Install directly in a local CMS instance
+    // ──────────────────────────────────────────────
+
+    public function installInCms(string $uuid): JsonResponse
+    {
+        $plugin = StudioPlugin::where('uuid', $uuid)->firstOrFail();
+
+        $cmsUrl    = rtrim((string) StudioSetting::get('cms_url', ''), '/');
+        $cmsKeyRaw = StudioSetting::get('cms_api_key', '');
+        try { $cmsKey = decrypt($cmsKeyRaw); } catch (\Throwable) { $cmsKey = $cmsKeyRaw; }
+
+        if (empty($cmsUrl) || empty($cmsKey)) {
+            return response()->json(['error' => 'CMS URL e API key não configurados em Definições.'], 422);
+        }
+
+        $zipPath = $this->buildPluginZip($plugin);
+
+        try {
+            $response = Http::withToken($cmsKey)
+                ->attach('package', file_get_contents($zipPath), "{$plugin->name}.zip")
+                ->post("{$cmsUrl}/api/v1/studio/install-plugin");
+
+            @unlink($zipPath);
+
+            if ($response->successful()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => $response->json('message') ?? 'Plugin instalado no CMS.',
+                ]);
+            }
+
+            return response()->json([
+                'error' => "CMS respondeu {$response->status()}: " . substr($response->body(), 0, 300),
+            ], 422);
+
+        } catch (\Throwable $e) {
+            @unlink($zipPath);
+            return response()->json(['error' => $e->getMessage()], 422);
+        }
     }
 
     // ──────────────────────────────────────────────
@@ -207,6 +258,13 @@ class PluginController extends Controller
             'label'       => $plugin->label,
             'description' => $plugin->description ?? '',
             'version'     => $plugin->version ?? '1.0.0',
+            'author'      => $plugin->author ?? StudioSetting::get('studio_author', ''),
+            'author_url'  => $plugin->author_url ?? StudioSetting::get('studio_author_url', ''),
+            'category'    => $plugin->category ?? '',
+            'tags'        => $plugin->tags ?? [],
+            'license'     => $plugin->license ?? 'MIT',
+            'requires'    => $plugin->min_animusflow_version ?? '1.0.0',
+            'homepage'    => $plugin->homepage_url ?? '',
             'hooks'       => $plugin->hooks ?? [],
             'settings'    => $plugin->settings_schema ?? [],
         ], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
@@ -231,6 +289,27 @@ class PluginController extends Controller
             File::ensureDirectoryExists("{$pluginDir}/assets");
             file_put_contents("{$pluginDir}/assets/widget.js", $plugin->widget_js);
         }
+
+        if (!empty($plugin->custom_css)) {
+            File::ensureDirectoryExists("{$pluginDir}/assets");
+            file_put_contents("{$pluginDir}/assets/plugin.css", $plugin->custom_css);
+        }
+
+        // README.md
+        $readmeContent = $plugin->readme;
+        if (empty($readmeContent)) {
+            $author    = $plugin->author    ?? StudioSetting::get('studio_author', '');
+            $authorUrl = $plugin->author_url ?? StudioSetting::get('studio_author_url', '');
+            $readmeContent = "# {$plugin->label}\n\n"
+                . ($plugin->description ? "{$plugin->description}\n\n" : '')
+                . "**Version:** {$plugin->version}\n"
+                . "**License:** {$plugin->license}\n"
+                . ($author ? "**Author:** {$author}" . ($authorUrl ? " <{$authorUrl}>" : '') . "\n" : '')
+                . "\n## Installation\n\nUpload this ZIP via AnimusFlow Admin → Extensions → Plugins → Upload ZIP.\n"
+                . "\n## Hooks\n\n"
+                . implode("\n", array_map(fn ($h) => "- `{$h}`", $plugin->hooks ?? [])) . "\n";
+        }
+        file_put_contents("{$pluginDir}/README.md", $readmeContent);
 
         // Build ZIP
         $zipPath = storage_path("app/{$plugin->name}.zip");

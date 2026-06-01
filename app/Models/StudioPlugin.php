@@ -16,13 +16,15 @@ class StudioPlugin extends Model
 
     protected $fillable = [
         'name', 'label', 'description', 'version',
-        'hooks', 'settings_schema', 'plugin_php', 'widget_blade', 'widget_js',
+        'author', 'author_url', 'category', 'tags', 'license', 'min_animusflow_version', 'homepage_url',
+        'hooks', 'settings_schema', 'plugin_php', 'widget_blade', 'widget_js', 'custom_css', 'readme',
         'status', 'is_published', 'animus_package_uuid',
     ];
 
     protected $casts = [
         'hooks'           => 'array',
         'settings_schema' => 'array',
+        'tags'            => 'array',
         'is_published'    => 'boolean',
     ];
 
