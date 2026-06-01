@@ -32,9 +32,19 @@ class PluginController extends Controller
         ]);
     }
 
-    public function create(): Response
+    public function create(): RedirectResponse
     {
-        return Inertia::render('Plugins/Edit', ['plugin' => null]);
+        $counter = StudioPlugin::withTrashed()->count() + 1;
+        $plugin  = StudioPlugin::create([
+            'name'   => 'novo-plugin-' . $counter,
+            'label'  => 'Novo Plugin ' . $counter,
+            'version' => '1.0.0',
+            'status' => 'draft',
+            'hooks'  => ['page.render'],
+        ]);
+
+        return redirect()->route('plugins.edit', $plugin->uuid)
+            ->with('success', 'Plugin criado — edita os detalhes abaixo.');
     }
 
     public function store(Request $request): RedirectResponse
@@ -130,6 +140,79 @@ class PluginController extends Controller
             'widget_blade'    => $fresh->widget_blade,
             'widget_js'       => $fresh->widget_js,
             'settings_schema' => $fresh->settings_schema,
+        ]);
+    }
+
+    // ──────────────────────────────────────────────
+    //  Multimodal Chat
+    // ──────────────────────────────────────────────
+
+    public function chat(Request $request, string $uuid): JsonResponse
+    {
+        $plugin = StudioPlugin::where('uuid', $uuid)->firstOrFail();
+
+        $request->validate([
+            'message'           => 'required|string|min:1|max:4000',
+            'history'           => 'nullable|array',
+            'history.*.role'    => 'required|in:user,assistant',
+            'history.*.content' => 'required|string',
+            'files'             => 'nullable|array|max:5',
+            'files.*'           => 'file|max:20480',
+        ]);
+
+        $history   = $request->input('history', []);
+        $history[] = ['role' => 'user', 'content' => $request->input('message')];
+
+        $attachments = [];
+        foreach ($request->file('files', []) as $file) {
+            $mime = $file->getMimeType() ?? '';
+            $name = $file->getClientOriginalName();
+            $size = $file->getSize();
+
+            if (in_array($mime, ['image/jpeg', 'image/png', 'image/gif', 'image/webp'])) {
+                $attachments[] = ['type' => 'image', 'mime' => $mime, 'data' => base64_encode(file_get_contents($file->getRealPath()))];
+            } elseif ($mime === 'application/pdf') {
+                $attachments[] = ['type' => 'document', 'data' => base64_encode(file_get_contents($file->getRealPath()))];
+            } elseif (str_starts_with($mime, 'audio/')) {
+                $attachments[] = ['type' => 'text_description', 'description' => "[Ficheiro de áudio: {$name}, {$mime}, " . round($size / 1024) . " KB. Usa para inspiração sonora/ambiente do widget.]"];
+            } elseif (str_starts_with($mime, 'video/')) {
+                $attachments[] = ['type' => 'text_description', 'description' => "[Vídeo: {$name}, " . round($size / 1024 / 1024, 1) . " MB. Usa para inspiração visual do plugin.]"];
+            } else {
+                $preview = '';
+                if ($size < 100000) {
+                    $content = @file_get_contents($file->getRealPath());
+                    if ($content !== false) $preview = substr($content, 0, 2000);
+                }
+                $attachments[] = ['type' => 'text_description', 'description' => "[Documento: {$name}" . ($preview ? "\n\nConteúdo:\n{$preview}" : '') . "]"];
+            }
+        }
+
+        $pluginData = $plugin->toArray();
+        unset($pluginData['plugin_php'], $pluginData['widget_blade'], $pluginData['widget_js']);
+        $pluginJson = json_encode($pluginData, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
+
+        try {
+            $result = AIEngine::chatPlugin($history, $pluginJson, $attachments);
+        } catch (\Throwable $e) {
+            return response()->json(['error' => $e->getMessage()], 422);
+        }
+
+        $applied = false;
+        if (!empty($result['updates'])) {
+            $allowed = ['label', 'description', 'version', 'status', 'hooks', 'plugin_php', 'widget_blade', 'widget_js', 'custom_css', 'settings_schema'];
+            $updates = array_intersect_key($result['updates'], array_flip($allowed));
+
+            if (!empty($updates)) {
+                $plugin->update($updates);
+                $applied = true;
+            }
+        }
+
+        return response()->json([
+            'reply'   => $result['reply'],
+            'updates' => $result['updates'] ?? null,
+            'applied' => $applied,
+            'plugin'  => $applied ? $plugin->fresh() : null,
         ]);
     }
 
@@ -311,16 +394,16 @@ class PluginController extends Controller
         }
         file_put_contents("{$pluginDir}/README.md", $readmeContent);
 
-        // Build ZIP
-        $zipPath = storage_path("app/{$plugin->name}.zip");
-        $zip     = new ZipArchive();
+        // Build ZIP — normalise paths to forward slashes (Windows fix)
+        $zipPath    = storage_path("app/{$plugin->name}.zip");
+        $zip        = new ZipArchive();
         $zip->open($zipPath, ZipArchive::CREATE | ZipArchive::OVERWRITE);
+        $tmpDirNorm = rtrim(str_replace('\\', '/', $tmpDir), '/') . '/';
         foreach (new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($tmpDir)) as $file) {
             if (!$file->isDir()) {
-                $zip->addFile(
-                    $file->getPathname(),
-                    str_replace($tmpDir . DIRECTORY_SEPARATOR, '', $file->getPathname())
-                );
+                $pathNorm  = str_replace('\\', '/', $file->getPathname());
+                $entryName = ltrim(str_replace($tmpDirNorm, '', $pathNorm), '/');
+                $zip->addFile($file->getPathname(), $entryName);
             }
         }
         $zip->close();

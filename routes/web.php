@@ -54,8 +54,9 @@ Route::middleware('auth')->group(function () {
     Route::delete('/plugins/{uuid}',     [PluginController::class, 'destroy'])->name('plugins.destroy');
     Route::get('/plugins/{uuid}/export', [PluginController::class, 'export'])->name('plugins.export');
 
-    Route::post('/plugins/{uuid}/generate-ai', [PluginController::class, 'generateAi'])->name('plugins.generate-ai');
-    Route::post('/plugins/{uuid}/publish',       [PluginController::class, 'publish'])->name('plugins.publish');
+    Route::post('/plugins/{uuid}/chat',           [PluginController::class, 'chat'])->name('plugins.chat');
+    Route::post('/plugins/{uuid}/generate-ai',   [PluginController::class, 'generateAi'])->name('plugins.generate-ai');
+    Route::post('/plugins/{uuid}/publish',        [PluginController::class, 'publish'])->name('plugins.publish');
     Route::post('/plugins/{uuid}/install-in-cms', [PluginController::class, 'installInCms'])->name('plugins.install-cms');
 
     /* ── Settings ── */

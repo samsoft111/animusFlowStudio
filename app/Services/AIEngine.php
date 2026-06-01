@@ -126,6 +126,85 @@ SYSTEM;
     }
 
     // ──────────────────────────────────────────────
+    //  Multimodal Chat (Plugin assistant)
+    // ──────────────────────────────────────────────
+
+    /**
+     * Multi-turn chat that can analyse images, PDFs and other attachments
+     * to help the user build a plugin.
+     *
+     * Same attachment descriptor format as chatTheme().
+     * Returns {reply:string, updates:array|null}
+     */
+    public static function chatPlugin(array $history, string $currentPluginJson, array $attachments = []): array
+    {
+        $system = <<<SYSTEM
+Você é um especialista em desenvolvimento de plugins para o AnimusFlow CMS.
+Ajuda o utilizador a criar e configurar plugins através de conversa natural em português (PT-PT).
+
+PLUGIN ACTUAL (JSON):
+{$currentPluginJson}
+
+CAMPOS DISPONÍVEIS PARA ACTUALIZAR:
+- label, description, version, status
+- hooks — array dos eventos activos: "page.render", "content.publish", "admin.sidebar"
+- plugin_php — código PHP completo da classe principal (incluir declare(strict_types=1))
+- widget_blade — template Blade injectado no front-end via hook page.render
+- widget_js — JavaScript do widget (carregado no front-end)
+- custom_css — CSS do plugin
+- settings_schema — array de campos configuráveis [{key, label, type, default, placeholder, hint}]
+
+ESTRUTURA DO PLUGIN AnimusFlow:
+- page.render:     onPageRender(\$page): string  — retorna HTML injectado antes de </body>
+- content.publish: onContentPublish(\$page): void — disparado ao publicar uma página
+- admin.sidebar:   onAdminSidebar(): array        — retorna ['label', 'icon', 'url']
+
+TYPES PARA settings_schema: text, textarea, color, select (com "options": {"val":"Label"}), toggle (com "toggle_label").
+
+INSTRUÇÕES:
+1. Responde SEMPRE em português (PT-PT), de forma clara e concisa.
+2. Se o utilizador pedir alterações ao plugin, inclui no final da resposta um bloco JSON:
+   ```json_updates
+   { apenas os campos que mudam }
+   ```
+3. Se analisares imagens ou documentos, usa-os para inspiração no design do widget.
+4. Se não há alterações, não incluis o bloco json_updates.
+5. Sê proactivo: sugere melhorias e boas práticas de desenvolvimento.
+6. Quando gerares PHP, inclui sempre a classe COMPLETA com declare(strict_types=1).
+SYSTEM;
+
+        $provider = StudioSetting::get('ai_provider', 'claude');
+        $model    = StudioSetting::get('ai_model', '');
+        $rawKey   = StudioSetting::get('ai_api_key', '');
+
+        $apiKey = '';
+        if (!empty($rawKey)) {
+            try { $apiKey = decrypt($rawKey); } catch (\Throwable) { $apiKey = $rawKey; }
+        }
+        if (empty($apiKey)) {
+            throw new RuntimeException('Chave AI não configurada. Vai a Definições → Provedor IA.');
+        }
+
+        $raw = match ($provider) {
+            'openai' => self::chatOpenAI($apiKey, $model ?: 'gpt-4o', $system, $history, $attachments),
+            default  => self::chatClaude($apiKey, $model ?: 'claude-sonnet-4-5', $system, $history, $attachments),
+        };
+
+        $updates = null;
+        if (preg_match('/```json_updates\s*([\s\S]*?)```/m', $raw, $m)) {
+            $parsed = json_decode(trim($m[1]), true);
+            if (is_array($parsed)) {
+                $updates = $parsed;
+            }
+        }
+
+        $reply = preg_replace('/```json_updates\s*[\s\S]*?```/m', '', $raw);
+        $reply = trim($reply ?? $raw);
+
+        return ['reply' => $reply, 'updates' => $updates];
+    }
+
+    // ──────────────────────────────────────────────
     //  Internal helpers
     // ──────────────────────────────────────────────
     //  Multimodal Chat (Theme assistant)
