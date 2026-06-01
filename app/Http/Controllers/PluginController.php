@@ -399,7 +399,7 @@ class PluginController extends Controller
 
 Para instalar este plugin no AnimusFlow:
   1. Vai a AnimusFlow Admin → Extensões → Plugins → Importar Prompt
-  2. Cola este bloco completo (incluindo as marcações [AF:PLUGIN:BEGIN] e [AF:PLUGIN:END])
+  2. Cola este bloco completo (incluindo as marcações de início e fim do bloco abaixo)
   3. Clica em "Instalar Plugin"
 
 O AnimusFlow irá:

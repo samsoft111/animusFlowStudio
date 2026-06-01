@@ -768,7 +768,7 @@ function injectPhpScaffold() {
   const cls = props.plugin.name.replace(/[^a-zA-Z0-9]/g, '');
   const hooks = form.hooks ?? [];
   const methods = hooks.map(h => {
-    if (h === 'page.render')     return `\n    public function onPageRender($page): string\n    {\n        return view('${props.plugin.name}::widget')->render();\n    }`;
+    if (h === 'page.render')     return `\n    public function onPageRender($page): string\n    {\n        $html = file_get_contents(__DIR__ . '/views/widget.blade.php');\n        return $html !== false ? $html : '';\n    }`;
     if (h === 'content.publish') return `\n    public function onContentPublish($page): void\n    {\n        // ...\n    }`;
     if (h === 'admin.sidebar')   return `\n    public function onAdminSidebar(): array\n    {\n        return ['label' => '${form.label}', 'icon' => '🔌', 'url' => '/admin/plugins'];\n    }`;
     return '';
