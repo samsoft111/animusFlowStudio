@@ -215,6 +215,48 @@ class ThemeController extends Controller
     }
 
     // ──────────────────────────────────────────────
+    //  Install directly in a local CMS instance
+    // ──────────────────────────────────────────────
+
+    public function installInCms(string $uuid): JsonResponse
+    {
+        $theme = StudioTheme::where('uuid', $uuid)->firstOrFail();
+
+        $cmsUrl        = rtrim((string) StudioSetting::get('cms_url', ''), '/');
+        $cmsKeyRaw     = StudioSetting::get('cms_api_key', '');
+        try { $cmsKey = decrypt($cmsKeyRaw); } catch (\Throwable) { $cmsKey = $cmsKeyRaw; }
+
+        if (empty($cmsUrl) || empty($cmsKey)) {
+            return response()->json(['error' => 'CMS URL e API key não configurados em Definições.'], 422);
+        }
+
+        $zipPath = $this->buildThemeZip($theme);
+
+        try {
+            $response = Http::withToken($cmsKey)
+                ->attach('package', file_get_contents($zipPath), "{$theme->name}.zip")
+                ->post("{$cmsUrl}/api/v1/studio/install-theme");
+
+            @unlink($zipPath);
+
+            if ($response->successful()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => $response->json('message') ?? 'Tema instalado no CMS.',
+                ]);
+            }
+
+            return response()->json([
+                'error' => "CMS respondeu {$response->status()}: " . substr($response->body(), 0, 300),
+            ], 422);
+
+        } catch (\Throwable $e) {
+            @unlink($zipPath);
+            return response()->json(['error' => $e->getMessage()], 422);
+        }
+    }
+
+    // ──────────────────────────────────────────────
     //  Publish to Marketplace (Phase 2)
     // ──────────────────────────────────────────────
 

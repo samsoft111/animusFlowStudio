@@ -13,7 +13,7 @@ use Inertia\Response;
 class SettingsController extends Controller
 {
     /** Keys that are stored encrypted and never returned raw to the frontend. */
-    private const ENCRYPTED_KEYS = ['ai_api_key', 'animusflow_api_key'];
+    private const ENCRYPTED_KEYS = ['ai_api_key', 'animusflow_api_key', 'cms_api_key'];
 
     public function index(): Response
     {
@@ -49,6 +49,10 @@ class SettingsController extends Controller
                 'plugin_default_version' => $s('plugin_default_version', '1.0.0'),
                 'plugin_default_hooks'   => $s('plugin_default_hooks', 'page.render'),
                 'plugin_namespace'       => $s('plugin_namespace', ''),
+
+                // ── CMS Integration ──
+                'cms_url'         => $s('cms_url', 'http://127.0.0.1:8000'),
+                'has_cms_api_key' => !empty($s('cms_api_key')),
 
                 // ── Marketplace ──
                 'animus_api_url'              => $s('animus_api_url', 'https://animus.kwantoe.com'),
@@ -97,6 +101,10 @@ class SettingsController extends Controller
             'plugin_default_hooks'   => 'nullable|string|max:200',
             'plugin_namespace'       => 'nullable|string|max:150',
 
+            // CMS Integration
+            'cms_url'     => 'nullable|url|max:300',
+            'cms_api_key' => 'nullable|string|max:500',
+
             // Marketplace
             'animus_api_url'             => 'nullable|url|max:255',
             'animusflow_api_key'         => 'nullable|string|max:500',
@@ -131,6 +139,7 @@ class SettingsController extends Controller
             'plugin_default_version' => 'plugin',
             'plugin_default_hooks'   => 'plugin',
             'plugin_namespace'       => 'plugin',
+            'cms_url' => 'cms',
             'animus_api_url'             => 'marketplace',
             'marketplace_publisher_name' => 'marketplace',
             'marketplace_publisher_url'  => 'marketplace',
@@ -151,6 +160,12 @@ class SettingsController extends Controller
             if ($key === 'animusflow_api_key') {
                 if (!empty($value)) {
                     StudioSetting::set('animusflow_api_key', encrypt($value), 'marketplace');
+                }
+                continue;
+            }
+            if ($key === 'cms_api_key') {
+                if (!empty($value)) {
+                    StudioSetting::set('cms_api_key', encrypt($value), 'cms');
                 }
                 continue;
             }

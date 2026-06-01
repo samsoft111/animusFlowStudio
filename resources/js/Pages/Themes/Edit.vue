@@ -13,6 +13,12 @@
         class="px-3 py-2 bg-violet-500/10 text-violet-600 dark:text-violet-400 border border-violet-500/20 rounded-lg text-sm font-semibold hover:bg-violet-500/20 transition-colors flex items-center gap-1.5">
         <SparklesIcon class="w-3.5 h-3.5" /> Exportar Prompt
       </button>
+      <button @click="installInCms" :disabled="installingCms"
+        class="px-3 py-2 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 rounded-lg text-sm font-semibold hover:bg-emerald-500/20 transition-colors flex items-center gap-1.5 disabled:opacity-50">
+        <template v-if="installingCms"><span class="w-3.5 h-3.5 border-2 border-emerald-500/30 border-t-emerald-500 rounded-full animate-spin inline-block"></span></template>
+        <template v-else>⚡</template>
+        {{ installingCms ? 'A instalar…' : 'Instalar no CMS' }}
+      </button>
       <button @click="publishTheme" :disabled="publishing"
         class="px-3 py-2 rounded-lg text-sm font-semibold transition-colors flex items-center gap-1.5 disabled:opacity-50"
         :class="theme.is_published ? 'bg-success/10 text-success hover:bg-success/20' : 'bg-primary text-primary-foreground hover:opacity-90'">
@@ -3026,6 +3032,20 @@ async function copyIcon(name, type) {
 const previewKey = ref(0);
 
 // ── Publish ───────────────────────────────────────────────────────
+const installingCms = ref(false);
+async function installInCms() {
+  if (!confirm('Instalar este tema directamente no CMS local? Certifica-te de que a URL e API Key estão configuradas em Definições.')) return;
+  installingCms.value = true; feedback.error = ''; feedback.success = '';
+  try {
+    const csrf = document.querySelector('meta[name="csrf-token"]')?.content ?? '';
+    const res  = await fetch(`/themes/${props.theme.uuid}/install-in-cms`, { method: 'POST', headers: { 'X-CSRF-TOKEN': csrf } });
+    const data = await res.json();
+    if (!res.ok || data.error) { feedback.error = data.error ?? 'Instalação falhou.'; }
+    else { feedback.success = data.message ?? 'Tema instalado no CMS com sucesso!'; }
+  } catch (e) { feedback.error = e.message; }
+  finally { installingCms.value = false; }
+}
+
 const publishing = ref(false);
 async function publishTheme() {
   if (!confirm(t('themes.publish_confirm'))) return;
