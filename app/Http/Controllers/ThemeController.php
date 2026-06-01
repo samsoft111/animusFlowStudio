@@ -701,12 +701,13 @@ PROMPT;
         $zipPath = storage_path("app/{$theme->name}.zip");
         $zip     = new ZipArchive();
         $zip->open($zipPath, ZipArchive::CREATE | ZipArchive::OVERWRITE);
+        // Normalise prefix to forward slashes for cross-platform comparison
+        $tmpDirNorm = rtrim(str_replace('\\', '/', $tmpDir), '/') . '/';
         foreach (new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($tmpDir)) as $file) {
             if (!$file->isDir()) {
-                $zip->addFile(
-                    $file->getPathname(),
-                    str_replace($tmpDir . DIRECTORY_SEPARATOR, '', $file->getPathname())
-                );
+                $pathNorm  = str_replace('\\', '/', $file->getPathname());
+                $entryName = ltrim(str_replace($tmpDirNorm, '', $pathNorm), '/');
+                $zip->addFile($file->getPathname(), $entryName);
             }
         }
         $zip->close();

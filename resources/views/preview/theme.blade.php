@@ -223,6 +223,138 @@
 
         /* AI override placeholder */
         .ai-section { background: var(--color-background); }
+
+        /* ── Editor overlay styles ── */
+        .af-edit-highlight {
+            outline: 2px solid var(--color-primary) !important;
+            outline-offset: 2px !important;
+            cursor: crosshair !important;
+            transition: outline 0.1s;
+        }
+        .af-edit-hover {
+            outline: 2px dashed var(--color-primary) !important;
+            outline-offset: 2px !important;
+            cursor: crosshair !important;
+        }
+        .af-tooltip {
+            position: fixed;
+            background: #1e1e2e;
+            color: #cdd6f4;
+            font: 11px/1.4 monospace;
+            padding: 4px 8px;
+            border-radius: 6px;
+            pointer-events: none;
+            z-index: 99998;
+            max-width: 220px;
+            border: 1px solid #313244;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        #af-inspector {
+            position: fixed;
+            top: 40px; right: 0;
+            width: 280px;
+            height: calc(100vh - 40px);
+            background: #1e1e2e;
+            color: #cdd6f4;
+            font-family: system-ui, sans-serif;
+            font-size: 12px;
+            z-index: 99999;
+            display: flex;
+            flex-direction: column;
+            border-left: 1px solid #313244;
+            transform: translateX(100%);
+            transition: transform 0.25s ease;
+            box-shadow: -4px 0 20px rgba(0,0,0,0.4);
+        }
+        #af-inspector.af-open { transform: translateX(0); }
+        #af-inspector-header {
+            padding: 12px 14px;
+            background: #181825;
+            border-bottom: 1px solid #313244;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-shrink: 0;
+        }
+        #af-inspector-header h3 {
+            flex: 1;
+            font-size: 12px;
+            font-weight: 700;
+            color: #cba6f7;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+        }
+        #af-close-btn {
+            width: 22px; height: 22px;
+            background: #313244;
+            border: none; border-radius: 6px;
+            color: #cdd6f4; cursor: pointer;
+            font-size: 12px; display: flex;
+            align-items: center; justify-content: center;
+        }
+        #af-close-btn:hover { background: #45475a; }
+        #af-inspector-body { flex: 1; overflow-y: auto; padding: 12px; display: flex; flex-direction: column; gap: 12px; }
+        .af-section-title {
+            font-size: 9px; font-weight: 700; letter-spacing: 0.1em;
+            text-transform: uppercase; color: #6c7086; margin-bottom: 6px;
+        }
+        .af-token-row {
+            display: flex; align-items: center; gap: 8px;
+            padding: 6px 8px; background: #181825;
+            border-radius: 8px; border: 1px solid #313244;
+            transition: border-color 0.15s;
+        }
+        .af-token-row:hover { border-color: #cba6f7; }
+        .af-token-row.af-active { border-color: #cba6f7; background: #1e1e2e; }
+        .af-color-swatch {
+            width: 22px; height: 22px; border-radius: 6px;
+            border: 1px solid rgba(255,255,255,0.1);
+            flex-shrink: 0; cursor: pointer;
+            position: relative; overflow: hidden;
+        }
+        .af-color-swatch input[type=color] {
+            position: absolute; inset: 0;
+            opacity: 0; width: 100%; height: 100%; cursor: pointer;
+        }
+        .af-token-info { flex: 1; min-width: 0; }
+        .af-token-name { font-size: 10px; color: #89b4fa; font-family: monospace; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .af-token-value { font-size: 10px; color: #a6e3a1; font-family: monospace; }
+        .af-token-input {
+            width: 64px; background: #313244; border: 1px solid #45475a;
+            border-radius: 4px; color: #cdd6f4; font-size: 10px;
+            font-family: monospace; padding: 2px 4px; text-align: center;
+        }
+        .af-token-input:focus { outline: 1px solid #cba6f7; }
+        .af-element-badge {
+            display: inline-flex; align-items: center; gap: 4px;
+            background: #313244; border-radius: 6px;
+            padding: 4px 8px; font-family: monospace; font-size: 11px; color: #f38ba8;
+        }
+        #af-save-btn {
+            margin: 12px; padding: 10px;
+            background: #cba6f7; color: #1e1e2e;
+            border: none; border-radius: 10px;
+            font-weight: 700; font-size: 12px; cursor: pointer;
+            flex-shrink: 0; transition: opacity 0.2s;
+        }
+        #af-save-btn:hover { opacity: 0.85; }
+        #af-mode-toggle {
+            position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%);
+            background: #1e1e2e; border: 1px solid #cba6f7;
+            color: #cba6f7; padding: 8px 18px; border-radius: 20px;
+            font-size: 12px; font-weight: 700; cursor: pointer;
+            z-index: 99997; display: none; align-items: center; gap: 6px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+            font-family: system-ui, sans-serif;
+        }
+        body.af-edit-active #af-mode-toggle { background: #cba6f7; color: #1e1e2e; }
+        .af-font-input {
+            flex: 1; background: #313244; border: 1px solid #45475a;
+            border-radius: 4px; color: #cdd6f4; font-size: 10px; padding: 3px 6px;
+        }
+        .af-font-input:focus { outline: 1px solid #cba6f7; }
     </style>
 </head>
 <body>
@@ -335,5 +467,340 @@
         @endforeach
 
     </div>
+
+    <!-- ── CSS Token Editor Overlay ── -->
+    <button id="af-mode-toggle">✦ Modo Edição</button>
+
+    <div id="af-inspector">
+        <div id="af-inspector-header">
+            <span>✦</span>
+            <h3>Design Inspector</h3>
+            <button id="af-close-btn" title="Fechar">✕</button>
+        </div>
+        <div id="af-inspector-body">
+            <div id="af-element-info" style="display:none">
+                <div class="af-section-title">Elemento seleccionado</div>
+                <div id="af-element-badge" class="af-element-badge"></div>
+            </div>
+            <div id="af-element-tokens" style="display:none">
+                <div class="af-section-title">Tokens deste elemento</div>
+                <div id="af-element-tokens-list"></div>
+            </div>
+            <div id="af-all-tokens">
+                <div class="af-section-title">Cores do tema</div>
+                <div id="af-colors-list"></div>
+            </div>
+            <div id="af-font-tokens">
+                <div class="af-section-title">Tipografia</div>
+                <div id="af-fonts-list"></div>
+            </div>
+            <div id="af-empty" style="text-align:center;padding:24px 0;color:#6c7086;">
+                <div style="font-size:24px;margin-bottom:8px;">🖱</div>
+                <div style="font-size:11px;">Clica em qualquer elemento<br>para inspeccionar os seus tokens</div>
+            </div>
+        </div>
+        <button id="af-save-btn">💾 Guardar tema</button>
+    </div>
+
+    <div class="af-tooltip" id="af-tooltip" style="display:none"></div>
+
+    @php
+        // Build the known CSS vars map to pass to JS
+        $allVars = array_merge(
+            $light,
+            ['--font-heading' => $fonts['heading'] ?? '', '--font-body' => $fonts['body'] ?? '']
+        );
+    @endphp
+
+    <script>
+    (function() {
+        // ── Theme token registry ────────────────────────────────────────
+        const THEME_VARS = @json($allVars);
+
+        // All color + font vars defined on :root
+        const COLOR_VARS  = Object.keys(THEME_VARS).filter(k => k.startsWith('--color-'));
+        const FONT_VARS   = Object.keys(THEME_VARS).filter(k => k.startsWith('--font-'));
+
+        // ── State ───────────────────────────────────────────────────────
+        let editActive   = false;
+        let selectedEl   = null;
+        let hoveredEl    = null;
+        const tooltip    = document.getElementById('af-tooltip');
+        const inspector  = document.getElementById('af-inspector');
+        const toggle     = document.getElementById('af-mode-toggle');
+        const emptyMsg   = document.getElementById('af-empty');
+        const elInfo     = document.getElementById('af-element-info');
+        const elBadge    = document.getElementById('af-element-badge');
+        const elTokens   = document.getElementById('af-element-tokens');
+        const elTokenList= document.getElementById('af-element-tokens-list');
+
+        // ── Read live CSS var value ─────────────────────────────────────
+        function getVar(name) {
+            return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+        }
+        function setVar(name, value) {
+            document.documentElement.style.setProperty(name, value);
+        }
+        function isColor(val) {
+            return /^#|^rgb|^oklch|^hsl/.test(val.trim());
+        }
+
+        // ── Detect CSS vars used by an element (via stylesheet rules) ───
+        function detectElementVars(el) {
+            const found = new Set();
+            const sheets = document.styleSheets;
+            for (const sheet of sheets) {
+                let rules;
+                try { rules = sheet.cssRules || []; } catch(e) { continue; }
+                for (const rule of rules) {
+                    if (!rule.selectorText || !rule.style) continue;
+                    try {
+                        if (el.matches(rule.selectorText) || el.closest(rule.selectorText)) {
+                            const text = rule.style.cssText;
+                            const matches = text.matchAll(/var\((--[\w-]+)\)/g);
+                            for (const m of matches) {
+                                if (COLOR_VARS.includes(m[1]) || FONT_VARS.includes(m[1])) {
+                                    found.add(m[1]);
+                                }
+                            }
+                        }
+                    } catch(e) {}
+                }
+            }
+            // Also check parent chain
+            let parent = el.parentElement;
+            while (parent && parent !== document.body) {
+                for (const sheet of sheets) {
+                    let rules;
+                    try { rules = sheet.cssRules || []; } catch(e) { continue; }
+                    for (const rule of rules) {
+                        if (!rule.selectorText || !rule.style) continue;
+                        try {
+                            if (parent.matches(rule.selectorText)) {
+                                const text = rule.style.cssText;
+                                const matches = text.matchAll(/var\((--[\w-]+)\)/g);
+                                for (const m of matches) {
+                                    if (COLOR_VARS.includes(m[1]) || FONT_VARS.includes(m[1])) {
+                                        found.add(m[1]);
+                                    }
+                                }
+                            }
+                        } catch(e) {}
+                    }
+                }
+                parent = parent.parentElement;
+            }
+            return [...found];
+        }
+
+        // ── Build a single token row ────────────────────────────────────
+        function buildTokenRow(varName, container, isElementRow) {
+            const value = getVar(varName);
+            const isColorVar = varName.startsWith('--color-');
+            const isFontVar  = varName.startsWith('--font-');
+
+            const row = document.createElement('div');
+            row.className = 'af-token-row';
+            row.dataset.var = varName;
+
+            if (isColorVar) {
+                // Resolve oklch/rgb to hex for the color picker
+                const tempDiv = document.createElement('div');
+                tempDiv.style.color = value;
+                document.body.appendChild(tempDiv);
+                const computed = getComputedStyle(tempDiv).color;
+                document.body.removeChild(tempDiv);
+                const hex = rgbToHex(computed);
+
+                row.innerHTML = `
+                    <div class="af-color-swatch" style="background:${value}" title="Clica para mudar cor">
+                        <input type="color" value="${hex}" data-var="${varName}" />
+                    </div>
+                    <div class="af-token-info">
+                        <div class="af-token-name">${varName}</div>
+                        <div class="af-token-value">${value.length > 20 ? value.substring(0,20)+'…' : value}</div>
+                    </div>
+                    <input type="text" class="af-token-input" value="${hex}" data-var="${varName}" maxlength="9" />
+                `;
+
+                // Color input change
+                const colorInput = row.querySelector('input[type=color]');
+                const textInput  = row.querySelector('.af-token-input');
+                const swatch     = row.querySelector('.af-color-swatch');
+
+                colorInput.addEventListener('input', (e) => {
+                    const v = e.target.value;
+                    textInput.value = v;
+                    swatch.style.background = v;
+                    applyVarChange(varName, v);
+                });
+                textInput.addEventListener('change', (e) => {
+                    const v = e.target.value.trim();
+                    if (/^#[0-9a-fA-F]{3,8}$/.test(v)) {
+                        colorInput.value = v;
+                        swatch.style.background = v;
+                        applyVarChange(varName, v);
+                    }
+                });
+
+            } else if (isFontVar) {
+                row.innerHTML = `
+                    <div style="font-size:16px;width:22px;text-align:center">𝐀</div>
+                    <div class="af-token-info">
+                        <div class="af-token-name">${varName}</div>
+                    </div>
+                    <input type="text" class="af-font-input" value="${value}" data-var="${varName}" placeholder="Font family" />
+                `;
+                const fontInput = row.querySelector('.af-font-input');
+                fontInput.addEventListener('change', (e) => applyVarChange(varName, e.target.value.trim()));
+            }
+
+            container.appendChild(row);
+        }
+
+        // ── Populate all tokens panel ───────────────────────────────────
+        function populateAllTokens() {
+            const colorsList = document.getElementById('af-colors-list');
+            const fontsList  = document.getElementById('af-fonts-list');
+            colorsList.innerHTML = '';
+            fontsList.innerHTML  = '';
+            COLOR_VARS.forEach(v => buildTokenRow(v, colorsList, false));
+            FONT_VARS.forEach(v  => buildTokenRow(v, fontsList,  false));
+        }
+
+        // ── Show inspector for clicked element ──────────────────────────
+        function inspectElement(el) {
+            selectedEl = el;
+            el.classList.add('af-edit-highlight');
+
+            // Element badge
+            const tag     = el.tagName.toLowerCase();
+            const classes = el.className.split(' ').filter(c => c && !c.startsWith('af-')).slice(0,2).map(c => '.'+c).join('');
+            elBadge.textContent = tag + (classes || '');
+            elInfo.style.display = 'block';
+
+            // Detect vars
+            const vars = detectElementVars(el);
+            if (vars.length > 0) {
+                elTokenList.innerHTML = '';
+                vars.forEach(v => buildTokenRow(v, elTokenList, true));
+                elTokens.style.display = 'block';
+                emptyMsg.style.display = 'none';
+            } else {
+                elTokens.style.display = 'none';
+                emptyMsg.style.display = 'block';
+                emptyMsg.innerHTML = '<div style="font-size:20px;margin-bottom:8px">🔍</div><div style="font-size:11px;color:#6c7086">Nenhum token detectado<br>neste elemento.<br><br>Usa os tokens globais abaixo.</div>';
+            }
+
+            // Refresh all tokens live values
+            populateAllTokens();
+        }
+
+        // ── Apply a var change live + notify parent ─────────────────────
+        function applyVarChange(varName, value) {
+            setVar(varName, value);
+            // Refresh swatch/value displays for same var in other rows
+            document.querySelectorAll(`[data-var="${varName}"]`).forEach(input => {
+                if (input.type === 'color') input.value = value;
+            });
+            // Notify parent frame
+            window.parent.postMessage({ type: 'af-token-change', var: varName, value }, '*');
+        }
+
+        // ── Activate / deactivate edit mode ─────────────────────────────
+        function activateEdit() {
+            editActive = true;
+            document.body.classList.add('af-edit-active');
+            toggle.style.display = 'flex';
+            toggle.textContent   = '✦ Edição Activa — clica para desactivar';
+            inspector.classList.add('af-open');
+            populateAllTokens();
+            window.parent.postMessage({ type: 'af-edit-activated' }, '*');
+        }
+
+        function deactivateEdit() {
+            editActive = false;
+            document.body.classList.remove('af-edit-active');
+            toggle.textContent = '✦ Modo Edição';
+            inspector.classList.remove('af-open');
+            clearHighlight();
+            tooltip.style.display = 'none';
+            window.parent.postMessage({ type: 'af-edit-deactivated' }, '*');
+        }
+
+        function clearHighlight() {
+            if (selectedEl) { selectedEl.classList.remove('af-edit-highlight'); selectedEl = null; }
+            if (hoveredEl)  { hoveredEl.classList.remove('af-edit-hover');      hoveredEl  = null; }
+        }
+
+        // ── Mouse events ────────────────────────────────────────────────
+        document.addEventListener('mousemove', (e) => {
+            if (!editActive) return;
+            const el = document.elementFromPoint(e.clientX, e.clientY);
+            if (!el || el.id?.startsWith('af-') || el.closest('#af-inspector') || el.closest('#af-mode-toggle')) return;
+
+            if (hoveredEl && hoveredEl !== el) hoveredEl.classList.remove('af-edit-hover');
+            if (el !== selectedEl) {
+                el.classList.add('af-edit-hover');
+                hoveredEl = el;
+            }
+
+            // Tooltip
+            const tag = el.tagName.toLowerCase();
+            const cls = el.className.split(' ').filter(c => c && !c.startsWith('af-')).slice(0,1).join('');
+            tooltip.textContent = tag + (cls ? '.'+cls : '');
+            tooltip.style.display = 'block';
+            tooltip.style.left = (e.clientX + 12) + 'px';
+            tooltip.style.top  = (e.clientY - 28) + 'px';
+        });
+
+        document.addEventListener('mouseleave', () => { tooltip.style.display = 'none'; });
+
+        document.addEventListener('click', (e) => {
+            if (!editActive) return;
+            const el = e.target;
+            if (el.id?.startsWith('af-') || el.closest('#af-inspector') || el.closest('#af-mode-toggle')) return;
+            e.preventDefault(); e.stopPropagation();
+
+            if (selectedEl) selectedEl.classList.remove('af-edit-highlight');
+            inspectElement(el);
+        }, true);
+
+        // ── Toggle button ───────────────────────────────────────────────
+        toggle.addEventListener('click', () => editActive ? deactivateEdit() : activateEdit());
+        document.getElementById('af-close-btn').addEventListener('click', deactivateEdit);
+        document.getElementById('af-save-btn').addEventListener('click', () => {
+            window.parent.postMessage({ type: 'af-save-request' }, '*');
+        });
+
+        // ── postMessage from parent ─────────────────────────────────────
+        window.addEventListener('message', (e) => {
+            const d = e.data;
+            if (!d || typeof d !== 'object') return;
+            if (d.type === 'af-enable-edit')  activateEdit();
+            if (d.type === 'af-disable-edit') deactivateEdit();
+            if (d.type === 'af-apply-vars' && d.vars) {
+                Object.entries(d.vars).forEach(([k, v]) => { if (v) setVar(k, v); });
+                if (editActive) populateAllTokens();
+            }
+        });
+
+        // ── Activate if ?edit=1 in URL ──────────────────────────────────
+        if (new URLSearchParams(location.search).get('edit') === '1') {
+            toggle.style.display = 'flex';
+            setTimeout(activateEdit, 300);
+        }
+
+        // ── Signal ready to parent ──────────────────────────────────────
+        window.parent.postMessage({ type: 'af-ready' }, '*');
+
+        // ── Utility: rgb() → #hex ───────────────────────────────────────
+        function rgbToHex(rgb) {
+            const m = rgb.match(/\d+/g);
+            if (!m || m.length < 3) return '#000000';
+            return '#' + [m[0],m[1],m[2]].map(x => parseInt(x).toString(16).padStart(2,'0')).join('');
+        }
+    })();
+    </script>
 </body>
 </html>

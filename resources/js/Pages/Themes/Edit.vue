@@ -1362,6 +1362,16 @@
       <div v-show="activeTab === 'preview'" class="space-y-3">
         <div class="flex items-center gap-3">
           <p class="text-sm text-muted-foreground flex-1">{{ t('themes.preview_hint') }}</p>
+
+          <!-- Edit mode toggle -->
+          <button @click="togglePreviewEditMode"
+            class="px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all"
+            :class="previewEditMode
+              ? 'bg-violet-500 text-white shadow-md'
+              : 'bg-muted text-foreground hover:bg-border'">
+            ✏️ {{ previewEditMode ? 'Modo Edição ON' : 'Modo Edição' }}
+          </button>
+
           <button @click="previewKey++"
             class="px-3 py-1.5 bg-muted text-foreground rounded-lg text-xs font-semibold hover:bg-border flex items-center gap-1">
             <RefreshCwIcon class="w-3.5 h-3.5" /> {{ t('themes.reload_preview') }}
@@ -1371,8 +1381,26 @@
             <ExternalLinkIcon class="w-3.5 h-3.5" /> {{ t('themes.open_preview') }}
           </a>
         </div>
+
+        <!-- Edit mode hint -->
+        <div v-if="previewEditMode"
+          class="flex items-center gap-2 px-3 py-2 bg-violet-500/10 border border-violet-500/20 rounded-xl text-xs text-violet-600 dark:text-violet-400">
+          <span>✏️</span>
+          <span>Clica em qualquer elemento no preview para editar as suas cores e fontes. As alterações são aplicadas em tempo real.</span>
+        </div>
+
+        <!-- Token toast -->
+        <Transition name="fade">
+          <div v-if="previewToast"
+            class="flex items-center gap-2 px-3 py-2 bg-success/10 border border-success/20 rounded-xl text-xs text-success">
+            ✦ {{ previewToast }}
+          </div>
+        </Transition>
+
         <div class="bg-muted rounded-2xl overflow-hidden border border-border" style="height:72vh;">
-          <iframe :key="previewKey" :src="`/preview/theme/${theme.uuid}`" class="w-full h-full border-0" />
+          <iframe ref="previewIframe" :key="previewKey"
+            :src="`/preview/theme/${theme.uuid}`"
+            class="w-full h-full border-0" />
         </div>
       </div>
 
@@ -1660,7 +1688,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, nextTick } from 'vue';
+import { ref, reactive, computed, nextTick, onMounted, onUnmounted } from 'vue';
 import { router } from '@inertiajs/vue3';
 import { useI18n } from 'vue-i18n';
 import AppLayout from '@/Layouts/AppLayout.vue';
@@ -3188,7 +3216,72 @@ async function copyIcon(name, type) {
 }
 
 // ── Preview ───────────────────────────────────────────────────────
-const previewKey = ref(0);
+const previewKey      = ref(0);
+const previewIframe   = ref(null);
+const previewEditMode = ref(false);
+const previewToast    = ref('');
+let   previewToastTimer = null;
+
+function showPreviewToast(msg) {
+  previewToast.value = msg;
+  clearTimeout(previewToastTimer);
+  previewToastTimer = setTimeout(() => { previewToast.value = ''; }, 3000);
+}
+
+function togglePreviewEditMode() {
+  previewEditMode.value = !previewEditMode.value;
+  const iframe = previewIframe.value;
+  if (!iframe?.contentWindow) return;
+  if (previewEditMode.value) {
+    iframe.contentWindow.postMessage({ type: 'af-enable-edit' }, '*');
+    // Sync current color vars into iframe
+    const vars = { ...(form.colors?.light ?? {}) };
+    if (form.fonts?.heading) vars['--font-heading'] = form.fonts.heading;
+    if (form.fonts?.body)    vars['--font-body']    = form.fonts.body;
+    iframe.contentWindow.postMessage({ type: 'af-apply-vars', vars }, '*');
+  } else {
+    iframe.contentWindow.postMessage({ type: 'af-disable-edit' }, '*');
+  }
+}
+
+function handlePreviewMessage(e) {
+  const d = e.data;
+  if (!d || typeof d !== 'object') return;
+
+  if (d.type === 'af-ready' && previewEditMode.value) {
+    // iframe reloaded while edit mode was on — re-enable
+    const iframe = previewIframe.value;
+    if (!iframe?.contentWindow) return;
+    iframe.contentWindow.postMessage({ type: 'af-enable-edit' }, '*');
+    const vars = { ...(form.colors?.light ?? {}) };
+    if (form.fonts?.heading) vars['--font-heading'] = form.fonts.heading;
+    if (form.fonts?.body)    vars['--font-body']    = form.fonts.body;
+    iframe.contentWindow.postMessage({ type: 'af-apply-vars', vars }, '*');
+  }
+
+  if (d.type === 'af-token-change') {
+    const { var: varName, value } = d;
+    if (!varName || !value) return;
+    if (varName === '--font-heading') {
+      form.fonts = { ...(form.fonts ?? {}), heading: value };
+    } else if (varName === '--font-body') {
+      form.fonts = { ...(form.fonts ?? {}), body: value };
+    } else if (varName.startsWith('--')) {
+      form.colors = {
+        ...(form.colors ?? {}),
+        light: { ...(form.colors?.light ?? {}), [varName]: value },
+      };
+    }
+    showPreviewToast('✦ Token actualizado — Guarda para persistir');
+  }
+
+  if (d.type === 'af-save-request') {
+    save();
+  }
+}
+
+onMounted(() => { window.addEventListener('message', handlePreviewMessage); });
+onUnmounted(() => { window.removeEventListener('message', handlePreviewMessage); clearTimeout(previewToastTimer); });
 
 // ── Publish ───────────────────────────────────────────────────────
 const installingCms = ref(false);
