@@ -595,6 +595,281 @@
         </div>
       </div>
 
+      <!-- ══════════ Tab: Versões ══════════ -->
+      <div v-show="activeTab === 'versions'" class="max-w-3xl space-y-4">
+
+        <!-- Top bar: new version form + load button -->
+        <div class="flex flex-col sm:flex-row gap-3">
+
+          <!-- Create version card -->
+          <div class="flex-1 bg-card border border-border rounded-2xl p-5 space-y-4">
+            <div class="flex items-center gap-2">
+              <span class="text-lg">🏷️</span>
+              <div>
+                <p class="text-sm font-semibold text-foreground">Guardar nova versão</p>
+                <p class="text-xs text-muted-foreground">Cria um snapshot imutável do estado actual</p>
+              </div>
+            </div>
+            <div class="space-y-3">
+              <div>
+                <label class="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">Número de versão</label>
+                <div class="flex items-center gap-2">
+                  <input v-model="newVersionNum" :class="inp" placeholder="ex: 1.1.0" class="flex-1" />
+                  <div class="flex gap-1">
+                    <button v-for="bump in ['patch','minor','major']" :key="bump"
+                      @click="bumpVersion(bump)"
+                      class="text-[10px] px-2 py-1 bg-muted hover:bg-border rounded font-mono text-muted-foreground transition-colors">
+                      +{{ bump }}
+                    </button>
+                  </div>
+                </div>
+                <p class="text-[10px] text-muted-foreground mt-1">Formato semver: MAJOR.MINOR.PATCH (ex: 1.0.0, 2.1.3)</p>
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">Changelog</label>
+                <textarea v-model="newVersionChangelog" rows="3" :class="inp + ' resize-none'"
+                  placeholder="O que mudou nesta versão? (opcional)" />
+              </div>
+              <button @click="createVersion" :disabled="versionSaving || !newVersionNum.trim()"
+                class="w-full flex items-center justify-center gap-2 py-2.5 bg-primary text-primary-foreground rounded-xl text-sm font-semibold disabled:opacity-50 hover:opacity-90 transition-opacity">
+                <span v-if="versionSaving" class="w-3.5 h-3.5 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin inline-block"></span>
+                <span v-else>💾</span>
+                {{ versionSaving ? 'A guardar…' : 'Guardar versão ' + (newVersionNum || '…') }}
+              </button>
+            </div>
+          </div>
+
+          <!-- Current state info -->
+          <div class="sm:w-52 bg-gradient-to-b from-primary/5 to-transparent border border-primary/20 rounded-2xl p-4 space-y-3">
+            <p class="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Estado actual</p>
+            <div class="space-y-2 text-xs">
+              <div class="flex justify-between">
+                <span class="text-muted-foreground">Versão</span>
+                <span class="font-mono font-bold text-foreground">{{ form.version }}</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-muted-foreground">Estado</span>
+                <span class="capitalize font-semibold" :class="form.status==='published'?'text-green-500':form.status==='ready'?'text-blue-500':'text-muted-foreground'">{{ form.status }}</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-muted-foreground">Hooks</span>
+                <span class="font-mono text-foreground">{{ (form.hooks??[]).length }}</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-muted-foreground">Versões</span>
+                <span class="font-mono font-bold text-primary">{{ versions.length }}</span>
+              </div>
+            </div>
+            <button @click="loadVersions" :disabled="versionsLoading"
+              class="w-full py-1.5 text-xs font-semibold bg-muted hover:bg-border rounded-lg transition-colors flex items-center justify-center gap-1.5">
+              <span v-if="versionsLoading" class="w-3 h-3 border-2 border-muted-foreground/30 border-t-muted-foreground rounded-full animate-spin inline-block"></span>
+              <span v-else>🔄</span> Actualizar lista
+            </button>
+          </div>
+        </div>
+
+        <!-- Compare bar (shown when 2 versions selected) -->
+        <Transition name="slide-down">
+          <div v-if="compareA && compareB"
+            class="flex items-center gap-3 px-4 py-3 bg-amber-500/10 border border-amber-500/20 rounded-xl">
+            <span class="text-base">⚖️</span>
+            <span class="text-sm font-semibold text-foreground flex-1">
+              Comparar <code class="text-amber-600">v{{ versions.find(v=>v.id===compareA)?.version }}</code>
+              com <code class="text-amber-600">v{{ versions.find(v=>v.id===compareB)?.version }}</code>
+            </span>
+            <button @click="runCompare" :disabled="compareLoading"
+              class="px-3.5 py-1.5 bg-amber-500 text-white rounded-lg text-xs font-semibold hover:bg-amber-400 transition-colors disabled:opacity-50">
+              <span v-if="compareLoading" class="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin inline-block mr-1"></span>
+              Ver diferenças
+            </button>
+            <button @click="compareA=null;compareB=null;diffResult=null" class="text-muted-foreground hover:text-foreground text-xs px-2">✕ Cancelar</button>
+          </div>
+        </Transition>
+
+        <!-- Diff result -->
+        <div v-if="diffResult" class="bg-card border border-border rounded-2xl overflow-hidden">
+          <div class="flex items-center justify-between px-5 py-3 border-b border-border bg-muted/40">
+            <div class="flex items-center gap-2">
+              <span class="text-base">⚖️</span>
+              <span class="text-sm font-semibold">
+                v{{ diffResult.version_a.version }} → v{{ diffResult.version_b.version }}
+              </span>
+              <span class="text-xs px-2 py-0.5 bg-amber-500/15 text-amber-600 rounded-full font-semibold">{{ diffResult.changed }} campo(s) alterado(s)</span>
+              <span class="text-xs text-muted-foreground">{{ diffResult.unchanged }} iguais</span>
+            </div>
+            <button @click="diffResult=null" class="text-muted-foreground hover:text-foreground text-xs">✕</button>
+          </div>
+          <div class="divide-y divide-border">
+            <div v-for="d in diffResult.diff" :key="d.field" class="p-4">
+              <div class="flex items-center gap-2 mb-2">
+                <code class="text-xs font-bold text-primary bg-primary/10 px-2 py-0.5 rounded">{{ d.field }}</code>
+                <span v-if="d.is_code" class="text-[10px] text-muted-foreground">{{ d.a_lines }} → {{ d.b_lines }} linhas</span>
+              </div>
+              <div v-if="!d.is_code" class="grid grid-cols-2 gap-3">
+                <div class="bg-red-500/8 border border-red-500/20 rounded-lg px-3 py-2 text-xs font-mono text-red-700 dark:text-red-400 line-through opacity-70">{{ d.a ?? '(vazio)' }}</div>
+                <div class="bg-green-500/8 border border-green-500/20 rounded-lg px-3 py-2 text-xs font-mono text-green-700 dark:text-green-400">{{ d.b ?? '(vazio)' }}</div>
+              </div>
+              <div v-else class="grid grid-cols-2 gap-3">
+                <div class="bg-red-500/5 border border-red-500/20 rounded-lg overflow-hidden">
+                  <div class="px-3 py-1 bg-red-500/10 text-[10px] text-red-600 font-semibold">v{{ diffResult.version_a.version }} — {{ d.a_lines }} linhas</div>
+                  <pre class="p-3 text-[10px] font-mono text-muted-foreground overflow-auto max-h-48 whitespace-pre-wrap break-words">{{ (d.a ?? '').slice(0, 800) }}{{ (d.a ?? '').length > 800 ? '\n… (truncado)' : '' }}</pre>
+                </div>
+                <div class="bg-green-500/5 border border-green-500/20 rounded-lg overflow-hidden">
+                  <div class="px-3 py-1 bg-green-500/10 text-[10px] text-green-600 font-semibold">v{{ diffResult.version_b.version }} — {{ d.b_lines }} linhas</div>
+                  <pre class="p-3 text-[10px] font-mono text-muted-foreground overflow-auto max-h-48 whitespace-pre-wrap break-words">{{ (d.b ?? '').slice(0, 800) }}{{ (d.b ?? '').length > 800 ? '\n… (truncado)' : '' }}</pre>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Version list loading -->
+        <div v-if="versionsLoading && !versions.length" class="space-y-3">
+          <div v-for="i in 3" :key="i" class="h-20 bg-muted rounded-xl animate-pulse"></div>
+        </div>
+
+        <!-- Empty state -->
+        <div v-if="!versionsLoading && !versions.length"
+          class="bg-card border border-dashed border-border rounded-2xl p-10 text-center">
+          <div class="text-3xl mb-3">📦</div>
+          <p class="text-sm font-semibold text-foreground mb-1">Nenhuma versão guardada ainda</p>
+          <p class="text-xs text-muted-foreground">Cria a tua primeira versão acima. Ao publicares no marketplace é criado um snapshot automático.</p>
+        </div>
+
+        <!-- Version timeline -->
+        <div v-if="versions.length" class="space-y-3">
+          <p class="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
+            <span>📋 Histórico de versões</span>
+            <span class="bg-muted px-2 py-0.5 rounded-full">{{ versions.length }}</span>
+          </p>
+
+          <div class="relative">
+            <!-- Timeline line -->
+            <div class="absolute left-[1.4rem] top-4 bottom-4 w-px bg-border"></div>
+
+            <div class="space-y-3">
+              <div v-for="(ver, idx) in versions" :key="ver.id"
+                class="relative flex gap-4 items-start">
+
+                <!-- Timeline dot -->
+                <div class="relative z-10 shrink-0 mt-3">
+                  <div class="w-7 h-7 rounded-full border-2 flex items-center justify-center text-[10px] font-bold"
+                    :class="idx === 0
+                      ? 'bg-primary border-primary text-primary-foreground'
+                      : ver.is_published
+                        ? 'bg-green-500 border-green-500 text-white'
+                        : 'bg-card border-border text-muted-foreground'">
+                    {{ idx === 0 ? '●' : ver.is_published ? '✓' : '○' }}
+                  </div>
+                </div>
+
+                <!-- Version card -->
+                <div class="flex-1 bg-card border border-border rounded-xl overflow-hidden hover:border-primary/30 transition-colors"
+                  :class="(compareA === ver.id || compareB === ver.id) ? 'border-amber-400 ring-1 ring-amber-400/30' : ''">
+
+                  <!-- Card header -->
+                  <div class="flex items-start justify-between gap-3 px-4 py-3">
+                    <div class="flex-1 min-w-0">
+                      <div class="flex items-center gap-2 flex-wrap">
+                        <code class="text-sm font-bold text-foreground font-mono">v{{ ver.version }}</code>
+                        <span v-if="idx === 0" class="text-[10px] px-2 py-0.5 bg-primary/10 text-primary rounded-full font-semibold">actual</span>
+                        <span v-if="ver.is_published" class="text-[10px] px-2 py-0.5 bg-green-500/10 text-green-600 rounded-full font-semibold">publicada</span>
+                        <span class="text-xs text-muted-foreground">{{ ver.created_at_human }}</span>
+                      </div>
+                      <p v-if="ver.changelog" class="text-xs text-muted-foreground mt-1 line-clamp-2">{{ ver.changelog }}</p>
+                    </div>
+                    <!-- Actions -->
+                    <div class="flex items-center gap-1.5 shrink-0">
+                      <!-- Compare selector -->
+                      <button @click="selectForCompare(ver.id)" title="Seleccionar para comparar"
+                        class="w-7 h-7 rounded-lg flex items-center justify-center text-xs transition-colors"
+                        :class="(compareA === ver.id || compareB === ver.id)
+                          ? 'bg-amber-500/20 text-amber-600'
+                          : 'bg-muted hover:bg-border text-muted-foreground'">
+                        ⚖️
+                      </button>
+                      <!-- View snapshot -->
+                      <button @click="viewSnapshot(ver)" title="Ver snapshot completo"
+                        class="w-7 h-7 rounded-lg bg-muted hover:bg-border flex items-center justify-center text-xs text-muted-foreground transition-colors">
+                        👁️
+                      </button>
+                      <!-- Restore -->
+                      <button v-if="idx !== 0" @click="restoreToVersion(ver)"
+                        class="flex items-center gap-1 px-2.5 py-1 bg-amber-500/10 hover:bg-amber-500/20 text-amber-700 dark:text-amber-400 rounded-lg text-xs font-semibold transition-colors">
+                        ↩️ Restaurar
+                      </button>
+                    </div>
+                  </div>
+
+                  <!-- Summary chips -->
+                  <div class="flex flex-wrap gap-1.5 px-4 pb-3">
+                    <span v-for="h in (ver.summary?.hooks ?? [])" :key="h"
+                      class="text-[10px] px-2 py-0.5 bg-muted font-mono text-muted-foreground rounded-full">{{ h }}</span>
+                    <span v-if="ver.summary?.has_php"    class="text-[10px] px-2 py-0.5 bg-blue-500/10 text-blue-600 rounded-full">PHP</span>
+                    <span v-if="ver.summary?.has_widget" class="text-[10px] px-2 py-0.5 bg-teal-500/10 text-teal-600 rounded-full">Widget</span>
+                    <span v-if="ver.summary?.has_js"     class="text-[10px] px-2 py-0.5 bg-yellow-500/10 text-yellow-600 rounded-full">JS</span>
+                    <span v-if="ver.summary?.has_css"    class="text-[10px] px-2 py-0.5 bg-pink-500/10 text-pink-600 rounded-full">CSS</span>
+                    <span v-if="ver.summary?.fields"     class="text-[10px] px-2 py-0.5 bg-purple-500/10 text-purple-600 rounded-full">{{ ver.summary.fields }} campo(s)</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Snapshot viewer modal -->
+        <Transition name="fade">
+          <div v-if="snapshotModal" class="fixed inset-0 z-50 flex items-center justify-center p-4"
+            @click.self="snapshotModal=null">
+            <div class="absolute inset-0 bg-black/60 backdrop-blur-sm"></div>
+            <div class="relative bg-card border border-border rounded-2xl w-full max-w-2xl max-h-[85vh] flex flex-col shadow-2xl">
+              <div class="flex items-center justify-between px-5 py-4 border-b border-border shrink-0">
+                <div>
+                  <p class="text-sm font-bold text-foreground">📦 Snapshot v{{ snapshotModal.version }}</p>
+                  <p class="text-xs text-muted-foreground mt-0.5">{{ snapshotModal.created_at_human }}</p>
+                </div>
+                <button @click="snapshotModal=null" class="w-7 h-7 rounded-lg bg-muted hover:bg-border flex items-center justify-center text-muted-foreground">✕</button>
+              </div>
+
+              <!-- Snapshot code tabs -->
+              <div class="flex border-b border-border bg-muted/30 text-xs shrink-0">
+                <button v-for="ct in inspireCodeTabs" :key="ct.id" @click="snapshotCodeTab=ct.id"
+                  class="px-4 py-2 font-medium transition-colors border-r border-border last:border-0"
+                  :class="snapshotCodeTab===ct.id?'bg-card text-foreground font-semibold':'text-muted-foreground hover:text-foreground'">
+                  {{ ct.label }}
+                </button>
+                <button @click="snapshotCodeTab='meta'"
+                  class="px-4 py-2 font-medium transition-colors"
+                  :class="snapshotCodeTab==='meta'?'bg-card text-foreground font-semibold':'text-muted-foreground hover:text-foreground'">
+                  Meta
+                </button>
+              </div>
+
+              <div class="flex-1 overflow-auto">
+                <div v-if="snapshotCodeTab==='meta'" class="p-5 space-y-2 text-xs">
+                  <div v-for="(val, key) in snapshotMeta" :key="key" class="flex gap-3">
+                    <span class="font-mono text-muted-foreground w-32 shrink-0">{{ key }}</span>
+                    <span class="font-semibold text-foreground break-all">{{ Array.isArray(val) ? val.join(', ') : val }}</span>
+                  </div>
+                </div>
+                <pre v-else class="p-5 text-xs font-mono text-[#cdd6f4] bg-[#1e1e2e] min-h-full whitespace-pre-wrap break-words">{{ snapshotCodeContent }}</pre>
+              </div>
+
+              <div class="px-5 py-3 border-t border-border bg-muted/30 flex gap-3 shrink-0">
+                <button @click="restoreToVersion(snapshotModal); snapshotModal=null"
+                  class="flex items-center gap-1.5 px-4 py-2 bg-amber-500 text-white rounded-xl text-sm font-semibold hover:bg-amber-400">
+                  ↩️ Restaurar esta versão
+                </button>
+                <button @click="snapshotModal=null" class="px-4 py-2 bg-muted rounded-xl text-sm font-semibold hover:bg-border">
+                  Fechar
+                </button>
+              </div>
+            </div>
+          </div>
+        </Transition>
+
+      </div>
+
       <!-- ══════════ Tab: Exportar ══════════ -->
       <div v-show="activeTab === 'export'" class="max-w-2xl space-y-4">
         <div class="bg-card border border-border rounded-2xl p-6 space-y-5">
@@ -911,7 +1186,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, nextTick } from 'vue';
+import { ref, reactive, computed, nextTick, watch } from 'vue';
 import { router } from '@inertiajs/vue3';
 import { useI18n } from 'vue-i18n';
 import AppLayout from '@/Layouts/AppLayout.vue';
@@ -938,6 +1213,7 @@ const tabs = [
   { id: 'preview', label: '👁️ Preview' },
   { id: 'ai',      label: '✨ IA'    },
   { id: 'chat',    label: '💬 Chat IA' },
+  { id: 'versions', label: '📦 Versões' },
   { id: 'export',  label: 'Exportar' },
 ];
 
@@ -1111,6 +1387,153 @@ async function generateDocs() {
     feedback.error = '❌ ' + (e.message ?? 'Erro ao gerar documentação.');
   } finally {
     docsLoading.value = false;
+  }
+}
+
+// ── Versioning ──
+const versions         = ref([]);
+const versionsLoading  = ref(false);
+const versionSaving    = ref(false);
+const newVersionNum    = ref('');
+const newVersionChangelog = ref('');
+const compareA         = ref(null);
+const compareB         = ref(null);
+const compareLoading   = ref(false);
+const diffResult       = ref(null);
+const snapshotModal    = ref(null);      // full snapshot data for modal
+const snapshotCodeTab  = ref('php');
+
+// Pre-fill version number with current plugin version on tab open
+watch(() => activeTab.value, (tab) => {
+  if (tab === 'versions') {
+    loadVersions();
+    if (!newVersionNum.value) newVersionNum.value = form.version ?? '1.0.0';
+  }
+});
+
+async function loadVersions() {
+  versionsLoading.value = true;
+  try {
+    const res = await fetch(`/plugins/${props.plugin.uuid}/versions`, {
+      headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content ?? '' },
+    });
+    const data = await res.json();
+    versions.value = data.versions ?? [];
+  } catch {}
+  finally { versionsLoading.value = false; }
+}
+
+function bumpVersion(type) {
+  const current = (newVersionNum.value || form.version || '1.0.0').trim();
+  const parts = current.split('.').map(Number);
+  if (parts.length < 3) { newVersionNum.value = current; return; }
+  if (type === 'patch') { parts[2]++; }
+  else if (type === 'minor') { parts[1]++; parts[2] = 0; }
+  else if (type === 'major') { parts[0]++; parts[1] = 0; parts[2] = 0; }
+  newVersionNum.value = parts.join('.');
+}
+
+async function createVersion() {
+  if (!newVersionNum.value.trim() || versionSaving.value) return;
+  versionSaving.value = true;
+  try {
+    const res = await fetch(`/plugins/${props.plugin.uuid}/versions`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content ?? '' },
+      body: JSON.stringify({ version: newVersionNum.value.trim(), changelog: newVersionChangelog.value }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error ?? 'Erro ao criar versão');
+    versions.value.unshift(data.version);
+    form.version = data.version.version;
+    newVersionChangelog.value = '';
+    feedback.success = `✅ Versão v${data.version.version} guardada com sucesso!`;
+  } catch (e) {
+    feedback.error = '❌ ' + (e.message ?? 'Erro ao guardar versão.');
+  } finally {
+    versionSaving.value = false;
+  }
+}
+
+function selectForCompare(id) {
+  if (compareA.value === id) { compareA.value = null; return; }
+  if (compareB.value === id) { compareB.value = null; return; }
+  if (!compareA.value) { compareA.value = id; return; }
+  if (!compareB.value) { compareB.value = id; return; }
+  // Both set — replace B and keep A
+  compareB.value = id;
+}
+
+async function runCompare() {
+  if (!compareA.value || !compareB.value || compareLoading.value) return;
+  compareLoading.value = true;
+  diffResult.value = null;
+  try {
+    const res = await fetch(`/plugins/${props.plugin.uuid}/versions/compare`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content ?? '' },
+      body: JSON.stringify({ version_a: compareA.value, version_b: compareB.value }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error ?? 'Erro ao comparar');
+    diffResult.value = data;
+  } catch (e) {
+    feedback.error = '❌ ' + (e.message ?? 'Erro ao comparar versões.');
+  } finally {
+    compareLoading.value = false;
+  }
+}
+
+async function viewSnapshot(ver) {
+  snapshotCodeTab.value = 'php';
+  try {
+    const res = await fetch(`/plugins/${props.plugin.uuid}/versions/${ver.id}`, {
+      headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content ?? '' },
+    });
+    const data = await res.json();
+    snapshotModal.value = { ...ver, ...data };
+  } catch {
+    snapshotModal.value = { ...ver, snapshot: {} };
+  }
+}
+
+const snapshotCodeContent = computed(() => {
+  if (!snapshotModal.value?.snapshot) return '';
+  const snap = snapshotModal.value.snapshot;
+  const map = { php: snap.plugin_php, widget: snap.widget_blade, js: snap.widget_js, css: snap.custom_css };
+  return map[snapshotCodeTab.value] ?? '';
+});
+
+const snapshotMeta = computed(() => {
+  if (!snapshotModal.value?.snapshot) return {};
+  const snap = snapshotModal.value.snapshot;
+  return {
+    label: snap.label, version: snap.version, description: snap.description,
+    status: snap.status, category: snap.category, license: snap.license,
+    author: snap.author, hooks: snap.hooks,
+    fields: (snap.settings_schema ?? []).length + ' campo(s)',
+  };
+});
+
+async function restoreToVersion(ver) {
+  if (!confirm(`Restaurar para v${ver.version}?\n\nO estado actual do plugin será substituído pelo snapshot desta versão. Esta acção não pode ser desfeita automaticamente (guarda uma nova versão antes se quiseres preservar o estado actual).`)) return;
+  try {
+    const res = await fetch(`/plugins/${props.plugin.uuid}/versions/${ver.id}/restore`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content ?? '' },
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error ?? 'Erro ao restaurar');
+    // Apply snapshot fields to form
+    const snap = data.plugin;
+    const fields = ['label','description','version','author','author_url','category','tags','license',
+                    'min_animusflow_version','homepage_url','status','hooks','plugin_php','widget_blade',
+                    'widget_js','custom_css','readme','settings_schema'];
+    fields.forEach(f => { if (snap[f] !== undefined) form[f] = Array.isArray(snap[f]) ? [...snap[f]] : snap[f]; });
+    feedback.success = `✅ Restaurado para v${ver.version}. Revê e guarda.`;
+    await loadVersions();
+  } catch (e) {
+    feedback.error = '❌ ' + (e.message ?? 'Erro ao restaurar.');
   }
 }
 
@@ -1449,3 +1872,14 @@ async function publishPlugin() {
   finally { publishing.value = false; }
 }
 </script>
+
+<style scoped>
+/* Slide-down transition (compare bar) */
+.slide-down-enter-active, .slide-down-leave-active { transition: all .25s ease; }
+.slide-down-enter-from, .slide-down-leave-to { opacity: 0; transform: translateY(-8px); max-height: 0; }
+.slide-down-enter-to, .slide-down-leave-from { opacity: 1; transform: translateY(0); max-height: 200px; }
+
+/* Fade transition (snapshot modal) */
+.fade-enter-active, .fade-leave-active { transition: opacity .2s ease; }
+.fade-enter-from, .fade-leave-to { opacity: 0; }
+</style>

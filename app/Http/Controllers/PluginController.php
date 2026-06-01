@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers;
 
 use App\Models\StudioPlugin;
+use App\Models\StudioPluginVersion;
 use App\Models\StudioSetting;
 use App\Services\AIEngine;
 use Illuminate\Http\JsonResponse;
@@ -322,6 +323,9 @@ class PluginController extends Controller
                     'status'              => 'published',
                     'animus_package_uuid' => $packageUuid,
                 ]);
+
+                // Auto-snapshot on successful publish
+                $this->saveVersionSnapshot($plugin, "Publicado v{$plugin->version}", true, $packageUuid);
 
                 return response()->json(['success' => true, 'package_uuid' => $packageUuid]);
             }
@@ -927,6 +931,222 @@ HTML;
             "{$plugin->name}.zip",
             ['Content-Type' => 'application/zip']
         );
+    }
+
+    // ──────────────────────────────────────────────
+    //  Versioning
+    // ──────────────────────────────────────────────
+
+    /** List all versions for a plugin. */
+    public function versions(string $uuid): JsonResponse
+    {
+        $plugin   = StudioPlugin::where('uuid', $uuid)->firstOrFail();
+        $versions = StudioPluginVersion::where('studio_plugin_id', $plugin->id)
+            ->orderByDesc('created_at')
+            ->orderByDesc('id')
+            ->get()
+            ->map(fn ($v) => [
+                'id'           => $v->id,
+                'version'      => $v->version,
+                'label'        => $v->label,
+                'changelog'    => $v->changelog,
+                'is_published' => $v->is_published,
+                'published_uuid' => $v->published_uuid,
+                'created_at'   => $v->created_at->toIso8601String(),
+                'created_at_human' => $v->created_at->diffForHumans(),
+                // Lightweight summary — no heavy code fields
+                'summary' => [
+                    'hooks'   => $v->snapshot['hooks']   ?? [],
+                    'has_php' => !empty($v->snapshot['plugin_php']),
+                    'has_widget' => !empty($v->snapshot['widget_blade']),
+                    'has_js'  => !empty($v->snapshot['widget_js']),
+                    'has_css' => !empty($v->snapshot['custom_css']),
+                    'fields'  => count($v->snapshot['settings_schema'] ?? []),
+                ],
+            ]);
+
+        return response()->json(['versions' => $versions]);
+    }
+
+    /** Get full snapshot of a specific version (for restore/diff). */
+    public function versionSnapshot(string $uuid, int $versionId): JsonResponse
+    {
+        $plugin  = StudioPlugin::where('uuid', $uuid)->firstOrFail();
+        $version = StudioPluginVersion::where('studio_plugin_id', $plugin->id)
+            ->where('id', $versionId)
+            ->firstOrFail();
+
+        return response()->json([
+            'version'  => $version->version,
+            'label'    => $version->label,
+            'changelog'=> $version->changelog,
+            'snapshot' => $version->snapshot,
+            'created_at_human' => $version->created_at->diffForHumans(),
+        ]);
+    }
+
+    /** Save a manual version snapshot. */
+    public function saveVersion(Request $request, string $uuid): JsonResponse
+    {
+        $plugin = StudioPlugin::where('uuid', $uuid)->firstOrFail();
+
+        $request->validate([
+            'version'   => ['required', 'string', 'regex:/^\d+\.\d+\.\d+([.-]\S+)?$/', 'max:30'],
+            'changelog' => ['nullable', 'string', 'max:2000'],
+        ]);
+
+        $ver = $request->input('version');
+
+        // Check duplicate
+        $exists = StudioPluginVersion::where('studio_plugin_id', $plugin->id)
+            ->where('version', $ver)->exists();
+        if ($exists) {
+            return response()->json(['error' => "A versão {$ver} já existe para este plugin."], 422);
+        }
+
+        $version = StudioPluginVersion::create([
+            'studio_plugin_id' => $plugin->id,
+            'version'          => $ver,
+            'label'            => $plugin->label,
+            'changelog'        => $request->input('changelog', ''),
+            'snapshot'         => StudioPluginVersion::snapshotFrom($plugin),
+            'is_published'     => false,
+            'created_by'       => auth()->user()?->email ?? 'studio',
+        ]);
+
+        // Also update the plugin's own version field
+        $plugin->update(['version' => $ver]);
+
+        return response()->json([
+            'success' => true,
+            'version' => [
+                'id'               => $version->id,
+                'version'          => $version->version,
+                'label'            => $version->label,
+                'changelog'        => $version->changelog,
+                'is_published'     => $version->is_published,
+                'created_at_human' => $version->created_at->diffForHumans(),
+                'summary'          => [
+                    'hooks'      => $version->snapshot['hooks'] ?? [],
+                    'has_php'    => !empty($version->snapshot['plugin_php']),
+                    'has_widget' => !empty($version->snapshot['widget_blade']),
+                    'has_js'     => !empty($version->snapshot['widget_js']),
+                    'has_css'    => !empty($version->snapshot['custom_css']),
+                    'fields'     => count($version->snapshot['settings_schema'] ?? []),
+                ],
+            ],
+        ]);
+    }
+
+    /** Restore plugin to a previous version snapshot. */
+    public function restoreVersion(string $uuid, int $versionId): JsonResponse
+    {
+        $plugin  = StudioPlugin::where('uuid', $uuid)->firstOrFail();
+        $version = StudioPluginVersion::where('studio_plugin_id', $plugin->id)
+            ->where('id', $versionId)
+            ->firstOrFail();
+
+        $snap = $version->snapshot;
+
+        // Apply snapshot fields to current plugin (preserve uuid, name, id)
+        $updateFields = array_intersect_key($snap, array_flip(StudioPluginVersion::$snapshotFields));
+        unset($updateFields['name']); // never overwrite the slug
+        $plugin->update($updateFields);
+
+        // Reload fresh
+        $plugin->refresh();
+
+        return response()->json([
+            'success' => true,
+            'message' => "Plugin restaurado para v{$version->version}.",
+            'plugin'  => $plugin,
+        ]);
+    }
+
+    /** Compare two version snapshots — return field-by-field diff. */
+    public function compareVersions(Request $request, string $uuid): JsonResponse
+    {
+        $plugin = StudioPlugin::where('uuid', $uuid)->firstOrFail();
+
+        $request->validate([
+            'version_a' => ['required', 'integer'],
+            'version_b' => ['required', 'integer'],
+        ]);
+
+        $vA = StudioPluginVersion::where('studio_plugin_id', $plugin->id)
+            ->where('id', $request->integer('version_a'))->firstOrFail();
+        $vB = StudioPluginVersion::where('studio_plugin_id', $plugin->id)
+            ->where('id', $request->integer('version_b'))->firstOrFail();
+
+        $snapA = $vA->snapshot;
+        $snapB = $vB->snapshot;
+
+        $codeFields = ['plugin_php', 'widget_blade', 'widget_js', 'custom_css', 'readme'];
+        $metaFields = ['label', 'description', 'version', 'author', 'category', 'license',
+                       'status', 'hooks', 'tags', 'settings_schema'];
+
+        $diff = [];
+        foreach (array_merge($metaFields, $codeFields) as $field) {
+            $a = $snapA[$field] ?? null;
+            $b = $snapB[$field] ?? null;
+
+            // Normalise arrays to JSON for comparison
+            if (is_array($a)) $a = json_encode($a, JSON_UNESCAPED_UNICODE);
+            if (is_array($b)) $b = json_encode($b, JSON_UNESCAPED_UNICODE);
+
+            if ($a !== $b) {
+                $diff[] = [
+                    'field'   => $field,
+                    'is_code' => in_array($field, $codeFields),
+                    'a'       => $a,
+                    'b'       => $b,
+                    'a_lines' => $a ? substr_count((string)$a, "\n") + 1 : 0,
+                    'b_lines' => $b ? substr_count((string)$b, "\n") + 1 : 0,
+                ];
+            }
+        }
+
+        return response()->json([
+            'version_a' => ['id' => $vA->id, 'version' => $vA->version, 'created_at_human' => $vA->created_at->diffForHumans()],
+            'version_b' => ['id' => $vB->id, 'version' => $vB->version, 'created_at_human' => $vB->created_at->diffForHumans()],
+            'diff'      => $diff,
+            'changed'   => count($diff),
+            'unchanged' => count(StudioPluginVersion::$snapshotFields) - count($diff),
+        ]);
+    }
+
+    /** Internal: save a snapshot (called automatically on publish). */
+    private function saveVersionSnapshot(
+        StudioPlugin $plugin,
+        string $changelog = '',
+        bool $isPublished = false,
+        ?string $publishedUuid = null
+    ): void {
+        $ver = $plugin->version ?? '1.0.0';
+
+        // Don't duplicate — update changelog/published flag if version already exists
+        $existing = StudioPluginVersion::where('studio_plugin_id', $plugin->id)
+            ->where('version', $ver)->first();
+
+        if ($existing) {
+            $existing->update([
+                'snapshot'       => StudioPluginVersion::snapshotFrom($plugin),
+                'changelog'      => $changelog ?: $existing->changelog,
+                'is_published'   => $isPublished || $existing->is_published,
+                'published_uuid' => $publishedUuid ?? $existing->published_uuid,
+            ]);
+        } else {
+            StudioPluginVersion::create([
+                'studio_plugin_id' => $plugin->id,
+                'version'          => $ver,
+                'label'            => $plugin->label,
+                'changelog'        => $changelog,
+                'snapshot'         => StudioPluginVersion::snapshotFrom($plugin),
+                'is_published'     => $isPublished,
+                'published_uuid'   => $publishedUuid,
+                'created_by'       => auth()->user()?->email ?? 'studio',
+            ]);
+        }
     }
 
     // ──────────────────────────────────────────────

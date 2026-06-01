@@ -557,6 +557,135 @@ check('chat() campos permitidos incluem widget_blade', str_contains($ctrlSrc, "'
 check('chat() campos permitidos incluem settings_schema', str_contains($ctrlSrc, "'settings_schema'"));
 
 // ═══════════════════════════════════════════════════
+echo PHP_EOL . '═══════════════════════════════════════════════════' . PHP_EOL;
+echo 'BLOCO 13: Versionamento de plugins' . PHP_EOL;
+echo '═══════════════════════════════════════════════════' . PHP_EOL;
+
+use App\Models\StudioPluginVersion;
+
+// Model e snapshot
+$verPlugin = \App\Models\StudioPlugin::create([
+    'name'        => 'ver-test-' . uniqid(),
+    'label'       => 'Version Test Plugin',
+    'version'     => '1.0.0',
+    'status'      => 'draft',
+    'hooks'       => ['page.render'],
+    'plugin_php'  => "<?php\ndeclare(strict_types=1);\nclass VerTestPlugin { public function onPageRender(): string { return '<div>v1</div>'; } }",
+    'widget_blade'=> '<div class="v1">Hello v1</div>',
+    'custom_css'  => '.v1 { color: red; }',
+    'settings_schema' => [['key'=>'msg','label'=>'Msg','type'=>'text','default'=>'']],
+]);
+
+// Check snapshotFrom
+$snap = StudioPluginVersion::snapshotFrom($verPlugin);
+check('snapshotFrom() retorna array', is_array($snap));
+check('snapshotFrom() inclui plugin_php', isset($snap['plugin_php']) && str_contains($snap['plugin_php'], 'VerTestPlugin'));
+check('snapshotFrom() inclui hooks', isset($snap['hooks']) && in_array('page.render', $snap['hooks']));
+check('snapshotFrom() inclui settings_schema', isset($snap['settings_schema']) && count($snap['settings_schema']) === 1);
+check('snapshotFrom() não inclui uuid', !isset($snap['uuid']));
+
+// Create version via controller
+$vCtrl = new PluginController();
+$vRef  = new ReflectionClass($vCtrl);
+
+// saveVersion via HTTP-like request
+$saveReq = \Illuminate\Http\Request::create('/plugins/x/versions', 'POST', [
+    'version'   => '1.0.0',
+    'changelog' => 'Versão inicial',
+]);
+$saveRes = $vCtrl->saveVersion($saveReq, $verPlugin->uuid);
+$saveData = json_decode($saveRes->getContent(), true);
+
+check('saveVersion() retorna success=true', ($saveData['success'] ?? false) === true);
+check('saveVersion() retorna version.id',   isset($saveData['version']['id']));
+check('saveVersion() version é 1.0.0',      ($saveData['version']['version'] ?? '') === '1.0.0');
+check('saveVersion() summary tem has_php',  ($saveData['version']['summary']['has_php'] ?? false) === true);
+
+$savedVersionId = $saveData['version']['id'] ?? null;
+
+// Duplicate version should fail
+$dupReq = \Illuminate\Http\Request::create('/plugins/x/versions', 'POST', ['version' => '1.0.0', 'changelog' => '']);
+$dupRes = $vCtrl->saveVersion($dupReq, $verPlugin->uuid);
+check('saveVersion() duplicado retorna 422', $dupRes->getStatusCode() === 422);
+
+// Create a second version
+$verPlugin->update(['plugin_php' => "<?php\ndeclare(strict_types=1);\nclass VerTestPlugin { public function onPageRender(): string { return '<div>v2</div>'; } }", 'version' => '1.1.0']);
+$v2Req = \Illuminate\Http\Request::create('/plugins/x/versions', 'POST', ['version' => '1.1.0', 'changelog' => 'Nova funcionalidade']);
+$v2Res = $vCtrl->saveVersion($v2Req, $verPlugin->uuid);
+$v2Data = json_decode($v2Res->getContent(), true);
+$v2Id   = $v2Data['version']['id'] ?? null;
+
+check('Segunda versão criada com sucesso', isset($v2Id));
+
+// versions() endpoint
+$listRes  = $vCtrl->versions($verPlugin->uuid);
+$listData = json_decode($listRes->getContent(), true);
+check('versions() retorna array de versões', is_array($listData['versions'] ?? null));
+check('versions() tem 2 versões', count($listData['versions'] ?? []) === 2);
+check('versions() inclui summary.has_php', isset($listData['versions'][0]['summary']['has_php']));
+check('versions() ordenado por created_at DESC', ($listData['versions'][0]['version'] ?? '') === '1.1.0');
+
+// versionSnapshot()
+if ($savedVersionId) {
+    $snapRes  = $vCtrl->versionSnapshot($verPlugin->uuid, $savedVersionId);
+    $snapData = json_decode($snapRes->getContent(), true);
+    check('versionSnapshot() retorna snapshot', isset($snapData['snapshot']));
+    check('versionSnapshot() snapshot tem plugin_php', !empty($snapData['snapshot']['plugin_php']));
+    check('versionSnapshot() snapshot é v1.0.0', ($snapData['version'] ?? '') === '1.0.0');
+}
+
+// compareVersions()
+if ($savedVersionId && $v2Id) {
+    $cmpReq = \Illuminate\Http\Request::create('/compare', 'POST', ['version_a' => $savedVersionId, 'version_b' => $v2Id]);
+    $cmpRes  = $vCtrl->compareVersions($cmpReq, $verPlugin->uuid);
+    $cmpData = json_decode($cmpRes->getContent(), true);
+    check('compareVersions() retorna diff', isset($cmpData['diff']));
+    check('compareVersions() detecta mudança em plugin_php', count(array_filter($cmpData['diff'] ?? [], fn($d) => $d['field'] === 'plugin_php')) > 0);
+    check('compareVersions() conta campos alterados', ($cmpData['changed'] ?? 0) > 0);
+}
+
+// restoreVersion()
+if ($savedVersionId) {
+    $rstRes  = $vCtrl->restoreVersion($verPlugin->uuid, $savedVersionId);
+    $rstData = json_decode($rstRes->getContent(), true);
+    check('restoreVersion() retorna success=true', ($rstData['success'] ?? false) === true);
+    $verPlugin->refresh();
+    check('restoreVersion() restaura plugin_php para v1.0.0', str_contains($verPlugin->plugin_php ?? '', 'v1</div>'));
+}
+
+// Rotas de versioning
+$routeNames = collect(\Illuminate\Support\Facades\Route::getRoutes())->map(fn($r) => $r->getName())->filter()->values()->all();
+check('Rota plugins.versions.list existe',     in_array('plugins.versions.list', $routeNames));
+check('Rota plugins.versions.save existe',     in_array('plugins.versions.save', $routeNames));
+check('Rota plugins.versions.snapshot existe', in_array('plugins.versions.snapshot', $routeNames));
+check('Rota plugins.versions.restore existe',  in_array('plugins.versions.restore', $routeNames));
+check('Rota plugins.versions.compare existe',  in_array('plugins.versions.compare', $routeNames));
+
+// Edit.vue — tab e funções
+$vue = file_get_contents(resource_path('js/Pages/Plugins/Edit.vue'));
+check("Tab '📦 Versões' presente",       str_contains($vue, "id: 'versions'"));
+check('bumpVersion() definida',          str_contains($vue, 'function bumpVersion'));
+check('createVersion() definida',        str_contains($vue, 'async function createVersion'));
+check('restoreToVersion() definida',     str_contains($vue, 'async function restoreToVersion'));
+check('selectForCompare() definida',     str_contains($vue, 'function selectForCompare'));
+check('runCompare() definida',           str_contains($vue, 'async function runCompare'));
+check('viewSnapshot() definida',         str_contains($vue, 'async function viewSnapshot'));
+check('Timeline dot activo no topo',     str_contains($vue, "idx === 0"));
+check('Diff viewer com grid cols 2',     str_contains($vue, 'grid-cols-2') && str_contains($vue, 'diffResult'));
+check('snapshotModal template presente', str_contains($vue, 'snapshotModal'));
+check('Botão ↩️ Restaurar no timeline',  str_contains($vue, '↩️ Restaurar'));
+
+// StudioPluginVersion model
+check('snapshotFields inclui plugin_php',  in_array('plugin_php', StudioPluginVersion::$snapshotFields));
+check('snapshotFields inclui hooks',       in_array('hooks', StudioPluginVersion::$snapshotFields));
+check('snapshotFields NÃO inclui uuid',    !in_array('uuid', StudioPluginVersion::$snapshotFields));
+check('auto-snapshot em publish wired',    str_contains(file_get_contents(app_path('Http/Controllers/PluginController.php')), 'saveVersionSnapshot'));
+
+// Limpeza
+StudioPluginVersion::where('studio_plugin_id', $verPlugin->id)->delete();
+$verPlugin->forceDelete();
+
+// ═══════════════════════════════════════════════════
 // Limpeza
 // ═══════════════════════════════════════════════════
 $plugin->forceDelete();

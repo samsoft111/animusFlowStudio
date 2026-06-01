@@ -62,6 +62,13 @@ Route::middleware('auth')->group(function () {
     Route::get('/plugins/{uuid}/export',        [PluginController::class, 'export'])->name('plugins.export');
     Route::get('/plugins/{uuid}/export-prompt', [PluginController::class, 'exportPrompt'])->name('plugins.export-prompt');
 
+    /* ── Plugin versioning ── */
+    Route::get ('/plugins/{uuid}/versions',              [PluginController::class, 'versions'])->name('plugins.versions.list');
+    Route::post('/plugins/{uuid}/versions',              [PluginController::class, 'saveVersion'])->name('plugins.versions.save');
+    Route::get ('/plugins/{uuid}/versions/{versionId}',  [PluginController::class, 'versionSnapshot'])->name('plugins.versions.snapshot');
+    Route::post('/plugins/{uuid}/versions/{versionId}/restore', [PluginController::class, 'restoreVersion'])->name('plugins.versions.restore');
+    Route::post('/plugins/{uuid}/versions/compare',      [PluginController::class, 'compareVersions'])->name('plugins.versions.compare');
+
     Route::get('/plugins/{uuid}/preview-widget',   [PluginController::class, 'previewWidget'])->name('plugins.preview-widget');
     Route::get('/plugins/{uuid}/export-doc',       [PluginController::class, 'exportDoc'])->name('plugins.export-doc');
     Route::post('/plugins/{uuid}/generate-docs',   [PluginController::class, 'generateDocs'])->name('plugins.generate-docs');
