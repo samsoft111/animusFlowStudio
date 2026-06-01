@@ -9,6 +9,10 @@
         class="px-3 py-2 bg-muted text-foreground rounded-lg text-sm font-semibold hover:bg-border transition-colors flex items-center gap-1.5">
         <DownloadIcon class="w-3.5 h-3.5" /> {{ t('common.export') }}
       </a>
+      <button @click="showPromptModal = true"
+        class="px-3 py-2 bg-violet-500/10 text-violet-600 dark:text-violet-400 border border-violet-500/20 rounded-lg text-sm font-semibold hover:bg-violet-500/20 transition-colors flex items-center gap-1.5">
+        <SparklesIcon class="w-3.5 h-3.5" /> Exportar Prompt
+      </button>
       <button @click="publishTheme" :disabled="publishing"
         class="px-3 py-2 rounded-lg text-sm font-semibold transition-colors flex items-center gap-1.5 disabled:opacity-50"
         :class="theme.is_published ? 'bg-success/10 text-success hover:bg-success/20' : 'bg-primary text-primary-foreground hover:opacity-90'">
@@ -28,6 +32,119 @@
       <div v-if="feedback.success" class="flex items-center gap-2 px-4 py-3 bg-success/10 text-success border border-success/20 rounded-xl text-sm">
         <CheckCircleIcon class="w-4 h-4 shrink-0" />{{ feedback.success }}
         <button @click="feedback.success=''" class="ml-auto">✕</button>
+      </div>
+
+      <!-- ══════════════════════════════════════════════════ -->
+      <!-- STEPPER DE PROGRESSO                             -->
+      <!-- ══════════════════════════════════════════════════ -->
+      <div class="bg-card border border-border rounded-2xl overflow-hidden">
+
+        <!-- Cabeçalho do stepper -->
+        <div class="flex items-center justify-between px-5 py-3 border-b border-border">
+          <div class="flex items-center gap-2.5">
+            <div class="w-6 h-6 rounded-full bg-primary flex items-center justify-center">
+              <span class="text-[10px] font-bold text-primary-foreground">{{ completedSteps }}/{{ workflowSteps.length }}</span>
+            </div>
+            <span class="text-sm font-semibold text-foreground">Progresso do tema</span>
+            <span class="text-xs text-muted-foreground">— {{ Math.round((completedSteps / workflowSteps.length) * 100) }}% concluído</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <button @click="guideOpen = !guideOpen"
+              class="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1 transition-colors">
+              {{ guideOpen ? '▲ Fechar guia' : '▼ Ver guia' }}
+            </button>
+          </div>
+        </div>
+
+        <!-- Barra de progresso total -->
+        <div class="h-0.5 bg-muted">
+          <div class="h-full bg-primary transition-all duration-500"
+            :style="{ width: (completedSteps / workflowSteps.length * 100) + '%' }"></div>
+        </div>
+
+        <!-- Passos horizontais -->
+        <div class="flex overflow-x-auto px-4 py-3 gap-0 scrollbar-hide">
+          <div v-for="(step, idx) in workflowSteps" :key="step.tabId"
+            class="flex items-center shrink-0">
+
+            <!-- Passo -->
+            <button @click="activeTab = step.tabId"
+              class="flex flex-col items-center gap-1 px-3 py-1 rounded-xl transition-all group relative"
+              :class="activeTab === step.tabId
+                ? 'bg-primary/10'
+                : 'hover:bg-muted'">
+
+              <!-- Círculo do passo -->
+              <div class="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold transition-all border-2"
+                :class="step.done
+                  ? 'bg-primary border-primary text-primary-foreground'
+                  : activeTab === step.tabId
+                    ? 'bg-card border-primary text-primary'
+                    : 'bg-muted border-border text-muted-foreground group-hover:border-primary/50'">
+                <span v-if="step.done">✓</span>
+                <span v-else>{{ idx + 1 }}</span>
+              </div>
+
+              <!-- Label -->
+              <span class="text-[9px] font-semibold whitespace-nowrap transition-colors"
+                :class="activeTab === step.tabId
+                  ? 'text-primary'
+                  : step.done
+                    ? 'text-foreground'
+                    : 'text-muted-foreground group-hover:text-foreground'">
+                {{ step.icon }} {{ step.label }}
+              </span>
+            </button>
+
+            <!-- Linha conectora -->
+            <div v-if="idx < workflowSteps.length - 1"
+              class="w-6 h-0.5 shrink-0 transition-colors"
+              :class="step.done ? 'bg-primary' : 'bg-border'">
+            </div>
+
+          </div>
+        </div>
+
+        <!-- Painel de guia colapsável -->
+        <transition name="guide-slide">
+          <div v-if="guideOpen" class="border-t border-border px-5 py-4 bg-muted/40">
+            <p class="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">📋 Guia passo a passo</p>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2">
+              <button v-for="(step, idx) in workflowSteps" :key="step.tabId"
+                @click="activeTab = step.tabId; guideOpen = false"
+                class="flex items-start gap-3 p-3 rounded-xl border text-left transition-all"
+                :class="step.done
+                  ? 'bg-primary/5 border-primary/20 hover:bg-primary/10'
+                  : activeTab === step.tabId
+                    ? 'bg-card border-primary shadow-sm'
+                    : 'bg-card border-border hover:border-primary/30 hover:bg-muted'">
+                <div class="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0 mt-0.5"
+                  :class="step.done ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground border border-border'">
+                  {{ step.done ? '✓' : idx + 1 }}
+                </div>
+                <div class="min-w-0">
+                  <p class="text-xs font-semibold text-foreground">{{ step.icon }} {{ step.label }}</p>
+                  <p class="text-[10px] text-muted-foreground mt-0.5 leading-relaxed">{{ step.hint }}</p>
+                </div>
+              </button>
+            </div>
+            <!-- Passo de exportação -->
+            <div class="mt-3 flex items-center gap-3 p-3 rounded-xl border border-dashed border-border bg-card">
+              <div class="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0 bg-muted text-muted-foreground border border-border">
+                🚀
+              </div>
+              <div>
+                <p class="text-xs font-semibold text-foreground">Exportar / Publicar</p>
+                <p class="text-[10px] text-muted-foreground">Quando o tema estiver pronto, usa os botões no topo da página — <strong>Exportar</strong> para descarregar o ZIP ou <strong>Publicar</strong> para enviar ao AnimusFlow.</p>
+              </div>
+              <a :href="`/themes/${theme.uuid}/export`"
+                class="ml-auto px-3 py-1.5 bg-primary text-primary-foreground rounded-lg text-xs font-semibold hover:opacity-90 transition-opacity shrink-0">
+                ↓ Exportar
+              </a>
+            </div>
+          </div>
+        </transition>
+
       </div>
 
       <!-- TAB BAR -->
@@ -985,6 +1102,256 @@
         </div>
       </div>
 
+      <!-- ════════════════════ TAB: Ícones ════════════════════ -->
+      <div v-show="activeTab === 'icons'" class="space-y-5">
+
+        <!-- Legenda -->
+        <div class="bg-violet-500/10 border border-violet-500/20 rounded-xl px-4 py-3 text-xs text-violet-600 dark:text-violet-400 space-y-1">
+          <p class="font-semibold">✦ Galeria de Ícones — Lucide Icon Set</p>
+          <p>Passa o rato por cima de um ícone para ver as 3 opções de cópia:</p>
+          <div class="flex flex-wrap gap-4 mt-1">
+            <span><strong class="bg-blue-500/20 px-1 rounded">Vue</strong> — importa e usa como componente <code>&lt;HomeIcon /&gt;</code></span>
+            <span><strong class="bg-green-500/20 px-1 rounded">Blade</strong> — usa com o pacote blade-lucide-icons <code>&lt;x-lucide-home /&gt;</code></span>
+            <span><strong class="bg-orange-500/20 px-1 rounded">SVG</strong> — copia o SVG inline completo, sem dependências</span>
+          </div>
+          <p class="text-violet-500/70 mt-1">💡 O SVG é carregado via CDN Lucide — requer ligação à internet no momento da cópia.</p>
+        </div>
+
+        <!-- Barra de pesquisa + categorias -->
+        <div class="bg-card border border-border rounded-2xl p-5 space-y-4">
+          <div class="flex gap-3 items-center">
+            <div class="relative flex-1 max-w-sm">
+              <SearchIcon class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <input v-model="iconSearch" type="search" placeholder="Pesquisar ícone…"
+                class="field-input pl-9" />
+            </div>
+            <span class="text-xs text-muted-foreground">{{ filteredIcons.length }} ícones</span>
+          </div>
+          <!-- Categoria pills -->
+          <div class="flex flex-wrap gap-1.5">
+            <button v-for="cat in iconCategories" :key="cat.id"
+              @click="activeIconCat = cat.id"
+              class="px-2.5 py-1 rounded-lg text-xs font-semibold transition-colors"
+              :class="activeIconCat === cat.id
+                ? 'bg-primary text-primary-foreground'
+                : 'bg-muted text-muted-foreground hover:bg-border hover:text-foreground'">
+              {{ cat.label }}
+            </button>
+          </div>
+        </div>
+
+        <!-- Toast "copiado" -->
+        <transition name="fade">
+          <div v-if="iconCopied.text"
+            class="fixed bottom-6 right-6 z-50 flex items-center gap-2 px-4 py-2.5 rounded-xl shadow-lg pointer-events-none text-xs font-semibold"
+            :class="{
+              'bg-blue-600 text-white':   iconCopied.type === 'vue',
+              'bg-green-600 text-white':  iconCopied.type === 'blade',
+              'bg-orange-500 text-white': iconCopied.type === 'svg',
+            }">
+            <CheckCircleIcon class="w-3.5 h-3.5" />
+            <span>{{ iconCopied.type === 'vue' ? 'Vue' : iconCopied.type === 'blade' ? 'Blade' : 'SVG' }} copiado — {{ iconCopied.label }}</span>
+          </div>
+        </transition>
+
+        <!-- Grade de ícones -->
+        <div class="grid grid-cols-[repeat(auto-fill,minmax(110px,1fr))] gap-2">
+          <template v-for="icon in filteredIcons" :key="icon.name">
+            <div class="relative group bg-card border border-border rounded-xl p-3 flex flex-col items-center gap-2 transition-all hover:border-primary/40 hover:shadow-sm">
+
+              <!-- Ícone + nome -->
+              <component :is="LucideIcons[icon.name]" class="w-6 h-6 text-foreground flex-shrink-0" />
+              <span class="text-[9px] text-center leading-tight text-muted-foreground break-all">
+                {{ icon.name.replace(/Icon$/, '') }}
+              </span>
+
+              <!-- Overlay com botões ao hover -->
+              <div class="absolute inset-0 rounded-xl bg-card/95 backdrop-blur-sm flex flex-col items-center justify-center gap-1.5 px-2
+                          opacity-0 group-hover:opacity-100 transition-opacity duration-150">
+                <!-- Vue -->
+                <button @click="copyIcon(icon.name, 'vue')"
+                  class="w-full py-1 rounded-lg text-[10px] font-bold bg-blue-500/15 text-blue-600 hover:bg-blue-500/30 transition-colors">
+                  &lt;&gt; Vue
+                </button>
+                <!-- Blade -->
+                <button @click="copyIcon(icon.name, 'blade')"
+                  class="w-full py-1 rounded-lg text-[10px] font-bold bg-green-500/15 text-green-700 hover:bg-green-500/30 transition-colors">
+                  🔪 Blade
+                </button>
+                <!-- SVG -->
+                <button @click="copyIcon(icon.name, 'svg')"
+                  :disabled="iconSvgLoading === icon.name"
+                  class="w-full py-1 rounded-lg text-[10px] font-bold bg-orange-500/15 text-orange-600 hover:bg-orange-500/30 transition-colors disabled:opacity-50">
+                  {{ iconSvgLoading === icon.name ? '…' : '&#60;svg&#62;' }}
+                </button>
+              </div>
+
+            </div>
+          </template>
+          <div v-if="filteredIcons.length === 0" class="col-span-full text-center py-16 text-muted-foreground text-sm">
+            Nenhum ícone encontrado para "<span class="font-semibold">{{ iconSearch }}</span>"
+          </div>
+        </div>
+      </div>
+
+      <!-- ════════════════════ TAB: Demo Data ════════════════════ -->
+      <div v-show="activeTab === 'demo'" class="space-y-5">
+
+        <!-- Legenda -->
+        <div class="bg-pink-500/10 border border-pink-500/20 rounded-xl px-4 py-3 text-xs text-pink-600 dark:text-pink-400 space-y-1">
+          <p class="font-semibold">🎭 O que é o Demo Data?</p>
+          <p>Preenche automaticamente o tema com <strong>conteúdo de demonstração realista</strong> — imagens placeholder, paletas de cores, layouts, secções e componentes — de acordo com o tipo de site escolhido.</p>
+          <p class="text-pink-500/70">💡 Podes aplicar por categoria (só cores, só imagens…) ou tudo de uma vez. Os dados existentes são <strong>substituídos</strong>. Guarda depois para persistir.</p>
+        </div>
+
+        <!-- Seletor de tipo de site -->
+        <div class="bg-card border border-border rounded-2xl p-5 space-y-4">
+          <h3 class="font-semibold text-sm text-foreground">1. Escolhe o tipo de site</h3>
+          <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+            <button v-for="st in demoSiteTypes" :key="st.id"
+              @click="selectedDemoType = st.id"
+              class="flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all text-center"
+              :class="selectedDemoType === st.id
+                ? 'border-primary bg-primary/5 shadow-sm'
+                : 'border-border bg-muted hover:border-primary/40 hover:bg-card'">
+              <span class="text-2xl">{{ st.emoji }}</span>
+              <span class="text-xs font-bold text-foreground">{{ st.label }}</span>
+              <span class="text-[10px] text-muted-foreground leading-tight">{{ st.description }}</span>
+              <!-- Preview de cores -->
+              <div class="flex gap-1 mt-1" v-if="st.palette">
+                <div v-for="c in st.palette" :key="c" class="w-4 h-4 rounded-full border border-white/20" :style="{ background: c }"></div>
+              </div>
+            </button>
+          </div>
+        </div>
+
+        <!-- Categorias a aplicar -->
+        <div v-if="selectedDemoType" class="bg-card border border-border rounded-2xl p-5 space-y-4">
+          <div class="flex items-center justify-between">
+            <h3 class="font-semibold text-sm text-foreground">2. O que queres preencher?</h3>
+            <button @click="toggleAllDemoCategories"
+              class="text-xs text-primary hover:underline">
+              {{ demoCategories.every(c => demoSelected.includes(c.id)) ? 'Desmarcar tudo' : 'Selecionar tudo' }}
+            </button>
+          </div>
+          <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
+            <label v-for="cat in demoCategories" :key="cat.id"
+              class="flex items-center gap-2.5 p-3 rounded-xl border cursor-pointer transition-all"
+              :class="demoSelected.includes(cat.id)
+                ? 'border-primary/40 bg-primary/5'
+                : 'border-border bg-muted hover:bg-card'">
+              <input type="checkbox" :value="cat.id" v-model="demoSelected" class="accent-primary w-4 h-4 rounded" />
+              <div>
+                <p class="text-xs font-semibold text-foreground">{{ cat.icon }} {{ cat.label }}</p>
+                <p class="text-[10px] text-muted-foreground">{{ cat.hint }}</p>
+              </div>
+            </label>
+          </div>
+        </div>
+
+        <!-- Pré-visualização do que vai ser aplicado -->
+        <div v-if="selectedDemoType && demoSelected.length" class="bg-card border border-border rounded-2xl p-5 space-y-4">
+          <h3 class="font-semibold text-sm text-foreground">3. Pré-visualização</h3>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+
+            <!-- Cores -->
+            <div v-if="demoSelected.includes('colors')" class="space-y-2">
+              <p class="text-xs font-semibold text-muted-foreground uppercase tracking-wider">🎨 Cores</p>
+              <div class="flex flex-wrap gap-2">
+                <div v-for="(val, key) in currentDemoData?.colors?.light" :key="key"
+                  class="flex items-center gap-1.5 bg-muted rounded-lg px-2 py-1">
+                  <div class="w-3.5 h-3.5 rounded-full border border-white/20 shrink-0" :style="{ background: val }"></div>
+                  <span class="text-[10px] text-muted-foreground">{{ key.replace('--color-','') }}</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Imagens demo -->
+            <div v-if="demoSelected.includes('assets')" class="space-y-2">
+              <p class="text-xs font-semibold text-muted-foreground uppercase tracking-wider">🖼️ Imagens</p>
+              <div class="flex gap-2 flex-wrap">
+                <img v-for="(url, slot) in currentDemoData?.assets" :key="slot"
+                  :src="url" :alt="slot"
+                  class="w-16 h-12 object-cover rounded-lg border border-border" />
+              </div>
+            </div>
+
+            <!-- Layout -->
+            <div v-if="demoSelected.includes('layout')" class="space-y-2">
+              <p class="text-xs font-semibold text-muted-foreground uppercase tracking-wider">📐 Layout</p>
+              <div class="flex flex-wrap gap-1.5">
+                <span v-for="(val, key) in currentDemoData?.layout_config" :key="key"
+                  class="text-[10px] bg-muted rounded-md px-2 py-0.5 text-foreground">
+                  {{ key.replace(/_/g, ' ') }}: <strong>{{ val }}</strong>
+                </span>
+              </div>
+            </div>
+
+            <!-- Secções -->
+            <div v-if="demoSelected.includes('sections')" class="space-y-2">
+              <p class="text-xs font-semibold text-muted-foreground uppercase tracking-wider">🧩 Secções</p>
+              <div class="flex flex-wrap gap-1.5">
+                <span v-for="(cfg, name) in currentDemoData?.sections" :key="name"
+                  class="text-[10px] bg-blue-500/10 text-blue-600 rounded-md px-2 py-0.5 font-semibold">
+                  {{ name }}
+                </span>
+              </div>
+            </div>
+
+            <!-- Componentes -->
+            <div v-if="demoSelected.includes('components')" class="space-y-2">
+              <p class="text-xs font-semibold text-muted-foreground uppercase tracking-wider">🔧 Componentes</p>
+              <div class="flex flex-wrap gap-1.5">
+                <span v-for="(cfg, name) in currentDemoData?.components" :key="name"
+                  class="text-[10px] bg-violet-500/10 text-violet-600 rounded-md px-2 py-0.5 font-semibold">
+                  {{ name }}
+                </span>
+              </div>
+            </div>
+
+            <!-- Capacidades -->
+            <div v-if="demoSelected.includes('capabilities')" class="space-y-2">
+              <p class="text-xs font-semibold text-muted-foreground uppercase tracking-wider">⚙️ Capacidades</p>
+              <div class="flex flex-wrap gap-1.5">
+                <span v-for="(val, key) in currentDemoData?.capabilities" :key="key"
+                  class="text-[10px] rounded-md px-2 py-0.5 font-semibold"
+                  :class="val ? 'bg-green-500/10 text-green-600' : 'bg-muted text-muted-foreground'">
+                  {{ val ? '✓' : '✗' }} {{ key.replace(/_/g, ' ') }}
+                </span>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- Botão de aplicar -->
+        <div v-if="selectedDemoType && demoSelected.length"
+          class="flex items-center justify-between gap-4 bg-card border border-border rounded-2xl p-5">
+          <div>
+            <p class="text-sm font-semibold text-foreground">Pronto para aplicar!</p>
+            <p class="text-xs text-muted-foreground">Serão preenchidas {{ demoSelected.length }} categorias com dados do tema <strong>{{ demoSiteTypes.find(t=>t.id===selectedDemoType)?.label }}</strong>.</p>
+          </div>
+          <div class="flex gap-2 shrink-0">
+            <button @click="selectedDemoType = null; demoSelected = []"
+              class="px-4 py-2 bg-muted text-foreground rounded-xl text-sm font-semibold hover:bg-border transition-colors">
+              Cancelar
+            </button>
+            <button @click="applyDemoData"
+              class="px-5 py-2 bg-primary text-primary-foreground rounded-xl text-sm font-bold hover:opacity-90 transition-opacity flex items-center gap-2">
+              🎭 Aplicar Demo Data
+            </button>
+          </div>
+        </div>
+
+        <!-- Estado vazio -->
+        <div v-if="!selectedDemoType" class="flex flex-col items-center justify-center py-16 text-center text-muted-foreground space-y-3">
+          <span class="text-5xl">🎭</span>
+          <p class="text-sm font-semibold">Escolhe um tipo de site acima para começar</p>
+          <p class="text-xs max-w-sm">Os dados de demo são baseados em sites reais de cada categoria — cores, imagens, layout e conteúdo coerentes.</p>
+        </div>
+
+      </div>
+
       <!-- ════════════════════ TAB: Preview ════════════════════ -->
       <div v-show="activeTab === 'preview'" class="space-y-3">
         <div class="flex items-center gap-3">
@@ -1028,6 +1395,103 @@
       </div>
     </div>
 
+  <!-- ════════════════════ MODAL: Exportar Prompt ════════════════════ -->
+  <transition name="fade">
+    <div v-if="showPromptModal"
+      class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4"
+      @click.self="showPromptModal = false">
+
+      <div class="bg-card border border-border rounded-2xl w-full max-w-2xl shadow-2xl flex flex-col max-h-[90vh]">
+
+        <!-- Header -->
+        <div class="flex items-center justify-between px-6 py-4 border-b border-border shrink-0">
+          <div class="flex items-center gap-3">
+            <div class="w-8 h-8 rounded-lg bg-violet-500/15 flex items-center justify-center">
+              <SparklesIcon class="w-4 h-4 text-violet-500" />
+            </div>
+            <div>
+              <h2 class="font-bold text-foreground text-sm">Exportar Theme Prompt</h2>
+              <p class="text-[10px] text-muted-foreground">Formato <code>.afprompt</code> — lido pelo AnimusFlow para instalar o tema</p>
+            </div>
+          </div>
+          <button @click="showPromptModal = false" class="w-7 h-7 rounded-lg bg-muted hover:bg-border flex items-center justify-center text-muted-foreground transition-colors">✕</button>
+        </div>
+
+        <!-- Conteúdo -->
+        <div class="overflow-y-auto flex-1 p-6 space-y-5">
+
+          <!-- O que é -->
+          <div class="bg-violet-500/10 border border-violet-500/20 rounded-xl px-4 py-3 text-xs text-violet-600 dark:text-violet-400 space-y-2">
+            <p class="font-semibold">✦ O que é um Theme Prompt?</p>
+            <p>É um ficheiro de texto estruturado (<code>.afprompt</code>) que contém <strong>todo o tema num único bloco</strong> — cores, layout, secções, componentes, assets, CSS e JS. O AnimusFlow lê este ficheiro e instala o tema automaticamente.</p>
+          </div>
+
+          <!-- Resumo do tema -->
+          <div class="bg-muted rounded-xl p-4 space-y-3">
+            <p class="text-xs font-semibold text-muted-foreground uppercase tracking-wider">📦 Conteúdo que será exportado</p>
+            <div class="grid grid-cols-2 gap-2">
+              <div v-for="item in promptSummary" :key="item.label"
+                class="flex items-center gap-2 bg-card rounded-lg px-3 py-2 border border-border">
+                <span class="text-base">{{ item.icon }}</span>
+                <div>
+                  <p class="text-[10px] font-semibold text-foreground">{{ item.label }}</p>
+                  <p class="text-[9px] text-muted-foreground">{{ item.value }}</p>
+                </div>
+                <span class="ml-auto text-xs" :class="item.ok ? 'text-success' : 'text-muted-foreground'">
+                  {{ item.ok ? '✓' : '—' }}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Fluxo de instalação -->
+          <div class="space-y-2">
+            <p class="text-xs font-semibold text-muted-foreground uppercase tracking-wider">🔄 Como instalar no AnimusFlow</p>
+            <div class="flex flex-col gap-1.5">
+              <div v-for="(step, i) in installSteps" :key="i"
+                class="flex items-start gap-3 p-3 bg-muted rounded-xl">
+                <div class="w-5 h-5 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-[10px] font-bold shrink-0 mt-0.5">{{ i + 1 }}</div>
+                <p class="text-xs text-foreground">{{ step }}</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Formato do ficheiro -->
+          <div class="bg-muted rounded-xl overflow-hidden">
+            <div class="flex items-center justify-between px-4 py-2 border-b border-border">
+              <span class="text-xs font-semibold text-muted-foreground">Pré-visualização do formato</span>
+              <span class="text-[10px] text-muted-foreground font-mono">{{ theme.name }}.afprompt</span>
+            </div>
+            <pre class="text-[10px] text-muted-foreground p-4 overflow-x-auto leading-relaxed font-mono">{{ promptPreview }}</pre>
+          </div>
+
+        </div>
+
+        <!-- Acções -->
+        <div class="flex items-center gap-3 px-6 py-4 border-t border-border shrink-0 bg-muted/50">
+          <div class="flex-1 min-w-0">
+            <p class="text-xs text-muted-foreground truncate">
+              Checksum SHA-256 gerado automaticamente para verificação de integridade.
+            </p>
+          </div>
+          <button @click="showPromptModal = false"
+            class="px-4 py-2 bg-muted text-foreground rounded-xl text-sm font-semibold hover:bg-border transition-colors">
+            Cancelar
+          </button>
+          <button @click="copyPromptToClipboard"
+            class="px-4 py-2 bg-muted border border-border text-foreground rounded-xl text-sm font-semibold hover:bg-border transition-colors flex items-center gap-2">
+            <span>📋</span> Copiar
+          </button>
+          <a :href="`/themes/${theme.uuid}/export-prompt`"
+            class="px-5 py-2 bg-violet-600 text-white rounded-xl text-sm font-bold hover:bg-violet-700 transition-colors flex items-center gap-2">
+            <SparklesIcon class="w-4 h-4" /> Descarregar .afprompt
+          </a>
+        </div>
+
+      </div>
+    </div>
+  </transition>
+
   </AppLayout>
 </template>
 
@@ -1036,10 +1500,11 @@ import { ref, reactive, computed } from 'vue';
 import { router } from '@inertiajs/vue3';
 import { useI18n } from 'vue-i18n';
 import AppLayout from '@/Layouts/AppLayout.vue';
+import * as LucideIcons from 'lucide-vue-next';
 import {
   EyeIcon, DownloadIcon, UploadIcon, SparklesIcon,
   CheckCircleIcon, XCircleIcon, PlusIcon, CodeIcon,
-  RefreshCwIcon, ExternalLinkIcon, PaletteIcon,
+  RefreshCwIcon, ExternalLinkIcon, PaletteIcon, SearchIcon,
 } from 'lucide-vue-next';
 
 const { t } = useI18n();
@@ -1057,8 +1522,84 @@ const tabs = [
   { id: 'components',   icon: '🔧', label: 'Componentes' },
   { id: 'code',         icon: '💻', label: 'Código'      },
   { id: 'variants',     icon: '🌈', label: 'Variantes'   },
+  { id: 'icons',        icon: '✦',  label: 'Ícones'      },
+  { id: 'demo',         icon: '🎭', label: 'Demo Data'   },
   { id: 'preview',      icon: '👁️',  label: 'Preview'     },
 ];
+
+// ── Workflow stepper ──────────────────────────────────────────────
+const guideOpen = ref(props.theme?.status === 'draft' && !props.theme?.description);
+
+const workflowSteps = computed(() => {
+  const f = form; // alias — computed reage às propriedades do reactive
+  const hasColors     = f.colors && Object.keys(f.colors).length > 0;
+  const hasVariants   = f.variants && f.variants.length > 0;
+  const hasAssets     = f.assets && Object.values(f.assets).some(v => !!v);
+  const hasSections   = f.sections && Object.keys(f.sections).length > 0;
+  const hasComponents = f.components && Object.keys(f.components).length > 0;
+  const hasCode       = !!(f.custom_css?.trim() || f.custom_js?.trim());
+  const isDefaultLabel = !f.label || f.label.startsWith('Novo Tema');
+
+  return [
+    {
+      tabId: 'details', icon: '📋', label: 'Detalhes',
+      hint: 'Define o nome, slug, versão e descrição do tema.',
+      done: !isDefaultLabel && !!f.description,
+    },
+    {
+      tabId: 'design', icon: '🎨', label: 'Design',
+      hint: 'Escolhe as cores base, tipografia e estilos globais.',
+      done: hasColors,
+    },
+    {
+      tabId: 'variants', icon: '🌈', label: 'Variantes',
+      hint: 'Adiciona paletas de cores alternativas (dark mode, skins).',
+      done: hasVariants,
+    },
+    {
+      tabId: 'layout', icon: '📐', label: 'Layout',
+      hint: 'Configura header, navegação, footer e estrutura da página.',
+      done: !!f.layout_config?.header_type,
+    },
+    {
+      tabId: 'capabilities', icon: '⚙️', label: 'Capacidades',
+      hint: 'Ativa funcionalidades especiais: parallax, animações, banners…',
+      done: f.capabilities && Object.values(f.capabilities).some(v => v === true),
+    },
+    {
+      tabId: 'assets', icon: '🖼️', label: 'Assets',
+      hint: 'Faz upload do logo, favicon, imagens de fundo e OG image.',
+      done: hasAssets,
+    },
+    {
+      tabId: 'sections', icon: '🧩', label: 'Secções',
+      hint: 'Seleciona os blocos de conteúdo: hero, features, pricing…',
+      done: hasSections,
+    },
+    {
+      tabId: 'components', icon: '🔧', label: 'Componentes',
+      hint: 'Adiciona e ordena componentes: navbar, footer, modais…',
+      done: hasComponents,
+    },
+    {
+      tabId: 'code', icon: '💻', label: 'Código',
+      hint: 'Adiciona CSS ou JS personalizado se necessário.',
+      done: hasCode,
+    },
+    {
+      tabId: 'demo', icon: '🎭', label: 'Demo Data',
+      hint: 'Preenche o tema com imagens, cores e conteúdo de demonstração por tipo de site.',
+      done: !!f._demoApplied,
+    },
+    {
+      tabId: 'preview', icon: '👁️', label: 'Preview',
+      hint: 'Visualiza o tema no browser antes de exportar.',
+      done: false,
+    },
+  ];
+});
+
+const completedSteps = computed(() => workflowSteps.value.filter(s => s.done).length);
 
 // ── Edit form ─────────────────────────────────────────────────────
 const defaultLayout = props.theme?.layout_config ?? {};
@@ -1084,6 +1625,7 @@ const form = reactive({
   custom_js:  props.theme?.custom_js  ?? '',
   assets:     { ...(props.theme?.assets ?? {}) },
   variants:   JSON.parse(JSON.stringify(props.theme?.variants ?? [])),
+  _demoApplied: false, // flag local — não enviada ao servidor
   layout_config: {
     header_type:      defaultLayout.header_type      ?? 'glass',
     header_sticky:    defaultLayout.header_sticky    ?? true,
@@ -1688,6 +2230,798 @@ function setVariantColor(idx, mode, varName, val) {
   form.variants[idx].colors[mode][varName] = val;
 }
 
+// ── Theme Prompt Modal ────────────────────────────────────────────
+const showPromptModal = ref(false);
+
+const promptSummary = computed(() => {
+  const f = form;
+  return [
+    { icon: '📋', label: 'Metadados',    value: `${f.label} v${f.version}`,                                                ok: !!f.label },
+    { icon: '🎨', label: 'Cores',        value: `Light + Dark tokens`,                                                      ok: !!(f.colors?.light && Object.keys(f.colors.light).length) },
+    { icon: '🌈', label: 'Variantes',    value: `${f.variants?.length ?? 0} paletas`,                                       ok: (f.variants?.length ?? 0) > 0 },
+    { icon: '📐', label: 'Layout',       value: `Header: ${f.layout_config?.header_type ?? '—'}, Nav: ${f.layout_config?.nav_type ?? '—'}`, ok: !!f.layout_config?.header_type },
+    { icon: '⚙️',  label: 'Capacidades', value: `${Object.values(f.capabilities ?? {}).filter(Boolean).length} ativas`,     ok: Object.values(f.capabilities ?? {}).some(Boolean) },
+    { icon: '🧩', label: 'Secções',      value: `${Object.keys(f.sections ?? {}).length} blocos`,                           ok: Object.keys(f.sections ?? {}).length > 0 },
+    { icon: '🔧', label: 'Componentes',  value: `${Object.keys(f.components ?? {}).length} componentes`,                    ok: Object.keys(f.components ?? {}).length > 0 },
+    { icon: '🖼️',  label: 'Assets',       value: `${Object.values(f.assets ?? {}).filter(Boolean).length} ficheiros`,        ok: Object.values(f.assets ?? {}).some(Boolean) },
+    { icon: '🖋️',  label: 'Tipografia',   value: `${f.fonts?.heading ?? 'padrão'} / ${f.fonts?.body ?? 'padrão'}`,          ok: !!f.fonts?.heading },
+    { icon: '💻', label: 'CSS Custom',   value: f.custom_css?.trim() ? `${f.custom_css.split('\n').length} linhas` : 'Sem CSS', ok: !!f.custom_css?.trim() },
+    { icon: '⚡', label: 'JS Custom',    value: f.custom_js?.trim()  ? `${f.custom_js.split('\n').length} linhas`  : 'Sem JS',  ok: !!f.custom_js?.trim()  },
+  ];
+});
+
+const installSteps = [
+  'Descarrega o ficheiro .afprompt ou copia o conteúdo para o clipboard.',
+  'Abre o AnimusFlow Admin → Extensões → Temas → Importar Prompt.',
+  'Cola o bloco completo (incluindo as marcações [AF:THEME:BEGIN] e [AF:THEME:END]).',
+  'Clica em "Instalar Tema" — o AnimusFlow valida o checksum e aplica todas as configurações.',
+  'Activa o tema em AnimusFlow Admin → Aparência → Tema Activo.',
+];
+
+const promptPreview = computed(() => {
+  const divider = '━'.repeat(50);
+  const caps = Object.entries(form.capabilities ?? {}).filter(([,v]) => v).map(([k]) => k.replace(/_/g,' ')).join(', ') || '—';
+  const secs = Object.keys(form.sections   ?? {}).join(', ') || '—';
+  const comps = Object.keys(form.components ?? {}).join(', ') || '—';
+  return `${divider}
+ ANIMUSFLOW THEME PROMPT  v1.0
+ Tema: ${form.label}  (${form.name})
+ Versão: ${form.version}
+${divider}
+
+[AF:THEME:BEGIN]
+{
+  "af_prompt_version": "1.0",
+  "meta": { "name": "${form.name}", "label": "${form.label}", ... },
+  "design": { "colors": {...}, "variants": [...] },
+  "layout": { "header_type": "${form.layout_config?.header_type}", ... },
+  "capabilities": { ${caps} },
+  "structure": {
+    "sections":   { ${secs} },
+    "components": { ${comps} }
+  },
+  "assets": {...},
+  "code": { "css": "...", "js": "..." }
+}
+[AF:THEME:END]
+${divider}
+CHECKSUM: sha256:<gerado no servidor>
+${divider}`;
+});
+
+async function copyPromptToClipboard() {
+  try {
+    const res = await fetch(`/themes/${props.theme.uuid}/export-prompt`);
+    const text = await res.text();
+    await navigator.clipboard.writeText(text);
+    feedback.success = '📋 Theme Prompt copiado para o clipboard!';
+    setTimeout(() => { feedback.success = ''; }, 3000);
+    showPromptModal.value = false;
+  } catch {
+    feedback.error = 'Não foi possível copiar. Usa o botão Descarregar.';
+  }
+}
+
+// ── Demo Data ─────────────────────────────────────────────────────
+const selectedDemoType = ref(null);
+const demoSelected     = ref(['colors','assets','layout','sections','components','capabilities','variants','code']);
+
+const demoCategories = [
+  { id: 'colors',       icon: '🎨', label: 'Cores',        hint: 'Paleta primária e tokens CSS' },
+  { id: 'assets',       icon: '🖼️',  label: 'Imagens',      hint: 'Logo, hero, fundos, OG image' },
+  { id: 'layout',       icon: '📐', label: 'Layout',       hint: 'Header, nav, footer, estrutura' },
+  { id: 'sections',     icon: '🧩', label: 'Secções',      hint: 'Blocos de conteúdo da página' },
+  { id: 'components',   icon: '🔧', label: 'Componentes',  hint: 'Navbar, footer, modais, etc.' },
+  { id: 'capabilities', icon: '⚙️',  label: 'Capacidades',  hint: 'Features especiais do tema' },
+  { id: 'variants',     icon: '🌈', label: 'Variantes',    hint: 'Dark mode e paletas alternativas' },
+  { id: 'code',         icon: '💻', label: 'CSS / JS Demo',hint: 'Estilos e scripts de exemplo' },
+];
+
+function toggleAllDemoCategories() {
+  if (demoSelected.value.length === demoCategories.length) {
+    demoSelected.value = [];
+  } else {
+    demoSelected.value = demoCategories.map(c => c.id);
+  }
+}
+
+const demoSiteTypes = [
+  {
+    id: 'saas', emoji: '🚀', label: 'SaaS / Tech',
+    description: 'Software, apps, plataformas digitais',
+    palette: ['#6366f1','#8b5cf6','#06b6d4','#0f172a','#f8fafc'],
+    data: {
+      colors: {
+        light: { '--color-primary':'#6366f1','--color-secondary':'#8b5cf6','--color-accent':'#06b6d4','--color-background':'#f8fafc','--color-foreground':'#0f172a','--color-card':'#ffffff','--color-muted':'#f1f5f9','--color-border':'#e2e8f0','--color-success':'#10b981','--color-warning':'#f59e0b','--color-destructive':'#ef4444' },
+        dark:  { '--color-primary':'#818cf8','--color-secondary':'#a78bfa','--color-accent':'#22d3ee','--color-background':'#0a0a0f','--color-foreground':'#f1f5f9','--color-card':'#13131a','--color-muted':'#1e1e2e','--color-border':'#2d2d3f','--color-success':'#34d399','--color-warning':'#fbbf24','--color-destructive':'#f87171' },
+      },
+      assets: {
+        logo:       'https://placehold.co/200x60/6366f1/ffffff?text=SaaSApp',
+        logo_dark:  'https://placehold.co/200x60/818cf8/0a0a0f?text=SaaSApp',
+        favicon:    'https://placehold.co/64x64/6366f1/ffffff?text=S',
+        hero_image: 'https://picsum.photos/seed/saas-hero/1280/720',
+        bg_image:   'https://picsum.photos/seed/saas-bg/1920/1080',
+        og_image:   'https://picsum.photos/seed/saas-og/1200/630',
+      },
+      layout_config: { header_type:'glass', nav_type:'horizontal', nav_position:'right', footer_type:'columns', layout_type:'full-width', max_width:'1200', spacing:'normal', header_sticky:true, show_dark_toggle:true, back_to_top:true, header_cta_text:'Começar grátis', header_cta_url:'#pricing' },
+      capabilities:  { animations:true, scroll_progress:true, back_to_top:true, search:true, preloader:true, parallax:false, video_bg:false, lightbox:false, mega_menu:false, cookie_banner:true },
+      sections:      { hero:{variant:'centered-cta'}, features:{variant:'grid-3'}, pricing:{variant:'cards'}, testimonials:{variant:'carousel'}, faq:{variant:'accordion'}, cta:{variant:'gradient'}, footer:{variant:'columns'} },
+      components:    { navbar:{variant:'transparent'}, 'cookie-banner':{variant:'bottom-bar'}, 'scroll-progress':{variant:'top-bar'}, 'back-to-top':{variant:'circle'} },
+      variants: [
+        { name:'dark', label:'Dark Mode', _open:false, _mode:'dark', colors:{ light:{}, dark:{ '--color-primary':'#818cf8','--color-secondary':'#a78bfa','--color-accent':'#22d3ee','--color-background':'#0a0a0f','--color-foreground':'#f1f5f9','--color-card':'#13131a','--color-muted':'#1e1e2e','--color-border':'#2d2d3f','--color-success':'#34d399','--color-warning':'#fbbf24','--color-destructive':'#f87171' } } },
+        { name:'ocean', label:'Ocean', _open:false, _mode:'light', colors:{ light:{ '--color-primary':'#0ea5e9','--color-secondary':'#38bdf8','--color-accent':'#6366f1','--color-background':'#f0f9ff','--color-foreground':'#0c4a6e','--color-card':'#ffffff','--color-muted':'#e0f2fe','--color-border':'#bae6fd','--color-success':'#10b981','--color-warning':'#f59e0b','--color-destructive':'#ef4444' }, dark:{} } },
+      ],
+      custom_css: `:root { --radius: 0.75rem; }\n.hero-gradient { background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%); }\n.glass { backdrop-filter: blur(12px); background: rgba(255,255,255,0.08); }`,
+      custom_js:  `// Demo: smooth scroll\ndocument.querySelectorAll('a[href^="#"]').forEach(a => {\n  a.addEventListener('click', e => {\n    e.preventDefault();\n    document.querySelector(a.getAttribute('href'))?.scrollIntoView({ behavior: 'smooth' });\n  });\n});`,
+    },
+  },
+  {
+    id: 'portfolio', emoji: '🎨', label: 'Portfolio',
+    description: 'Criativos, designers, fotógrafos',
+    palette: ['#111111','#f5f5f0','#d4a853','#6b7280','#ffffff'],
+    data: {
+      colors: {
+        light: { '--color-primary':'#111111','--color-secondary':'#374151','--color-accent':'#d4a853','--color-background':'#f5f5f0','--color-foreground':'#111111','--color-card':'#ffffff','--color-muted':'#f3f4f6','--color-border':'#e5e7eb','--color-success':'#10b981','--color-warning':'#f59e0b','--color-destructive':'#ef4444' },
+        dark:  { '--color-primary':'#f5f5f0','--color-secondary':'#d1d5db','--color-accent':'#d4a853','--color-background':'#0a0a09','--color-foreground':'#f5f5f0','--color-card':'#141413','--color-muted':'#1c1c1a','--color-border':'#2a2a28','--color-success':'#34d399','--color-warning':'#fbbf24','--color-destructive':'#f87171' },
+      },
+      assets: {
+        logo:       'https://placehold.co/160x50/111111/f5f5f0?text=Studio',
+        logo_dark:  'https://placehold.co/160x50/f5f5f0/111111?text=Studio',
+        favicon:    'https://placehold.co/64x64/111111/d4a853?text=P',
+        hero_image: 'https://picsum.photos/seed/portfolio-hero/1280/800',
+        about_bg:   'https://picsum.photos/seed/portfolio-about/800/600',
+        og_image:   'https://picsum.photos/seed/portfolio-og/1200/630',
+      },
+      layout_config: { header_type:'transparent', nav_type:'horizontal', nav_position:'center', footer_type:'minimal', layout_type:'full-width', max_width:'1100', spacing:'spacious', header_sticky:true, show_dark_toggle:true, back_to_top:false, header_cta_text:'Contactar', header_cta_url:'#contact' },
+      capabilities:  { animations:true, lightbox:true, back_to_top:false, parallax:true, scroll_progress:false, search:false, preloader:true, video_bg:false, mega_menu:false, cookie_banner:false },
+      sections:      { hero:{variant:'fullscreen-image'}, about:{variant:'side-by-side'}, portfolio:{variant:'masonry'}, testimonials:{variant:'minimal'}, contact:{variant:'simple'} },
+      components:    { navbar:{variant:'minimal'}, lightbox:{variant:'standard'} },
+      variants: [
+        { name:'dark', label:'Dark Mode', _open:false, _mode:'dark', colors:{ light:{}, dark:{ '--color-primary':'#f5f5f0','--color-secondary':'#d1d5db','--color-accent':'#d4a853','--color-background':'#0a0a09','--color-foreground':'#f5f5f0','--color-card':'#141413','--color-muted':'#1c1c1a','--color-border':'#2a2a28','--color-success':'#34d399','--color-warning':'#fbbf24','--color-destructive':'#f87171' } } },
+      ],
+      custom_css: `body { font-family: 'Georgia', serif; }\n.portfolio-grid { column-count: 3; column-gap: 1.5rem; }\n.portfolio-item { break-inside: avoid; margin-bottom: 1.5rem; }`,
+      custom_js:  `// Demo: lazy load images\ndocument.querySelectorAll('img[data-src]').forEach(img => {\n  new IntersectionObserver(([e]) => { if(e.isIntersecting) { img.src = img.dataset.src; } }).observe(img);\n});`,
+    },
+  },
+  {
+    id: 'ecommerce', emoji: '🛒', label: 'E-commerce',
+    description: 'Lojas online, produtos, marketplace',
+    palette: ['#16a34a','#15803d','#f59e0b','#ffffff','#f9fafb'],
+    data: {
+      colors: {
+        light: { '--color-primary':'#16a34a','--color-secondary':'#15803d','--color-accent':'#f59e0b','--color-background':'#f9fafb','--color-foreground':'#111827','--color-card':'#ffffff','--color-muted':'#f3f4f6','--color-border':'#e5e7eb','--color-success':'#10b981','--color-warning':'#f59e0b','--color-destructive':'#ef4444' },
+        dark:  { '--color-primary':'#4ade80','--color-secondary':'#86efac','--color-accent':'#fbbf24','--color-background':'#030a05','--color-foreground':'#f0fdf4','--color-card':'#0a1a0d','--color-muted':'#14291a','--color-border':'#1a3a21','--color-success':'#34d399','--color-warning':'#fbbf24','--color-destructive':'#f87171' },
+      },
+      assets: {
+        logo:       'https://placehold.co/180x55/16a34a/ffffff?text=MyShop',
+        logo_dark:  'https://placehold.co/180x55/4ade80/030a05?text=MyShop',
+        favicon:    'https://placehold.co/64x64/16a34a/ffffff?text=S',
+        hero_image: 'https://picsum.photos/seed/shop-hero/1280/600',
+        hero_poster:'https://picsum.photos/seed/shop-hero2/1280/600',
+        og_image:   'https://picsum.photos/seed/shop-og/1200/630',
+        features_bg:'https://picsum.photos/seed/shop-feat/1200/500',
+      },
+      layout_config: { header_type:'solid', nav_type:'horizontal', nav_position:'right', footer_type:'columns', layout_type:'full-width', max_width:'1280', spacing:'normal', header_sticky:true, show_dark_toggle:false, back_to_top:true, header_cta_text:'Ver promoções', header_cta_url:'#products' },
+      capabilities:  { animations:true, lightbox:true, back_to_top:true, search:true, scroll_progress:false, preloader:false, parallax:false, video_bg:false, mega_menu:true, cookie_banner:true },
+      sections:      { hero:{variant:'promo-banner'}, products:{variant:'grid-4'}, categories:{variant:'image-cards'}, features:{variant:'icon-list'}, testimonials:{variant:'stars'}, newsletter:{variant:'inline'}, footer:{variant:'columns'} },
+      components:    { navbar:{variant:'with-cart'}, 'mega-menu':{variant:'categories'}, 'cookie-banner':{variant:'bottom-bar'}, 'back-to-top':{variant:'circle'} },
+      variants: [
+        { name:'sale', label:'Sale Mode', _open:false, _mode:'light', colors:{ light:{ '--color-primary':'#dc2626','--color-secondary':'#ef4444','--color-accent':'#f59e0b','--color-background':'#fff5f5','--color-foreground':'#450a0a','--color-card':'#ffffff','--color-muted':'#fee2e2','--color-border':'#fecaca','--color-success':'#10b981','--color-warning':'#f59e0b','--color-destructive':'#ef4444' }, dark:{} } },
+      ],
+      custom_css: `.badge-sale { background: var(--color-destructive); color: white; border-radius: 9999px; padding: 2px 8px; font-size: 11px; font-weight: 700; }\n.product-card:hover { transform: translateY(-4px); box-shadow: 0 12px 24px rgba(0,0,0,.1); }`,
+      custom_js:  `// Demo: add to cart feedback\ndocument.querySelectorAll('.btn-cart').forEach(btn => {\n  btn.addEventListener('click', () => { btn.textContent = '✓ Adicionado!'; setTimeout(() => btn.textContent = 'Adicionar ao carrinho', 2000); });\n});`,
+    },
+  },
+  {
+    id: 'blog', emoji: '✍️', label: 'Blog / Editorial',
+    description: 'Artigos, notícias, revistas online',
+    palette: ['#1d4ed8','#1e40af','#f8fafc','#374151','#ffffff'],
+    data: {
+      colors: {
+        light: { '--color-primary':'#1d4ed8','--color-secondary':'#1e40af','--color-accent':'#f59e0b','--color-background':'#f8fafc','--color-foreground':'#1e293b','--color-card':'#ffffff','--color-muted':'#f1f5f9','--color-border':'#e2e8f0','--color-success':'#10b981','--color-warning':'#f59e0b','--color-destructive':'#ef4444' },
+        dark:  { '--color-primary':'#60a5fa','--color-secondary':'#93c5fd','--color-accent':'#fbbf24','--color-background':'#020617','--color-foreground':'#e2e8f0','--color-card':'#0f172a','--color-muted':'#1e293b','--color-border':'#334155','--color-success':'#34d399','--color-warning':'#fbbf24','--color-destructive':'#f87171' },
+      },
+      assets: {
+        logo:       'https://placehold.co/160x45/1d4ed8/ffffff?text=TheBlog',
+        logo_dark:  'https://placehold.co/160x45/60a5fa/020617?text=TheBlog',
+        favicon:    'https://placehold.co/64x64/1d4ed8/ffffff?text=B',
+        hero_image: 'https://picsum.photos/seed/blog-hero/1280/500',
+        og_image:   'https://picsum.photos/seed/blog-og/1200/630',
+      },
+      layout_config: { header_type:'solid', nav_type:'horizontal', nav_position:'right', footer_type:'simple', layout_type:'boxed', max_width:'900', spacing:'spacious', header_sticky:true, show_dark_toggle:true, back_to_top:true, header_cta_text:'Newsletter', header_cta_url:'#newsletter' },
+      capabilities:  { animations:true, scroll_progress:true, back_to_top:true, search:true, preloader:false, parallax:false, video_bg:false, lightbox:true, mega_menu:false, cookie_banner:true },
+      sections:      { hero:{variant:'editorial'}, 'featured-posts':{variant:'grid-3'}, categories:{variant:'tags'}, newsletter:{variant:'centered'}, footer:{variant:'simple'} },
+      components:    { navbar:{variant:'with-search'}, 'scroll-progress':{variant:'top-bar'}, 'back-to-top':{variant:'circle'} },
+      variants: [
+        { name:'dark', label:'Dark Mode', _open:false, _mode:'dark', colors:{ light:{}, dark:{ '--color-primary':'#60a5fa','--color-secondary':'#93c5fd','--color-accent':'#fbbf24','--color-background':'#020617','--color-foreground':'#e2e8f0','--color-card':'#0f172a','--color-muted':'#1e293b','--color-border':'#334155','--color-success':'#34d399','--color-warning':'#fbbf24','--color-destructive':'#f87171' } } },
+      ],
+      custom_css: `article { font-family: 'Georgia', serif; line-height: 1.85; }\narticle h2 { font-size: 1.5rem; margin-top: 2.5rem; }\n.reading-time { font-size: 0.75rem; color: var(--color-muted-foreground); }`,
+      custom_js:  `// Demo: reading progress\nconst bar = document.querySelector('.reading-bar');\nif(bar) window.addEventListener('scroll', () => { const p = window.scrollY / (document.body.scrollHeight - window.innerHeight); bar.style.width = (p*100)+'%'; });`,
+    },
+  },
+  {
+    id: 'restaurant', emoji: '🍽️', label: 'Restaurante',
+    description: 'Restaurantes, cafés, take-away',
+    palette: ['#b45309','#92400e','#fef3c7','#111827','#ffffff'],
+    data: {
+      colors: {
+        light: { '--color-primary':'#b45309','--color-secondary':'#92400e','--color-accent':'#d97706','--color-background':'#fffbeb','--color-foreground':'#1c1917','--color-card':'#ffffff','--color-muted':'#fef3c7','--color-border':'#fde68a','--color-success':'#10b981','--color-warning':'#f59e0b','--color-destructive':'#ef4444' },
+        dark:  { '--color-primary':'#fbbf24','--color-secondary':'#fcd34d','--color-accent':'#f59e0b','--color-background':'#0d0800','--color-foreground':'#fef3c7','--color-card':'#1c1000','--color-muted':'#2a1a00','--color-border':'#451a03','--color-success':'#34d399','--color-warning':'#fbbf24','--color-destructive':'#f87171' },
+      },
+      assets: {
+        logo:       'https://placehold.co/180x60/b45309/ffffff?text=Restaurante',
+        logo_dark:  'https://placehold.co/180x60/fbbf24/0d0800?text=Restaurante',
+        favicon:    'https://placehold.co/64x64/b45309/fef3c7?text=R',
+        hero_image: 'https://picsum.photos/seed/restaurant-hero/1280/700',
+        about_bg:   'https://picsum.photos/seed/restaurant-about/900/600',
+        bg_image:   'https://picsum.photos/seed/restaurant-bg/1920/1080',
+        og_image:   'https://picsum.photos/seed/restaurant-og/1200/630',
+      },
+      layout_config: { header_type:'transparent', nav_type:'horizontal', nav_position:'center', footer_type:'dark', layout_type:'full-width', max_width:'1200', spacing:'spacious', header_sticky:true, show_dark_toggle:false, back_to_top:false, header_cta_text:'Reservar mesa', header_cta_url:'#reservas' },
+      capabilities:  { animations:true, parallax:true, back_to_top:false, lightbox:true, video_bg:false, scroll_progress:false, search:false, preloader:false, mega_menu:false, cookie_banner:false },
+      sections:      { hero:{variant:'fullscreen-parallax'}, menu:{variant:'grid-categories'}, about:{variant:'side-image'}, gallery:{variant:'masonry'}, testimonials:{variant:'minimal'}, reservations:{variant:'form'}, footer:{variant:'dark'} },
+      components:    { navbar:{variant:'transparent'} },
+      variants: [
+        { name:'dark', label:'Dark Dining', _open:false, _mode:'dark', colors:{ light:{}, dark:{ '--color-primary':'#fbbf24','--color-secondary':'#fcd34d','--color-accent':'#f59e0b','--color-background':'#0d0800','--color-foreground':'#fef3c7','--color-card':'#1c1000','--color-muted':'#2a1a00','--color-border':'#451a03','--color-success':'#34d399','--color-warning':'#fbbf24','--color-destructive':'#f87171' } } },
+      ],
+      custom_css: `.menu-card { border-radius: 1rem; overflow: hidden; transition: transform .3s; }\n.menu-card:hover { transform: scale(1.02); }\n.hero-overlay { background: linear-gradient(to bottom, rgba(0,0,0,.3) 0%, rgba(0,0,0,.6) 100%); }`,
+      custom_js:  `// Demo: reservation form validation\ndocument.querySelector('#reservation-form')?.addEventListener('submit', e => { e.preventDefault(); alert('Reserva recebida! Confirmaremos por email.'); });`,
+    },
+  },
+  {
+    id: 'agency', emoji: '🏢', label: 'Agência',
+    description: 'Marketing, design, consultoria',
+    palette: ['#7c3aed','#6d28d9','#ec4899','#fafafa','#09090b'],
+    data: {
+      colors: {
+        light: { '--color-primary':'#7c3aed','--color-secondary':'#6d28d9','--color-accent':'#ec4899','--color-background':'#fafafa','--color-foreground':'#09090b','--color-card':'#ffffff','--color-muted':'#f4f4f5','--color-border':'#e4e4e7','--color-success':'#10b981','--color-warning':'#f59e0b','--color-destructive':'#ef4444' },
+        dark:  { '--color-primary':'#a78bfa','--color-secondary':'#c4b5fd','--color-accent':'#f472b6','--color-background':'#09090b','--color-foreground':'#fafafa','--color-card':'#111113','--color-muted':'#18181b','--color-border':'#27272a','--color-success':'#34d399','--color-warning':'#fbbf24','--color-destructive':'#f87171' },
+      },
+      assets: {
+        logo:       'https://placehold.co/160x50/7c3aed/ffffff?text=Agency',
+        logo_dark:  'https://placehold.co/160x50/a78bfa/09090b?text=Agency',
+        favicon:    'https://placehold.co/64x64/7c3aed/ffffff?text=A',
+        hero_image: 'https://picsum.photos/seed/agency-hero/1280/720',
+        about_bg:   'https://picsum.photos/seed/agency-about/900/600',
+        og_image:   'https://picsum.photos/seed/agency-og/1200/630',
+      },
+      layout_config: { header_type:'glass', nav_type:'horizontal', nav_position:'right', footer_type:'dark', layout_type:'full-width', max_width:'1280', spacing:'normal', header_sticky:true, show_dark_toggle:true, back_to_top:true, header_cta_text:'Falar connosco', header_cta_url:'#contact' },
+      capabilities:  { animations:true, scroll_progress:true, back_to_top:true, parallax:true, video_bg:false, lightbox:true, search:false, preloader:true, mega_menu:false, cookie_banner:true },
+      sections:      { hero:{variant:'split-content'}, services:{variant:'grid-3'}, 'case-studies':{variant:'large-cards'}, team:{variant:'grid'}, testimonials:{variant:'carousel'}, contact:{variant:'split'}, footer:{variant:'dark'} },
+      components:    { navbar:{variant:'glass'}, 'scroll-progress':{variant:'top-bar'}, 'back-to-top':{variant:'circle'}, 'cookie-banner':{variant:'bottom-bar'} },
+      variants: [
+        { name:'dark', label:'Dark Mode', _open:false, _mode:'dark', colors:{ light:{}, dark:{ '--color-primary':'#a78bfa','--color-secondary':'#c4b5fd','--color-accent':'#f472b6','--color-background':'#09090b','--color-foreground':'#fafafa','--color-card':'#111113','--color-muted':'#18181b','--color-border':'#27272a','--color-success':'#34d399','--color-warning':'#fbbf24','--color-destructive':'#f87171' } } },
+        { name:'pink', label:'Pink Energy', _open:false, _mode:'light', colors:{ light:{ '--color-primary':'#ec4899','--color-secondary':'#db2777','--color-accent':'#7c3aed','--color-background':'#fdf2f8','--color-foreground':'#500724','--color-card':'#ffffff','--color-muted':'#fce7f3','--color-border':'#fbcfe8','--color-success':'#10b981','--color-warning':'#f59e0b','--color-destructive':'#ef4444' }, dark:{} } },
+      ],
+      custom_css: `.gradient-text { background: linear-gradient(135deg, var(--color-primary), var(--color-accent)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }\n.card-hover { transition: all .3s; }\n.card-hover:hover { transform: translateY(-6px); box-shadow: 0 20px 40px rgba(124,58,237,.15); }`,
+      custom_js:  `// Demo: counter animation\ndocument.querySelectorAll('[data-counter]').forEach(el => {\n  const target = parseInt(el.dataset.counter);\n  let count = 0;\n  const step = target / 60;\n  const timer = setInterval(() => { count = Math.min(count + step, target); el.textContent = Math.round(count); if(count >= target) clearInterval(timer); }, 16);\n});`,
+    },
+  },
+  {
+    id: 'health', emoji: '💊', label: 'Saúde / Wellness',
+    description: 'Clínicas, bem-estar, fitness',
+    palette: ['#0d9488','#0f766e','#f0fdfa','#134e4a','#ffffff'],
+    data: {
+      colors: {
+        light: { '--color-primary':'#0d9488','--color-secondary':'#0f766e','--color-accent':'#6ee7b7','--color-background':'#f0fdfa','--color-foreground':'#134e4a','--color-card':'#ffffff','--color-muted':'#ccfbf1','--color-border':'#99f6e4','--color-success':'#10b981','--color-warning':'#f59e0b','--color-destructive':'#ef4444' },
+        dark:  { '--color-primary':'#2dd4bf','--color-secondary':'#5eead4','--color-accent':'#a7f3d0','--color-background':'#010f0e','--color-foreground':'#ccfbf1','--color-card':'#042f2e','--color-muted':'#042f2e','--color-border':'#134e4a','--color-success':'#34d399','--color-warning':'#fbbf24','--color-destructive':'#f87171' },
+      },
+      assets: {
+        logo:       'https://placehold.co/180x55/0d9488/ffffff?text=WellnessClinic',
+        logo_dark:  'https://placehold.co/180x55/2dd4bf/010f0e?text=WellnessClinic',
+        favicon:    'https://placehold.co/64x64/0d9488/f0fdfa?text=W',
+        hero_image: 'https://picsum.photos/seed/health-hero/1280/700',
+        about_bg:   'https://picsum.photos/seed/health-about/900/600',
+        og_image:   'https://picsum.photos/seed/health-og/1200/630',
+      },
+      layout_config: { header_type:'solid', nav_type:'horizontal', nav_position:'right', footer_type:'simple', layout_type:'boxed', max_width:'1100', spacing:'spacious', header_sticky:true, show_dark_toggle:false, back_to_top:true, header_cta_text:'Marcar consulta', header_cta_url:'#appointments' },
+      capabilities:  { animations:true, back_to_top:true, scroll_progress:false, parallax:false, lightbox:false, video_bg:false, search:false, preloader:false, mega_menu:false, cookie_banner:true },
+      sections:      { hero:{variant:'centered-cta'}, services:{variant:'icon-cards'}, team:{variant:'grid'}, about:{variant:'side-by-side'}, testimonials:{variant:'stars'}, contact:{variant:'form'}, footer:{variant:'simple'} },
+      components:    { navbar:{variant:'solid'}, 'cookie-banner':{variant:'bottom-bar'}, 'back-to-top':{variant:'circle'} },
+      variants: [],
+      custom_css: `.trust-badge { display: flex; align-items: center; gap: .5rem; padding: .5rem 1rem; background: var(--color-muted); border-radius: .5rem; font-size: .75rem; font-weight: 600; }\n.appointment-card { border-left: 4px solid var(--color-primary); }`,
+      custom_js:  '',
+    },
+  },
+  {
+    id: 'realestate', emoji: '🏠', label: 'Imobiliário',
+    description: 'Imóveis, arrendamento, promoção',
+    palette: ['#1e40af','#1d4ed8','#fbbf24','#f8fafc','#1e293b'],
+    data: {
+      colors: {
+        light: { '--color-primary':'#1e40af','--color-secondary':'#1d4ed8','--color-accent':'#fbbf24','--color-background':'#f8fafc','--color-foreground':'#1e293b','--color-card':'#ffffff','--color-muted':'#f1f5f9','--color-border':'#e2e8f0','--color-success':'#10b981','--color-warning':'#f59e0b','--color-destructive':'#ef4444' },
+        dark:  { '--color-primary':'#60a5fa','--color-secondary':'#93c5fd','--color-accent':'#fbbf24','--color-background':'#060d1a','--color-foreground':'#e2e8f0','--color-card':'#0f1d35','--color-muted':'#1e293b','--color-border':'#1e3a5f','--color-success':'#34d399','--color-warning':'#fbbf24','--color-destructive':'#f87171' },
+      },
+      assets: {
+        logo:       'https://placehold.co/180x55/1e40af/ffffff?text=ImobPrime',
+        logo_dark:  'https://placehold.co/180x55/60a5fa/060d1a?text=ImobPrime',
+        favicon:    'https://placehold.co/64x64/1e40af/ffffff?text=I',
+        hero_image: 'https://picsum.photos/seed/realestate-hero/1280/700',
+        features_bg:'https://picsum.photos/seed/realestate-feat/1200/500',
+        og_image:   'https://picsum.photos/seed/realestate-og/1200/630',
+      },
+      layout_config: { header_type:'solid', nav_type:'horizontal', nav_position:'right', footer_type:'columns', layout_type:'full-width', max_width:'1280', spacing:'normal', header_sticky:true, show_dark_toggle:true, back_to_top:true, header_cta_text:'Ver imóveis', header_cta_url:'#listings' },
+      capabilities:  { animations:true, search:true, back_to_top:true, lightbox:true, scroll_progress:false, parallax:false, video_bg:false, preloader:false, mega_menu:false, cookie_banner:true },
+      sections:      { hero:{variant:'search-hero'}, listings:{variant:'grid-3'}, features:{variant:'icon-list'}, about:{variant:'stats'}, testimonials:{variant:'carousel'}, cta:{variant:'contact'}, footer:{variant:'columns'} },
+      components:    { navbar:{variant:'solid'}, 'back-to-top':{variant:'circle'}, 'cookie-banner':{variant:'bottom-bar'} },
+      variants: [
+        { name:'dark', label:'Dark Mode', _open:false, _mode:'dark', colors:{ light:{}, dark:{ '--color-primary':'#60a5fa','--color-secondary':'#93c5fd','--color-accent':'#fbbf24','--color-background':'#060d1a','--color-foreground':'#e2e8f0','--color-card':'#0f1d35','--color-muted':'#1e293b','--color-border':'#1e3a5f','--color-success':'#34d399','--color-warning':'#fbbf24','--color-destructive':'#f87171' } } },
+      ],
+      custom_css: `.listing-card { border-radius: 1rem; overflow: hidden; }\n.listing-card:hover .listing-image { transform: scale(1.05); }\n.listing-image { transition: transform .4s; }\n.price-tag { font-size: 1.25rem; font-weight: 800; color: var(--color-primary); }`,
+      custom_js:  '',
+    },
+  },
+];
+
+const currentDemoData = computed(() => {
+  if (!selectedDemoType.value) return null;
+  return demoSiteTypes.find(t => t.id === selectedDemoType.value)?.data ?? null;
+});
+
+function applyDemoData() {
+  const data = currentDemoData.value;
+  if (!data) return;
+  const cats = demoSelected.value;
+
+  if (cats.includes('colors') && data.colors) {
+    form.colors = JSON.parse(JSON.stringify(data.colors));
+  }
+  if (cats.includes('assets') && data.assets) {
+    form.assets = { ...form.assets, ...data.assets };
+  }
+  if (cats.includes('layout') && data.layout_config) {
+    Object.assign(form.layout_config, data.layout_config);
+  }
+  if (cats.includes('capabilities') && data.capabilities) {
+    Object.assign(form.capabilities, data.capabilities);
+  }
+  if (cats.includes('sections') && data.sections) {
+    form.sections = JSON.parse(JSON.stringify(data.sections));
+    // Sincroniza com compOrder se aplicável
+    compOrder.value = Object.entries(form.sections).map(([id]) => ({ id, variant: form.sections[id]?.variant ?? '' }));
+  }
+  if (cats.includes('components') && data.components) {
+    form.components = JSON.parse(JSON.stringify(data.components));
+    compOrder.value = Object.entries(form.components).map(([id, cfg]) => ({ id, variant: cfg?.variant ?? '' }));
+  }
+  if (cats.includes('variants') && data.variants) {
+    form.variants = JSON.parse(JSON.stringify(data.variants));
+  }
+  if (cats.includes('code') && (data.custom_css || data.custom_js)) {
+    if (data.custom_css) form.custom_css = data.custom_css;
+    if (data.custom_js)  form.custom_js  = data.custom_js;
+  }
+
+  form._demoApplied = true;
+
+  // Guarda automaticamente
+  save();
+
+  feedback.success = `🎭 Demo Data "${demoSiteTypes.find(t=>t.id===selectedDemoType.value)?.label}" aplicado com sucesso!`;
+  setTimeout(() => { feedback.success = ''; }, 4000);
+
+  // Navega para preview
+  setTimeout(() => { activeTab.value = 'preview'; }, 600);
+}
+
+// ── Icons ─────────────────────────────────────────────────────────
+const iconSearch      = ref('');
+const activeIconCat   = ref('all');
+const iconCopied      = reactive({ text: '', type: '', label: '' });
+const iconSvgLoading  = ref('');
+const iconSvgCache    = {}; // name → svg string
+
+const iconCategories = [
+  { id: 'all',         label: '🔍 Todos'         },
+  { id: 'interface',   label: '🖱️ Interface'      },
+  { id: 'navigation',  label: '🧭 Navegação'      },
+  { id: 'media',       label: '🎬 Media'          },
+  { id: 'communication', label: '💬 Comunicação'  },
+  { id: 'commerce',    label: '🛒 Comércio'       },
+  { id: 'files',       label: '📁 Ficheiros'      },
+  { id: 'data',        label: '📊 Dados'          },
+  { id: 'layout',      label: '🧩 Layout'         },
+  { id: 'social',      label: '📡 Social'         },
+  { id: 'nature',      label: '🌿 Natureza'       },
+  { id: 'devices',     label: '💻 Dispositivos'   },
+  { id: 'security',    label: '🔐 Segurança'      },
+  { id: 'arrows',      label: '↗️ Setas'           },
+  { id: 'shapes',      label: '⬡ Formas'          },
+];
+
+const iconCatalog = [
+  // Interface
+  { name: 'HomeIcon',          cat: 'interface' },
+  { name: 'SearchIcon',        cat: 'interface' },
+  { name: 'BellIcon',          cat: 'interface' },
+  { name: 'StarIcon',          cat: 'interface' },
+  { name: 'HeartIcon',         cat: 'interface' },
+  { name: 'BookmarkIcon',      cat: 'interface' },
+  { name: 'ThumbsUpIcon',      cat: 'interface' },
+  { name: 'ThumbsDownIcon',    cat: 'interface' },
+  { name: 'EyeIcon',           cat: 'interface' },
+  { name: 'EyeOffIcon',        cat: 'interface' },
+  { name: 'SunIcon',           cat: 'interface' },
+  { name: 'MoonIcon',          cat: 'interface' },
+  { name: 'ZapIcon',           cat: 'interface' },
+  { name: 'FlagIcon',          cat: 'interface' },
+  { name: 'TagIcon',           cat: 'interface' },
+  { name: 'FilterIcon',        cat: 'interface' },
+  { name: 'SlidersIcon',       cat: 'interface' },
+  { name: 'AdjustmentsHorizontalIcon', cat: 'interface' },
+  { name: 'SettingsIcon',      cat: 'interface' },
+  { name: 'Settings2Icon',     cat: 'interface' },
+  { name: 'MenuIcon',          cat: 'interface' },
+  { name: 'GridIcon',          cat: 'interface' },
+  { name: 'ListIcon',          cat: 'interface' },
+  { name: 'MoreHorizontalIcon',cat: 'interface' },
+  { name: 'MoreVerticalIcon',  cat: 'interface' },
+  { name: 'PlusIcon',          cat: 'interface' },
+  { name: 'MinusIcon',         cat: 'interface' },
+  { name: 'XIcon',             cat: 'interface' },
+  { name: 'CheckIcon',         cat: 'interface' },
+  { name: 'CheckCircleIcon',   cat: 'interface' },
+  { name: 'XCircleIcon',       cat: 'interface' },
+  { name: 'InfoIcon',          cat: 'interface' },
+  { name: 'AlertCircleIcon',   cat: 'interface' },
+  { name: 'AlertTriangleIcon', cat: 'interface' },
+  { name: 'HelpCircleIcon',    cat: 'interface' },
+  { name: 'LoaderIcon',        cat: 'interface' },
+  { name: 'RefreshCwIcon',     cat: 'interface' },
+  { name: 'RotateCcwIcon',     cat: 'interface' },
+  { name: 'RotateCwIcon',      cat: 'interface' },
+  { name: 'ZoomInIcon',        cat: 'interface' },
+  { name: 'ZoomOutIcon',       cat: 'interface' },
+  { name: 'MaximizeIcon',      cat: 'interface' },
+  { name: 'Maximize2Icon',     cat: 'interface' },
+  { name: 'MinimizeIcon',      cat: 'interface' },
+  { name: 'SidebarIcon',       cat: 'interface' },
+  { name: 'PanelLeftIcon',     cat: 'interface' },
+  { name: 'PanelRightIcon',    cat: 'interface' },
+  { name: 'LayoutIcon',        cat: 'interface' },
+  { name: 'ColumnsIcon',       cat: 'interface' },
+  // Navigation
+  { name: 'NavigationIcon',    cat: 'navigation' },
+  { name: 'Navigation2Icon',   cat: 'navigation' },
+  { name: 'MapIcon',           cat: 'navigation' },
+  { name: 'MapPinIcon',        cat: 'navigation' },
+  { name: 'CompassIcon',       cat: 'navigation' },
+  { name: 'RouteIcon',         cat: 'navigation' },
+  { name: 'GlobeIcon',         cat: 'navigation' },
+  { name: 'Globe2Icon',        cat: 'navigation' },
+  { name: 'LinkIcon',          cat: 'navigation' },
+  { name: 'ExternalLinkIcon',  cat: 'navigation' },
+  { name: 'CornerDownRightIcon', cat: 'navigation' },
+  { name: 'CornerUpRightIcon', cat: 'navigation' },
+  { name: 'ChevronUpIcon',     cat: 'navigation' },
+  { name: 'ChevronDownIcon',   cat: 'navigation' },
+  { name: 'ChevronLeftIcon',   cat: 'navigation' },
+  { name: 'ChevronRightIcon',  cat: 'navigation' },
+  { name: 'ChevronsUpDownIcon',cat: 'navigation' },
+  { name: 'MenuSquareIcon',    cat: 'navigation' },
+  // Media
+  { name: 'PlayIcon',          cat: 'media' },
+  { name: 'PauseIcon',         cat: 'media' },
+  { name: 'StopCircleIcon',    cat: 'media' },
+  { name: 'SkipBackIcon',      cat: 'media' },
+  { name: 'SkipForwardIcon',   cat: 'media' },
+  { name: 'RewindIcon',        cat: 'media' },
+  { name: 'FastForwardIcon',   cat: 'media' },
+  { name: 'VolumeIcon',        cat: 'media' },
+  { name: 'Volume1Icon',       cat: 'media' },
+  { name: 'Volume2Icon',       cat: 'media' },
+  { name: 'VolumeXIcon',       cat: 'media' },
+  { name: 'MicIcon',           cat: 'media' },
+  { name: 'MicOffIcon',        cat: 'media' },
+  { name: 'VideoIcon',         cat: 'media' },
+  { name: 'VideoOffIcon',      cat: 'media' },
+  { name: 'CameraIcon',        cat: 'media' },
+  { name: 'ImageIcon',         cat: 'media' },
+  { name: 'ImagesIcon',        cat: 'media' },
+  { name: 'GalleryHorizontalIcon', cat: 'media' },
+  { name: 'FilmIcon',          cat: 'media' },
+  { name: 'MusicIcon',         cat: 'media' },
+  { name: 'HeadphonesIcon',    cat: 'media' },
+  { name: 'RadioIcon',         cat: 'media' },
+  { name: 'PodcastIcon',       cat: 'media' },
+  { name: 'YoutubeIcon',       cat: 'media' },
+  // Communication
+  { name: 'MessageCircleIcon', cat: 'communication' },
+  { name: 'MessageSquareIcon', cat: 'communication' },
+  { name: 'MessagesSquareIcon',cat: 'communication' },
+  { name: 'MailIcon',          cat: 'communication' },
+  { name: 'MailOpenIcon',      cat: 'communication' },
+  { name: 'InboxIcon',         cat: 'communication' },
+  { name: 'SendIcon',          cat: 'communication' },
+  { name: 'PhoneIcon',         cat: 'communication' },
+  { name: 'PhoneCallIcon',     cat: 'communication' },
+  { name: 'PhoneMissedIcon',   cat: 'communication' },
+  { name: 'SmartphoneIcon',    cat: 'communication' },
+  { name: 'ContactIcon',       cat: 'communication' },
+  { name: 'UsersIcon',         cat: 'communication' },
+  { name: 'UserIcon',          cat: 'communication' },
+  { name: 'UserPlusIcon',      cat: 'communication' },
+  { name: 'UserCheckIcon',     cat: 'communication' },
+  { name: 'RssIcon',           cat: 'communication' },
+  { name: 'AtSignIcon',        cat: 'communication' },
+  { name: 'BellRingIcon',      cat: 'communication' },
+  { name: 'ShareIcon',         cat: 'communication' },
+  { name: 'Share2Icon',        cat: 'communication' },
+  // Commerce
+  { name: 'ShoppingCartIcon',  cat: 'commerce' },
+  { name: 'ShoppingBagIcon',   cat: 'commerce' },
+  { name: 'PackageIcon',       cat: 'commerce' },
+  { name: 'Package2Icon',      cat: 'commerce' },
+  { name: 'TruckIcon',         cat: 'commerce' },
+  { name: 'CreditCardIcon',    cat: 'commerce' },
+  { name: 'WalletIcon',        cat: 'commerce' },
+  { name: 'BanknoteIcon',      cat: 'commerce' },
+  { name: 'CoinsIcon',         cat: 'commerce' },
+  { name: 'DollarSignIcon',    cat: 'commerce' },
+  { name: 'EuroIcon',          cat: 'commerce' },
+  { name: 'ReceiptIcon',       cat: 'commerce' },
+  { name: 'BarChart2Icon',     cat: 'commerce' },
+  { name: 'TrendingUpIcon',    cat: 'commerce' },
+  { name: 'TrendingDownIcon',  cat: 'commerce' },
+  { name: 'PercentIcon',       cat: 'commerce' },
+  { name: 'TagsIcon',          cat: 'commerce' },
+  { name: 'GiftIcon',          cat: 'commerce' },
+  { name: 'AwardIcon',         cat: 'commerce' },
+  { name: 'BadgeIcon',         cat: 'commerce' },
+  // Files
+  { name: 'FileIcon',          cat: 'files' },
+  { name: 'FileTextIcon',      cat: 'files' },
+  { name: 'FileImageIcon',     cat: 'files' },
+  { name: 'FileVideoIcon',     cat: 'files' },
+  { name: 'FileAudioIcon',     cat: 'files' },
+  { name: 'FilePdfIcon',       cat: 'files' },
+  { name: 'FileCodeIcon',      cat: 'files' },
+  { name: 'FileJsonIcon',      cat: 'files' },
+  { name: 'FolderIcon',        cat: 'files' },
+  { name: 'FolderOpenIcon',    cat: 'files' },
+  { name: 'UploadIcon',        cat: 'files' },
+  { name: 'DownloadIcon',      cat: 'files' },
+  { name: 'DownloadCloudIcon', cat: 'files' },
+  { name: 'UploadCloudIcon',   cat: 'files' },
+  { name: 'CloudIcon',         cat: 'files' },
+  { name: 'HardDriveIcon',     cat: 'files' },
+  { name: 'DatabaseIcon',      cat: 'files' },
+  { name: 'ServerIcon',        cat: 'files' },
+  { name: 'ArchiveIcon',       cat: 'files' },
+  { name: 'ClipboardIcon',     cat: 'files' },
+  { name: 'ClipboardCheckIcon',cat: 'files' },
+  { name: 'CopyIcon',          cat: 'files' },
+  { name: 'ScissorsIcon',      cat: 'files' },
+  { name: 'PaperclipIcon',     cat: 'files' },
+  { name: 'PrinterIcon',       cat: 'files' },
+  // Data
+  { name: 'BarChartIcon',      cat: 'data' },
+  { name: 'BarChart3Icon',     cat: 'data' },
+  { name: 'BarChart4Icon',     cat: 'data' },
+  { name: 'LineChartIcon',     cat: 'data' },
+  { name: 'PieChartIcon',      cat: 'data' },
+  { name: 'AreaChartIcon',     cat: 'data' },
+  { name: 'ActivityIcon',      cat: 'data' },
+  { name: 'GaugeIcon',         cat: 'data' },
+  { name: 'CalendarIcon',      cat: 'data' },
+  { name: 'CalendarDaysIcon',  cat: 'data' },
+  { name: 'ClockIcon',         cat: 'data' },
+  { name: 'TimerIcon',         cat: 'data' },
+  { name: 'AlarmClockIcon',    cat: 'data' },
+  { name: 'TableIcon',         cat: 'data' },
+  { name: 'Table2Icon',        cat: 'data' },
+  { name: 'HashIcon',          cat: 'data' },
+  { name: 'TypeIcon',          cat: 'data' },
+  { name: 'CaseSensitiveIcon', cat: 'data' },
+  { name: 'BinaryIcon',        cat: 'data' },
+  // Layout
+  { name: 'LayoutDashboardIcon', cat: 'layout' },
+  { name: 'LayoutGridIcon',    cat: 'layout' },
+  { name: 'LayoutListIcon',    cat: 'layout' },
+  { name: 'LayoutTemplateIcon',cat: 'layout' },
+  { name: 'PanelTopIcon',      cat: 'layout' },
+  { name: 'PanelBottomIcon',   cat: 'layout' },
+  { name: 'FootprintsIcon',    cat: 'layout' },
+  { name: 'AlignLeftIcon',     cat: 'layout' },
+  { name: 'AlignCenterIcon',   cat: 'layout' },
+  { name: 'AlignRightIcon',    cat: 'layout' },
+  { name: 'AlignJustifyIcon',  cat: 'layout' },
+  { name: 'CenterIcon',        cat: 'layout' },
+  { name: 'RectangleHorizontalIcon', cat: 'layout' },
+  { name: 'RectangleVerticalIcon', cat: 'layout' },
+  { name: 'SquareIcon',        cat: 'layout' },
+  { name: 'CircleIcon',        cat: 'layout' },
+  { name: 'GripIcon',          cat: 'layout' },
+  { name: 'GripHorizontalIcon',cat: 'layout' },
+  { name: 'GripVerticalIcon',  cat: 'layout' },
+  { name: 'SeparatorHorizontalIcon', cat: 'layout' },
+  { name: 'SeparatorVerticalIcon', cat: 'layout' },
+  // Social
+  { name: 'TwitterIcon',       cat: 'social' },
+  { name: 'FacebookIcon',      cat: 'social' },
+  { name: 'InstagramIcon',     cat: 'social' },
+  { name: 'LinkedinIcon',      cat: 'social' },
+  { name: 'GithubIcon',        cat: 'social' },
+  { name: 'GitlabIcon',        cat: 'social' },
+  { name: 'YoutubeIcon',       cat: 'social' },
+  { name: 'TwitchIcon',        cat: 'social' },
+  { name: 'DiscordIcon',       cat: 'social' },
+  { name: 'SlackIcon',         cat: 'social' },
+  { name: 'FigmaIcon',         cat: 'social' },
+  { name: 'ChromeIcon',        cat: 'social' },
+  { name: 'CodepenIcon',       cat: 'social' },
+  { name: 'DribbbleIcon',      cat: 'social' },
+  { name: 'GlobeIcon',         cat: 'social' },
+  // Nature
+  { name: 'LeafIcon',          cat: 'nature' },
+  { name: 'TreesIcon',         cat: 'nature' },
+  { name: 'TreePineIcon',      cat: 'nature' },
+  { name: 'FlowerIcon',        cat: 'nature' },
+  { name: 'Flower2Icon',       cat: 'nature' },
+  { name: 'SunIcon',           cat: 'nature' },
+  { name: 'SunMediumIcon',     cat: 'nature' },
+  { name: 'MoonIcon',          cat: 'nature' },
+  { name: 'CloudIcon',         cat: 'nature' },
+  { name: 'CloudRainIcon',     cat: 'nature' },
+  { name: 'CloudSnowIcon',     cat: 'nature' },
+  { name: 'CloudLightningIcon',cat: 'nature' },
+  { name: 'WindIcon',          cat: 'nature' },
+  { name: 'UmbrellaIcon',      cat: 'nature' },
+  { name: 'ThermometerIcon',   cat: 'nature' },
+  { name: 'DropletIcon',       cat: 'nature' },
+  { name: 'WavesIcon',         cat: 'nature' },
+  { name: 'MountainIcon',      cat: 'nature' },
+  { name: 'MountainSnowIcon',  cat: 'nature' },
+  // Devices
+  { name: 'MonitorIcon',       cat: 'devices' },
+  { name: 'LaptopIcon',        cat: 'devices' },
+  { name: 'TabletIcon',        cat: 'devices' },
+  { name: 'SmartphoneIcon',    cat: 'devices' },
+  { name: 'WatchIcon',         cat: 'devices' },
+  { name: 'PrinterIcon',       cat: 'devices' },
+  { name: 'KeyboardIcon',      cat: 'devices' },
+  { name: 'MouseIcon',         cat: 'devices' },
+  { name: 'MousePointerIcon',  cat: 'devices' },
+  { name: 'TvIcon',            cat: 'devices' },
+  { name: 'RadioReceiverIcon', cat: 'devices' },
+  { name: 'WifiIcon',          cat: 'devices' },
+  { name: 'BluetoothIcon',     cat: 'devices' },
+  { name: 'BatteryIcon',       cat: 'devices' },
+  { name: 'BatteryFullIcon',   cat: 'devices' },
+  { name: 'BatteryLowIcon',    cat: 'devices' },
+  { name: 'BatteryChargingIcon', cat: 'devices' },
+  { name: 'PowerIcon',         cat: 'devices' },
+  { name: 'CpuIcon',           cat: 'devices' },
+  { name: 'HardDriveIcon',     cat: 'devices' },
+  // Security
+  { name: 'LockIcon',          cat: 'security' },
+  { name: 'LockKeyholeIcon',   cat: 'security' },
+  { name: 'UnlockIcon',        cat: 'security' },
+  { name: 'KeyIcon',           cat: 'security' },
+  { name: 'KeyRoundIcon',      cat: 'security' },
+  { name: 'ShieldIcon',        cat: 'security' },
+  { name: 'ShieldCheckIcon',   cat: 'security' },
+  { name: 'ShieldAlertIcon',   cat: 'security' },
+  { name: 'ShieldBanIcon',     cat: 'security' },
+  { name: 'EyeIcon',           cat: 'security' },
+  { name: 'EyeOffIcon',        cat: 'security' },
+  { name: 'ScanIcon',          cat: 'security' },
+  { name: 'FingerprintIcon',   cat: 'security' },
+  { name: 'BadgeCheckIcon',    cat: 'security' },
+  { name: 'AlertOctagonIcon',  cat: 'security' },
+  // Arrows
+  { name: 'ArrowUpIcon',       cat: 'arrows' },
+  { name: 'ArrowDownIcon',     cat: 'arrows' },
+  { name: 'ArrowLeftIcon',     cat: 'arrows' },
+  { name: 'ArrowRightIcon',    cat: 'arrows' },
+  { name: 'ArrowUpRightIcon',  cat: 'arrows' },
+  { name: 'ArrowUpLeftIcon',   cat: 'arrows' },
+  { name: 'ArrowDownRightIcon',cat: 'arrows' },
+  { name: 'ArrowDownLeftIcon', cat: 'arrows' },
+  { name: 'ArrowsUpFromLineIcon', cat: 'arrows' },
+  { name: 'MoveIcon',          cat: 'arrows' },
+  { name: 'MoveHorizontalIcon',cat: 'arrows' },
+  { name: 'MoveVerticalIcon',  cat: 'arrows' },
+  { name: 'MoveUpRightIcon',   cat: 'arrows' },
+  { name: 'MoveDownRightIcon', cat: 'arrows' },
+  { name: 'ArrowBigUpIcon',    cat: 'arrows' },
+  { name: 'ArrowBigDownIcon',  cat: 'arrows' },
+  { name: 'ArrowBigLeftIcon',  cat: 'arrows' },
+  { name: 'ArrowBigRightIcon', cat: 'arrows' },
+  { name: 'ChevronsUpIcon',    cat: 'arrows' },
+  { name: 'ChevronsDownIcon',  cat: 'arrows' },
+  { name: 'ChevronsLeftIcon',  cat: 'arrows' },
+  { name: 'ChevronsRightIcon', cat: 'arrows' },
+  // Shapes
+  { name: 'CircleIcon',        cat: 'shapes' },
+  { name: 'SquareIcon',        cat: 'shapes' },
+  { name: 'TriangleIcon',      cat: 'shapes' },
+  { name: 'HexagonIcon',       cat: 'shapes' },
+  { name: 'OctagonIcon',       cat: 'shapes' },
+  { name: 'DiamondIcon',       cat: 'shapes' },
+  { name: 'PentagonIcon',      cat: 'shapes' },
+  { name: 'StarIcon',          cat: 'shapes' },
+  { name: 'Cross',             cat: 'shapes' },
+  { name: 'MinusCircleIcon',   cat: 'shapes' },
+  { name: 'PlusCircleIcon',    cat: 'shapes' },
+  { name: 'XCircleIcon',       cat: 'shapes' },
+  { name: 'Slice',             cat: 'shapes' },
+  { name: 'EllipsisIcon',      cat: 'shapes' },
+  { name: 'DotIcon',           cat: 'shapes' },
+  { name: 'CircleDotIcon',     cat: 'shapes' },
+];
+
+// Only keep icons that actually exist in the imported module
+const validIconCatalog = iconCatalog.filter(i => !!LucideIcons[i.name]);
+
+const filteredIcons = computed(() => {
+  const q   = iconSearch.value.toLowerCase().trim();
+  const cat = activeIconCat.value;
+  return validIconCatalog.filter(i => {
+    const matchCat  = cat === 'all' || i.cat === cat;
+    const matchName = !q || i.name.toLowerCase().includes(q);
+    return matchCat && matchName;
+  });
+});
+
+/** Converte 'HomeIcon' → 'home', 'ArrowUpRightIcon' → 'arrow-up-right' */
+function iconToKebab(name) {
+  return name
+    .replace(/Icon$/, '')
+    .replace(/([A-Z])/g, (m, l, o) => (o > 0 ? '-' : '') + l.toLowerCase());
+}
+
+function showCopied(type, label) {
+  iconCopied.text  = label;
+  iconCopied.type  = type;
+  iconCopied.label = label;
+  clearTimeout(iconCopied._t);
+  iconCopied._t = setTimeout(() => { iconCopied.text = ''; }, 2000);
+}
+
+async function copyIcon(name, type) {
+  const kebab = iconToKebab(name);
+
+  if (type === 'vue') {
+    const snippet = `import { ${name} } from 'lucide-vue-next';\n// No template: <${name} class="w-5 h-5" />`;
+    await navigator.clipboard.writeText(snippet);
+    showCopied('vue', name.replace(/Icon$/, ''));
+
+  } else if (type === 'blade') {
+    const snippet = `<x-lucide-${kebab} class="w-5 h-5" />`;
+    await navigator.clipboard.writeText(snippet);
+    showCopied('blade', kebab);
+
+  } else if (type === 'svg') {
+    // Cache hit
+    if (iconSvgCache[name]) {
+      await navigator.clipboard.writeText(iconSvgCache[name]);
+      showCopied('svg', kebab);
+      return;
+    }
+    // Fetch from Lucide CDN
+    iconSvgLoading.value = name;
+    try {
+      const url = `https://unpkg.com/lucide-static@latest/icons/${kebab}.svg`;
+      const res = await fetch(url);
+      if (!res.ok) throw new Error('not found');
+      const svg = await res.text();
+      // Add width/height/class attributes for convenience
+      const ready = svg.replace('<svg ', '<svg class="w-5 h-5" ');
+      iconSvgCache[name] = ready;
+      await navigator.clipboard.writeText(ready);
+      showCopied('svg', kebab);
+    } catch {
+      // Fallback: copy a basic SVG wrapper with a comment
+      const fallback = `<!-- Lucide icon: ${kebab} -->\n<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">\n  <!-- paths here -->\n</svg>`;
+      await navigator.clipboard.writeText(fallback);
+      showCopied('svg', kebab + ' (fallback)');
+    } finally {
+      iconSvgLoading.value = '';
+    }
+  }
+}
+
 // ── Preview ───────────────────────────────────────────────────────
 const previewKey = ref(0);
 
@@ -1792,4 +3126,11 @@ const AssetSlot = {
 .field-label { @apply block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5; }
 .field-input  { @apply w-full px-3 py-2 bg-muted border border-border rounded-lg text-sm focus:outline-none focus:border-primary; }
 .field-hint   { @apply text-xs text-muted-foreground mt-1; }
+.fade-enter-active, .fade-leave-active { transition: opacity 0.3s; }
+.fade-enter-from, .fade-leave-to { opacity: 0; }
+.guide-slide-enter-active, .guide-slide-leave-active { transition: all 0.25s ease; overflow: hidden; }
+.guide-slide-enter-from, .guide-slide-leave-to { opacity: 0; max-height: 0; }
+.guide-slide-enter-to, .guide-slide-leave-from { opacity: 1; max-height: 600px; }
+.scrollbar-hide::-webkit-scrollbar { display: none; }
+.scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
 </style>

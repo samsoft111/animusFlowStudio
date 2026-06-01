@@ -282,6 +282,155 @@ class ThemeController extends Controller
     }
 
     // ──────────────────────────────────────────────
+    //  Theme Prompt Export
+    // ──────────────────────────────────────────────
+
+    public function exportPrompt(string $uuid)
+    {
+        $theme = StudioTheme::where('uuid', $uuid)->firstOrFail();
+
+        $author    = StudioSetting::get('studio_author', '');
+        $authorUrl = StudioSetting::get('studio_author_url', '');
+        $minVer    = StudioSetting::get('export_animusflow_min_ver', '1.0.0');
+
+        // Build mapped AnimusFlow-native colors and layout settings
+        $afColors  = $this->mapStudioColors($theme->colors ?? []);
+        $afLayout  = $this->mapStudioLayout($theme->layout_config ?? []);
+
+        // Map font to AnimusFlow enum (inter, poppins, dm-sans, outfit, plus-jakarta, playfair, fraunces, sora)
+        $afFontMap    = ['Inter'=>'inter','Poppins'=>'poppins','DM Sans'=>'dm-sans','Outfit'=>'outfit',
+                         'Plus Jakarta Sans'=>'plus-jakarta','Playfair Display'=>'playfair','Fraunces'=>'fraunces','Sora'=>'sora'];
+        $headingFont  = $theme->fonts['heading'] ?? '';
+        $afFont       = $afFontMap[$headingFont] ?? 'inter';
+
+        // Derive brand_primary and brand_accent from mapped colors
+        $afBrandPrimary = $afColors['light']['--primary'] ?? '#6366f1';
+        $afBrandAccent  = $afColors['light']['--accent']  ?? '#8b5cf6';
+
+        // Merge derived settings into af_settings
+        $afSettings = array_merge($afLayout, [
+            'layout_brand_primary' => $afBrandPrimary,
+            'layout_brand_accent'  => $afBrandAccent,
+            'layout_font_family'   => $afFont,
+            'layout_shape'         => 'normal',
+        ]);
+
+        // Apply capabilities → AnimusFlow settings
+        $caps = $theme->capabilities ?? [];
+        if (!empty($caps['animations']))      $afSettings['layout_content_animations'] = '1';
+        if (!empty($caps['back_to_top']))     $afSettings['layout_content_animations'] = $afSettings['layout_content_animations'] ?? '1';
+
+        // Build the full theme payload
+        $payload = [
+            'af_prompt_version' => '1.0',
+            'generated_at'      => now()->toIso8601String(),
+            'generator'         => 'AnimusFlowStudio',
+            'meta' => [
+                'uuid'        => $theme->uuid,
+                'name'        => $theme->name,
+                'label'       => $theme->label,
+                'description' => $theme->description ?? '',
+                'version'     => $theme->version ?? '1.0.0',
+                'status'      => $theme->status,
+                'requires'    => $minVer,
+                'author'      => $author,
+                'author_url'  => $authorUrl,
+            ],
+            // Studio-native format (for Studio re-import)
+            'design' => [
+                'colors'   => $theme->colors   ?? [],
+                'fonts'    => $theme->fonts    ?? [],
+                'variants' => $theme->variants ?? [],
+            ],
+            'layout'       => $theme->layout_config ?? [],
+            'capabilities' => $theme->capabilities  ?? [],
+            'structure'    => [
+                'sections'   => $theme->sections   ?? [],
+                'components' => $theme->components ?? [],
+            ],
+            'assets'  => $theme->assets ?? [],
+            'code'    => [
+                'css' => $theme->custom_css ?? '',
+                'js'  => $theme->custom_js  ?? '',
+            ],
+            // AnimusFlow-native format (for direct installation)
+            'af_install' => [
+                'theme_json' => [
+                    'name'        => $theme->name,
+                    'label'       => $theme->label,
+                    'description' => $theme->description ?? '',
+                    'version'     => $theme->version ?? '1.0.0',
+                    'author'      => $author,
+                    'author_url'  => $authorUrl,
+                    'blocks'      => $this->allBlockTypes(),
+                ],
+                'colors'     => $afColors,   // mapped to --primary, --accent, etc.
+                'font'       => [
+                    'family'     => $headingFont ?: 'Inter',
+                    'google_url' => $headingFont ? "https://fonts.googleapis.com/css2?family=" . rawurlencode($headingFont) . ":wght@400;500;600;700&display=swap" : null,
+                ],
+                'extra_css'  => $theme->custom_css ?? '',
+                'extra_js'   => $theme->custom_js  ?? '',
+                'settings'   => $afSettings,   // ready to write to AnimusFlow settings table
+            ],
+        ];
+
+        // Compute a simple checksum for integrity verification
+        $json     = json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        $checksum = hash('sha256', $json);
+
+        // Capabilities summary for the human-readable header
+        $caps = collect($theme->capabilities ?? [])
+            ->filter(fn ($v) => $v === true)
+            ->keys()
+            ->map(fn ($k) => str_replace('_', ' ', $k))
+            ->join(', ');
+
+        $sections = implode(', ', array_keys($theme->sections   ?? []));
+        $comps    = implode(', ', array_keys($theme->components ?? []));
+
+        $divider = str_repeat('━', 60);
+
+        $prompt = <<<PROMPT
+{$divider}
+ ANIMUSFLOW THEME PROMPT  v1.0
+ Gerado por: AnimusFlowStudio
+ Tema: {$theme->label}  ({$theme->name})
+ Versão: {$theme->version}   |   AnimusFlow >= {$minVer}
+ Gerado em: {$payload['generated_at']}
+{$divider}
+
+Para instalar este tema no AnimusFlow:
+  1. Vai a AnimusFlow Admin → Temas → Importar Prompt
+  2. Cola este bloco completo (incluindo as marcações [AF:THEME:BEGIN] e [AF:THEME:END])
+  3. Clica em "Instalar Tema"
+
+O AnimusFlow irá:
+  ✓ Criar o tema com todas as configurações
+  ✓ Registar as cores, tipografia e variantes
+  ✓ Configurar o layout, header e footer
+  ✓ Ativar as capacidades: {$caps}
+  ✓ Registar as secções: {$sections}
+  ✓ Registar os componentes: {$comps}
+  ✓ Injetar o CSS e JS customizados
+  ✓ Associar os assets (imagens/vídeos)
+
+{$divider}
+[AF:THEME:BEGIN]
+{$json}
+[AF:THEME:END]
+{$divider}
+CHECKSUM: sha256:{$checksum}
+{$divider}
+PROMPT;
+
+        return response($prompt, 200, [
+            'Content-Type'        => 'text/plain; charset=utf-8',
+            'Content-Disposition' => "attachment; filename=\"{$theme->name}.afprompt\"",
+        ]);
+    }
+
+    // ──────────────────────────────────────────────
     //  ZIP builder
     // ──────────────────────────────────────────────
 
@@ -435,34 +584,125 @@ class ThemeController extends Controller
         return ['hero', 'features', 'text', 'cta', 'testimonials', 'pricing', 'gallery', 'faq'];
     }
 
-    private function injectColors(string $layout, array $colors): string
-    {
-        $light = $colors['light'] ?? [];
-        $dark  = $colors['dark']  ?? [];
+    // ──────────────────────────────────────────────
+    //  Token mapping: Studio → AnimusFlow CSS vars
+    // ──────────────────────────────────────────────
 
-        foreach ($light as $var => $value) {
-            $layout = preg_replace(
-                '/(' . preg_quote($var, '/') . '\s*:\s*)[^;]+;/',
-                '${1}' . $value . ';',
-                $layout, 1
-            ) ?? $layout;
+    /**
+     * The Studio stores 11 Tailwind-style tokens (--color-primary, etc.).
+     * AnimusFlow's layout.blade.php uses 2-word tokens (--primary, --accent, --bg, etc.).
+     * This map translates Studio → AnimusFlow before injecting into layout.
+     */
+    private const TOKEN_MAP = [
+        '--color-primary'     => '--primary',
+        '--color-secondary'   => '--primary-h',   // closest equivalent: darker shade
+        '--color-accent'      => '--accent',
+        '--color-background'  => '--bg',
+        '--color-foreground'  => '--text',
+        '--color-card'        => '--bg-subtle',
+        '--color-muted'       => '--bg-muted',
+        '--color-border'      => '--border',
+        '--color-success'     => '--success',
+        '--color-destructive' => '--danger',
+        // --color-warning has no direct equivalent; injected as extra CSS var
+    ];
+
+    /**
+     * Layout config field mapping: Studio → AnimusFlow settings keys.
+     * Used by exportPrompt() to build af_settings payload.
+     */
+    private const LAYOUT_MAP = [
+        'header_type'      => 'layout_header_bg',
+        'nav_position'     => 'layout_header_menu',
+        'max_width'        => 'layout_content_max_width',
+        'spacing'          => 'layout_content_spacing',
+        'show_dark_toggle' => 'layout_header_show_toggle',
+        'header_sticky'    => 'layout_header_sticky',
+        'header_cta_text'  => 'layout_header_cta_text',
+        'header_cta_url'   => 'layout_header_cta_url',
+        'footer_copyright' => 'layout_footer_copyright',
+        'back_to_top'      => null,   // handled separately via capabilities
+    ];
+
+    private function mapStudioColors(array $colors): array
+    {
+        $mapped = ['light' => [], 'dark' => []];
+
+        foreach (['light', 'dark'] as $mode) {
+            foreach ($colors[$mode] ?? [] as $studioVar => $value) {
+                $afVar = self::TOKEN_MAP[$studioVar] ?? null;
+                if ($afVar !== null) {
+                    $mapped[$mode][$afVar] = $value;
+                }
+            }
+            // Always pass --color-warning through as an extra var (not in AnimusFlow's default)
+            if (isset($colors[$mode]['--color-warning'])) {
+                $mapped[$mode]['--warning'] = $colors[$mode]['--color-warning'];
+            }
         }
 
-        if (preg_match('/\[data-theme="dark"\]\s*\{/', $layout, $m, PREG_OFFSET_CAPTURE)) {
-            $openBrace   = strpos($layout, '{', $m[0][1]);
-            $closeBrace  = strpos($layout, '}', $openBrace + 1);
-            $darkContent = substr($layout, $openBrace + 1, $closeBrace - $openBrace - 1);
-            foreach ($dark as $var => $value) {
-                $darkContent = preg_replace(
-                    '/(' . preg_quote($var, '/') . '\s*:\s*)[^;]+;/',
-                    '${1}' . $value . ';',
-                    $darkContent, 1
-                ) ?? $darkContent;
+        return $mapped;
+    }
+
+    private function mapStudioLayout(array $layoutConfig): array
+    {
+        $af = [];
+        foreach (self::LAYOUT_MAP as $studioKey => $afKey) {
+            if ($afKey === null || !array_key_exists($studioKey, $layoutConfig)) {
+                continue;
             }
-            $layout = substr($layout, 0, $openBrace + 1) . $darkContent . substr($layout, $closeBrace);
+            $value = $layoutConfig[$studioKey];
+            // Convert booleans to '1'/'0' strings (AnimusFlow stores settings as strings)
+            $af[$afKey] = is_bool($value) ? ($value ? '1' : '0') : (string) $value;
+        }
+        return $af;
+    }
+
+    private function injectColors(string $layout, array $colors): string
+    {
+        // Map Studio token names → AnimusFlow token names before injecting
+        $mapped = $this->mapStudioColors($colors);
+
+        $light = $mapped['light'];
+        $dark  = $mapped['dark'];
+
+        // Split at [data-theme="dark"] to apply light and dark independently
+        if (preg_match('/\[data-theme="dark"\]\s*\{/', $layout, $m, PREG_OFFSET_CAPTURE)) {
+            $selectorStart = $m[0][1];
+            $openBrace     = strpos($layout, '{', $selectorStart);
+            $closeBrace    = strpos($layout, '}', $openBrace + 1);
+
+            $lightSection = substr($layout, 0, $selectorStart);
+            $darkHeader   = substr($layout, $selectorStart, $openBrace - $selectorStart + 1);
+            $darkContent  = substr($layout, $openBrace + 1, $closeBrace - $openBrace - 1);
+            $afterDark    = substr($layout, $closeBrace);
+
+            foreach ($light as $var => $value) {
+                $lightSection = $this->replaceCssVar($lightSection, $var, $value);
+            }
+            foreach ($dark as $var => $value) {
+                $darkContent = $this->replaceCssVar($darkContent, $var, $value);
+            }
+
+            $layout = $lightSection . $darkHeader . $darkContent . $afterDark;
+        } else {
+            // Fallback: replace in whole file
+            foreach ($light as $var => $value) {
+                $layout = $this->replaceCssVar($layout, $var, $value);
+            }
         }
 
         return $layout;
+    }
+
+    private function replaceCssVar(string $css, string $var, string $value): string
+    {
+        return preg_replace(
+            '/(' . preg_quote($var, '/') . '\s*:\s*)[^;]+;/',
+            '${1}' . $value . ';',
+            $css,
+            1
+        ) ?? $css;
     }
 
     private function injectFonts(string $layout, array $fonts): string

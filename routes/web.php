@@ -35,7 +35,8 @@ Route::middleware('auth')->group(function () {
     Route::get('/themes/{uuid}/edit',   [ThemeController::class, 'edit'])->name('themes.edit');
     Route::put('/themes/{uuid}',        [ThemeController::class, 'update'])->name('themes.update');
     Route::delete('/themes/{uuid}',     [ThemeController::class, 'destroy'])->name('themes.destroy');
-    Route::get('/themes/{uuid}/export', [ThemeController::class, 'export'])->name('themes.export');
+    Route::get('/themes/{uuid}/export',        [ThemeController::class, 'export'])->name('themes.export');
+    Route::get('/themes/{uuid}/export-prompt', [ThemeController::class, 'exportPrompt'])->name('themes.export-prompt');
 
     Route::post('/themes/{uuid}/generate-ai',   [ThemeController::class, 'generateAi'])->name('themes.generate-ai');
     Route::post('/themes/{uuid}/publish',       [ThemeController::class, 'publish'])->name('themes.publish');

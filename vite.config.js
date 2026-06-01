@@ -22,7 +22,8 @@ export default defineConfig({
         rollupOptions: {
             output: {
                 manualChunks: {
-                    'vue-vendor': ['vue', '@inertiajs/vue3'],
+                    'vue-vendor':    ['vue', '@inertiajs/vue3'],
+                    'lucide-vendor': ['lucide-vue-next'],
                 },
             },
         },
