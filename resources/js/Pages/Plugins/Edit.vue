@@ -140,6 +140,137 @@
           <div>Slug: <span class="text-foreground">{{ plugin.name }}</span></div>
           <div>UUID: <span class="text-foreground">{{ plugin.uuid }}</span></div>
         </div>
+
+        <!-- ── Inspiration panel ────────────────────────────────── -->
+        <div class="bg-card border border-border rounded-2xl overflow-hidden">
+          <!-- Header -->
+          <div class="flex items-center justify-between px-5 py-4 border-b border-border bg-gradient-to-r from-amber-500/5 via-orange-500/5 to-rose-500/5">
+            <div class="flex items-center gap-3">
+              <div class="w-8 h-8 bg-amber-500/10 rounded-lg flex items-center justify-center text-base">🔍</div>
+              <div>
+                <p class="text-sm font-semibold text-foreground">Procurar exemplos de plugins</p>
+                <p class="text-xs text-muted-foreground mt-0.5">A IA pesquisa padrões reais da categoria e gera 3 exemplos funcionais prontos a usar</p>
+              </div>
+            </div>
+            <button @click="fetchInspiration"
+              :disabled="inspireLoading || !form.category"
+              class="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+              :class="form.category
+                ? 'bg-amber-500 hover:bg-amber-400 text-white shadow-sm shadow-amber-500/20'
+                : 'bg-muted text-muted-foreground'">
+              <template v-if="inspireLoading">
+                <span class="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin inline-block"></span>
+                A pesquisar…
+              </template>
+              <template v-else>
+                <span>✨</span>
+                {{ form.category ? 'Buscar exemplos para «' + categoryLabel + '»' : 'Selecciona uma categoria primeiro' }}
+              </template>
+            </button>
+          </div>
+
+          <!-- Results -->
+          <div v-if="inspireExamples.length" class="p-5 space-y-4">
+            <!-- Example selector tabs -->
+            <div class="flex gap-2 flex-wrap">
+              <button v-for="(ex, i) in inspireExamples" :key="i"
+                @click="inspireActive = i"
+                class="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold border transition-all"
+                :class="inspireActive === i
+                  ? 'bg-amber-500 text-white border-amber-500 shadow-sm'
+                  : 'bg-muted text-muted-foreground border-border hover:border-amber-400 hover:text-amber-600'">
+                <span>{{ ['①','②','③'][i] }}</span>
+                <span>{{ ex.title }}</span>
+                <span class="opacity-60 text-[10px] font-normal px-1.5 py-0.5 rounded-full"
+                  :class="ex.complexity === 'simples' ? 'bg-emerald-500/20 text-emerald-600'
+                         : ex.complexity === 'avançado' ? 'bg-rose-500/20 text-rose-600'
+                         : 'bg-blue-500/20 text-blue-600'">
+                  {{ ex.complexity }}
+                </span>
+              </button>
+            </div>
+
+            <!-- Active example card -->
+            <div v-if="inspireExamples[inspireActive]" class="border border-border rounded-xl overflow-hidden">
+              <!-- Example header -->
+              <div class="px-5 py-4 bg-muted/40 border-b border-border flex items-start justify-between gap-4">
+                <div class="flex-1 min-w-0">
+                  <p class="text-sm font-semibold text-foreground">{{ inspireExamples[inspireActive].title }}</p>
+                  <p class="text-xs text-muted-foreground mt-1">{{ inspireExamples[inspireActive].description }}</p>
+                  <p class="text-xs text-amber-600 dark:text-amber-400 mt-2 flex items-center gap-1">
+                    <span>💡</span>
+                    <span>{{ inspireExamples[inspireActive].inspiration_source }}</span>
+                  </p>
+                  <div class="flex flex-wrap gap-1.5 mt-2">
+                    <span v-for="h in (inspireExamples[inspireActive].hooks ?? [])" :key="h"
+                      class="text-[10px] px-2 py-0.5 bg-primary/10 text-primary rounded-full font-mono">{{ h }}</span>
+                  </div>
+                </div>
+                <button @click="applyInspiration(inspireExamples[inspireActive])"
+                  class="shrink-0 flex items-center gap-1.5 px-4 py-2 bg-primary text-primary-foreground rounded-xl text-sm font-semibold hover:opacity-90 transition-opacity shadow-sm">
+                  ✅ Usar esta base
+                </button>
+              </div>
+
+              <!-- Code tabs inside example -->
+              <div class="flex gap-0 border-b border-border bg-muted/20 text-xs">
+                <button v-for="ct in inspireCodeTabs" :key="ct.id" @click="inspireCodeTab = ct.id"
+                  class="px-4 py-2 font-medium transition-colors border-r border-border last:border-0"
+                  :class="inspireCodeTab === ct.id ? 'bg-card text-foreground font-semibold' : 'text-muted-foreground hover:text-foreground'">
+                  {{ ct.label }}
+                </button>
+              </div>
+
+              <!-- Code preview -->
+              <div class="relative">
+                <pre class="overflow-auto text-xs font-mono p-4 bg-[#1e1e2e] text-[#cdd6f4] max-h-72 leading-relaxed whitespace-pre-wrap break-words"><code>{{ inspireCodePreview }}</code></pre>
+                <button @click="copyInspireCode"
+                  class="absolute top-2 right-2 text-[10px] px-2 py-1 bg-white/10 hover:bg-white/20 text-white rounded transition-colors">
+                  {{ inspireCopied ? '✓ Copiado' : 'Copiar' }}
+                </button>
+              </div>
+
+              <!-- Schema preview if available -->
+              <div v-if="(inspireExamples[inspireActive].settings_schema ?? []).length" class="px-4 py-3 border-t border-border bg-muted/20">
+                <p class="text-xs font-semibold text-muted-foreground mb-2">{{ inspireExamples[inspireActive].settings_schema.length }} campo(s) de configuração incluídos</p>
+                <div class="flex flex-wrap gap-2">
+                  <span v-for="f in inspireExamples[inspireActive].settings_schema" :key="f.key"
+                    class="text-[10px] px-2 py-1 bg-muted rounded font-mono text-muted-foreground border border-border">
+                    {{ f.key }} <span class="opacity-50">{{ f.type }}</span>
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Apply all button -->
+            <div class="flex items-center gap-3 pt-1">
+              <button @click="applyInspiration(inspireExamples[inspireActive])"
+                class="flex items-center gap-2 px-5 py-2.5 bg-primary text-primary-foreground rounded-xl text-sm font-semibold hover:opacity-90 transition-opacity">
+                ✅ Usar «{{ inspireExamples[inspireActive]?.title }}» como base do plugin
+              </button>
+              <span class="text-xs text-muted-foreground">Preenche PHP, Widget, JS, CSS e Configurações</span>
+            </div>
+          </div>
+
+          <!-- Empty state -->
+          <div v-else-if="!inspireLoading" class="px-5 py-8 text-center">
+            <div class="text-3xl mb-3">🔍</div>
+            <p class="text-sm text-muted-foreground">
+              {{ form.category
+                ? 'Clica em «Buscar exemplos» para a IA pesquisar padrões reais de plugins «' + categoryLabel + '» e gerar exemplos prontos a usar.'
+                : 'Selecciona uma categoria no formulário acima para desbloquear a pesquisa de exemplos.' }}
+            </p>
+          </div>
+
+          <!-- Loading skeleton -->
+          <div v-if="inspireLoading" class="p-5 space-y-3">
+            <div class="flex gap-2">
+              <div v-for="i in 3" :key="i" class="h-7 w-28 bg-muted rounded-full animate-pulse"></div>
+            </div>
+            <div class="h-24 bg-muted rounded-xl animate-pulse"></div>
+            <div class="h-48 bg-muted rounded-xl animate-pulse"></div>
+          </div>
+        </div>
       </div>
 
       <!-- ══════════ Tab: Hooks ══════════ -->
@@ -743,6 +874,88 @@ function save() {
     onSuccess: () => { feedback.success = 'Guardado com sucesso!'; },
     onError:   (e) => { feedback.error = Object.values(e)[0] ?? 'Erro ao guardar.'; },
   });
+}
+
+// ── Inspiration ──
+const categoryLabels = {
+  seo: 'SEO', analytics: 'Analytics', ecommerce: 'E-commerce', social: 'Social Media',
+  forms: 'Forms', ai: 'AI / Chatbot', design: 'Design', marketing: 'Marketing', utilities: 'Utilities',
+};
+const categoryLabel = computed(() => categoryLabels[form.category] ?? form.category);
+
+const inspireLoading  = ref(false);
+const inspireExamples = ref([]);
+const inspireActive   = ref(0);
+const inspireCodeTab  = ref('php');
+const inspireCopied   = ref(false);
+
+const inspireCodeTabs = [
+  { id: 'php',    label: 'Plugin.php' },
+  { id: 'widget', label: 'Widget Blade' },
+  { id: 'js',     label: 'JavaScript' },
+  { id: 'css',    label: 'CSS' },
+];
+
+const inspireCodePreview = computed(() => {
+  const ex = inspireExamples.value[inspireActive.value];
+  if (!ex) return '';
+  const map = { php: ex.plugin_php, widget: ex.widget_blade, js: ex.widget_js, css: ex.custom_css };
+  return map[inspireCodeTab.value] ?? '';
+});
+
+async function fetchInspiration() {
+  if (!form.category || inspireLoading.value) return;
+  inspireLoading.value = true;
+  inspireExamples.value = [];
+  inspireActive.value   = 0;
+  inspireCodeTab.value  = 'php';
+  try {
+    const res = await fetch(`/plugins/${props.plugin.uuid}/inspire`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content ?? '' },
+      body: JSON.stringify({ category: form.category }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error ?? 'Erro desconhecido');
+    inspireExamples.value = data.examples ?? [];
+  } catch (e) {
+    feedback.error = '❌ ' + (e.message ?? 'Erro ao buscar exemplos.');
+  } finally {
+    inspireLoading.value = false;
+  }
+}
+
+function applyInspiration(ex) {
+  if (!ex) return;
+  const has = (v) => v && v.trim().length > 0;
+  const confirmMsg = [
+    has(form.plugin_php)   && 'PHP',
+    has(form.widget_blade) && 'Widget',
+    has(form.widget_js)    && 'JavaScript',
+    has(form.custom_css)   && 'CSS',
+  ].filter(Boolean);
+  if (confirmMsg.length && !confirm(`Isto vai substituir o conteúdo actual de: ${confirmMsg.join(', ')}.\n\nContinuar?`)) return;
+
+  if (ex.plugin_php)       form.plugin_php       = ex.plugin_php;
+  if (ex.widget_blade)     form.widget_blade     = ex.widget_blade;
+  if (ex.widget_js)        form.widget_js        = ex.widget_js;
+  if (ex.custom_css)       form.custom_css       = ex.custom_css;
+  if (ex.hooks?.length)    form.hooks            = [...ex.hooks];
+  if (ex.settings_schema?.length) form.settings_schema = JSON.parse(JSON.stringify(ex.settings_schema));
+
+  feedback.success = `✅ Exemplo «${ex.title}» aplicado! Revê e guarda.`;
+  // Jump to PHP tab to review
+  activeTab.value = 'php';
+}
+
+async function copyInspireCode() {
+  const text = inspireCodePreview.value;
+  if (!text) return;
+  try {
+    await navigator.clipboard.writeText(text);
+    inspireCopied.value = true;
+    setTimeout(() => { inspireCopied.value = false; }, 2000);
+  } catch {}
 }
 
 // ── Hooks ──

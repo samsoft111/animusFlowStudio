@@ -126,6 +126,82 @@ SYSTEM;
     }
 
     // ──────────────────────────────────────────────
+    //  Plugin Inspiration (category-based examples)
+    // ──────────────────────────────────────────────
+
+    /**
+     * Generate 3 concrete plugin examples for a given category.
+     *
+     * Returns an array of up to 3 examples, each with:
+     *   title, description, inspiration_source, plugin_php,
+     *   widget_blade, widget_js, custom_css, settings_schema, hooks
+     */
+    public static function inspirePlugin(
+        string $category,
+        string $pluginName,
+        string $pluginLabel,
+        array  $hooks,
+        string $description = ''
+    ): array {
+        $hooksStr   = implode(', ', $hooks ?: ['page.render']);
+        $className  = self::toClassName($pluginLabel ?: $pluginName);
+        $descPart   = $description ? "\nPlugin description: {$description}" : '';
+
+        $systemPrompt = <<<SYSTEM
+Você é um especialista em desenvolvimento de plugins para o AnimusFlow CMS e tem profundo conhecimento de padrões de plugins em WordPress, Joomla, Drupal e outros CMS populares.
+
+Quando o utilizador pede inspiração para um plugin de categoria "{$category}", você deve:
+1. Pesquisar no seu conhecimento exemplos reais de plugins populares dessa categoria
+2. Gerar 3 exemplos COMPLETOS e FUNCIONAIS, do mais simples ao mais completo
+3. Cada exemplo deve ter um propósito ligeiramente diferente dentro da mesma categoria
+
+AnimusFlow plugin hooks disponíveis:
+- page.render: onPageRender(\$page): string  — retorna HTML injectado antes de </body>. IMPORTANTE: use file_get_contents(__DIR__ . '/views/widget.blade.php') ou heredoc/strings inline para retornar HTML, NUNCA use view()->render()
+- content.publish: onContentPublish(\$page): void — disparado ao publicar página
+- admin.sidebar: onAdminSidebar(): array — retorna ['label', 'icon', 'url']
+
+REGRAS CRÍTICAS:
+- Plugin.php NUNCA usa view()->render() — o CMS não regista namespaces de views
+- Plugin.php deve retornar HTML como string (heredoc, sprintf ou file_get_contents)
+- Sempre include declare(strict_types=1) no PHP
+- widget_blade é o ficheiro views/widget.blade.php separado (para referência, não chamado por view())
+- CSS deve usar classes com prefixo único (ex: .af-{slug}-*)
+- JavaScript deve ser vanilla JS dentro de DOMContentLoaded
+
+A resposta DEVE ser JSON válido apenas — sem markdown, sem code fences, sem explicações.
+
+Retorna exactamente esta estrutura:
+{
+  "examples": [
+    {
+      "title": "Nome do exemplo",
+      "description": "O que este exemplo faz",
+      "inspiration_source": "Inspirado em: [plugin/padrão real, ex: 'Hello Bar do Sumo', 'Google Analytics snippet', etc.]",
+      "complexity": "simples|médio|avançado",
+      "hooks": ["page.render"],
+      "plugin_php": "<?php\\n\\ndeclare(strict_types=1);\\n\\nclass {$className}Plugin\\n{\\n    ...código completo...\\n}\\n",
+      "widget_blade": "<div class=\\\"af-{slug}-widget\\\">...</div>",
+      "widget_js": "document.addEventListener('DOMContentLoaded', () => { ... });",
+      "custom_css": ".af-{slug}-* { ... }",
+      "settings_schema": [{"key":"...","label":"...","type":"text","default":"","placeholder":"","hint":""}]
+    }
+  ]
+}
+SYSTEM;
+
+        $userPrompt = "Gera 3 exemplos de plugin para a categoria \"{$category}\" para o AnimusFlow CMS.{$descPart}\nHooks activos: {$hooksStr}\nNome do plugin: {$pluginName}";
+
+        $raw = self::call($systemPrompt, $userPrompt, 8192);
+
+        $parsed = self::parseJson($raw, ['examples' => []]);
+
+        // Normalise: ensure at most 3 examples
+        $parsed['examples'] = array_slice($parsed['examples'] ?? [], 0, 3);
+
+        return $parsed;
+    }
+
+    // ──────────────────────────────────────────────
     //  Multimodal Chat (Plugin assistant)
     // ──────────────────────────────────────────────
 

@@ -144,6 +144,33 @@ class PluginController extends Controller
     }
 
     // ──────────────────────────────────────────────
+    //  Plugin Inspiration (category-based examples)
+    // ──────────────────────────────────────────────
+
+    public function inspire(Request $request, string $uuid): JsonResponse
+    {
+        $plugin = StudioPlugin::where('uuid', $uuid)->firstOrFail();
+
+        $request->validate([
+            'category' => ['required', 'string', 'max:60'],
+        ]);
+
+        try {
+            $result = AIEngine::inspirePlugin(
+                category:    $request->input('category'),
+                pluginName:  $plugin->name,
+                pluginLabel: $plugin->label,
+                hooks:       $plugin->hooks ?? ['page.render'],
+                description: $plugin->description ?? '',
+            );
+        } catch (\Throwable $e) {
+            return response()->json(['error' => $e->getMessage()], 422);
+        }
+
+        return response()->json($result);
+    }
+
+    // ──────────────────────────────────────────────
     //  Multimodal Chat
     // ──────────────────────────────────────────────
 
