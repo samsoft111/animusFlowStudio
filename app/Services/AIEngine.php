@@ -128,6 +128,188 @@ SYSTEM;
     // ──────────────────────────────────────────────
     //  Internal helpers
     // ──────────────────────────────────────────────
+    //  Multimodal Chat (Theme assistant)
+    // ──────────────────────────────────────────────
+
+    /**
+     * Multi-turn chat that can analyse images, PDFs and other attachments
+     * to help the user design a theme.
+     *
+     * $history  — array of {role:'user'|'assistant', content:string}
+     * $attachments — array of processed attachment descriptors:
+     *   image:    {type:'image',    mime:string, data:string (base64)}
+     *   document: {type:'document', data:string (base64)}
+     *   other:    {type:'text_description', description:string}
+     *
+     * Returns {reply:string, updates:array|null}
+     */
+    public static function chatTheme(array $history, string $currentThemeJson, array $attachments = []): array
+    {
+        $system = <<<SYSTEM
+Você é um designer especialista em temas para o AnimusFlow CMS.
+Ajuda o utilizador a criar e configurar temas através de conversa natural em português (PT-PT).
+
+TEMA ACTUAL (JSON):
+{$currentThemeJson}
+
+CAMPOS DISPONÍVEIS PARA ACTUALIZAR:
+- label, description, version, status
+- colors.light / colors.dark — mapas de variáveis CSS (ex: "--color-primary": "#...")
+- fonts.heading / fonts.body — nome da família de fonte
+- layout_config — header_type, nav_type, footer_type, layout_type, max_width, spacing, show_dark_toggle, back_to_top, header_cta_text, header_cta_url
+- capabilities — video_bg, parallax, animations, lightbox, mega_menu, search, cookie_banner, preloader, scroll_progress (true/false)
+- sections — {tipo: html_blade}
+- components — {uid: {type, variant, blade}}
+- custom_css, custom_js
+- variants — array de paletas alternativas
+
+INSTRUÇÕES:
+1. Responde SEMPRE em português (PT-PT), de forma clara e concisa.
+2. Se o utilizador pedir alterações ao tema, inclui no final da resposta um bloco JSON:
+   ```json_updates
+   { apenas os campos que mudam }
+   ```
+3. Se analisares imagens, vídeos ou documentos, extrai cores, estilos e layouts para sugerir mudanças concretas.
+4. Se não há alterações, não incluis o bloco json_updates.
+5. Sê proactivo: sugere melhorias mesmo quando o utilizador faz perguntas gerais.
+SYSTEM;
+
+        $provider = StudioSetting::get('ai_provider', 'claude');
+        $model    = StudioSetting::get('ai_model', '');
+        $rawKey   = StudioSetting::get('ai_api_key', '');
+
+        $apiKey = '';
+        if (!empty($rawKey)) {
+            try { $apiKey = decrypt($rawKey); } catch (\Throwable) { $apiKey = $rawKey; }
+        }
+        if (empty($apiKey)) {
+            throw new RuntimeException('Chave AI não configurada. Vai a Definições → Provedor IA.');
+        }
+
+        $raw = match ($provider) {
+            'openai' => self::chatOpenAI($apiKey, $model ?: 'gpt-4o', $system, $history, $attachments),
+            default  => self::chatClaude($apiKey, $model ?: 'claude-sonnet-4-5', $system, $history, $attachments),
+        };
+
+        // Extract json_updates block
+        $updates = null;
+        if (preg_match('/```json_updates\s*([\s\S]*?)```/m', $raw, $m)) {
+            $parsed = json_decode(trim($m[1]), true);
+            if (is_array($parsed)) {
+                $updates = $parsed;
+            }
+        }
+
+        // Remove json_updates from visible reply
+        $reply = preg_replace('/```json_updates\s*[\s\S]*?```/m', '', $raw);
+        $reply = trim($reply ?? $raw);
+
+        return ['reply' => $reply, 'updates' => $updates];
+    }
+
+    private static function chatClaude(string $key, string $model, string $system, array $history, array $attachments): string
+    {
+        $messages = [];
+
+        foreach ($history as $i => $msg) {
+            $isLast = $i === count($history) - 1;
+
+            // On the last user message, append attachment content blocks
+            if ($isLast && $msg['role'] === 'user' && !empty($attachments)) {
+                $blocks = [['type' => 'text', 'text' => $msg['content']]];
+
+                foreach ($attachments as $att) {
+                    if ($att['type'] === 'image') {
+                        $blocks[] = [
+                            'type'   => 'image',
+                            'source' => [
+                                'type'       => 'base64',
+                                'media_type' => $att['mime'],
+                                'data'       => $att['data'],
+                            ],
+                        ];
+                    } elseif ($att['type'] === 'document') {
+                        $blocks[] = [
+                            'type'   => 'document',
+                            'source' => [
+                                'type'       => 'base64',
+                                'media_type' => 'application/pdf',
+                                'data'       => $att['data'],
+                            ],
+                        ];
+                    } elseif ($att['type'] === 'text_description') {
+                        $blocks[] = ['type' => 'text', 'text' => $att['description']];
+                    }
+                }
+
+                $messages[] = ['role' => 'user', 'content' => $blocks];
+            } else {
+                $messages[] = ['role' => $msg['role'], 'content' => $msg['content']];
+            }
+        }
+
+        $response = Http::withHeaders([
+            'x-api-key'         => $key,
+            'anthropic-version' => '2023-06-01',
+            'content-type'      => 'application/json',
+            'anthropic-beta'    => 'pdfs-2024-09-25',
+        ])->timeout(60)->post('https://api.anthropic.com/v1/messages', [
+            'model'      => $model,
+            'max_tokens' => 4096,
+            'system'     => $system,
+            'messages'   => $messages,
+        ]);
+
+        if (!$response->successful()) {
+            throw new RuntimeException('Claude API error: ' . $response->body());
+        }
+
+        return $response->json('content.0.text', '');
+    }
+
+    private static function chatOpenAI(string $key, string $model, string $system, array $history, array $attachments): string
+    {
+        $messages = [['role' => 'system', 'content' => $system]];
+
+        foreach ($history as $i => $msg) {
+            $isLast = $i === count($history) - 1;
+
+            if ($isLast && $msg['role'] === 'user' && !empty($attachments)) {
+                $parts = [['type' => 'text', 'text' => $msg['content']]];
+
+                foreach ($attachments as $att) {
+                    if ($att['type'] === 'image') {
+                        $parts[] = [
+                            'type'      => 'image_url',
+                            'image_url' => ['url' => "data:{$att['mime']};base64,{$att['data']}"],
+                        ];
+                    } elseif ($att['type'] === 'text_description') {
+                        $parts[] = ['type' => 'text', 'text' => $att['description']];
+                    }
+                }
+
+                $messages[] = ['role' => 'user', 'content' => $parts];
+            } else {
+                $messages[] = ['role' => $msg['role'], 'content' => $msg['content']];
+            }
+        }
+
+        $response = Http::withToken($key)
+            ->timeout(60)
+            ->post('https://api.openai.com/v1/chat/completions', [
+                'model'      => $model,
+                'max_tokens' => 4096,
+                'messages'   => $messages,
+            ]);
+
+        if (!$response->successful()) {
+            throw new RuntimeException('OpenAI API error: ' . $response->body());
+        }
+
+        return $response->json('choices.0.message.content', '');
+    }
+
+    // ──────────────────────────────────────────────
 
     private static function call(string $system, string $user, int $maxTokens = 2048): string
     {

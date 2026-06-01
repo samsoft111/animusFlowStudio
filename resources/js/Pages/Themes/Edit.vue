@@ -1376,6 +1376,164 @@
         </div>
       </div>
 
+      <!-- ════════════════════ TAB: Chat IA ════════════════════ -->
+      <div v-show="activeTab === 'chat'" class="flex flex-col gap-4">
+
+        <!-- Header info -->
+        <div class="flex items-center gap-3 px-4 py-3 bg-violet-500/8 border border-violet-500/20 rounded-xl">
+          <span class="text-lg">💬</span>
+          <div class="flex-1 min-w-0">
+            <p class="text-sm font-semibold text-foreground">Assistente de Design IA</p>
+            <p class="text-xs text-muted-foreground">Descreve o que queres em linguagem natural. Podes anexar imagens, vídeos, áudios e documentos para inspiração.</p>
+          </div>
+          <button @click="chatMessages = []; chatPendingUpdates = null"
+            class="text-xs text-muted-foreground hover:text-foreground px-2 py-1 rounded-lg hover:bg-muted transition-colors shrink-0">
+            🗑 Limpar
+          </button>
+        </div>
+
+        <!-- Chat messages -->
+        <div ref="chatScrollEl"
+          class="flex flex-col gap-3 overflow-y-auto pr-1"
+          style="max-height: 55vh; min-height: 200px;">
+
+          <!-- Empty state -->
+          <div v-if="chatMessages.length === 0" class="flex flex-col items-center justify-center py-16 gap-3 text-center">
+            <div class="w-14 h-14 rounded-2xl bg-violet-500/10 flex items-center justify-center text-2xl">💬</div>
+            <p class="text-sm font-semibold text-foreground">Começa uma conversa</p>
+            <p class="text-xs text-muted-foreground max-w-xs">Pergunta algo como "Torna o tema mais minimalista" ou "Sugere uma paleta para uma loja de luxo" e anexa imagens para inspiração.</p>
+            <!-- Quick prompts -->
+            <div class="flex flex-wrap gap-2 justify-center mt-2">
+              <button v-for="qp in chatQuickPrompts" :key="qp"
+                @click="chatInput = qp"
+                class="px-3 py-1.5 bg-muted hover:bg-border border border-border rounded-full text-xs text-foreground transition-colors">
+                {{ qp }}
+              </button>
+            </div>
+          </div>
+
+          <!-- Messages -->
+          <template v-for="(msg, i) in chatMessages" :key="i">
+
+            <!-- User message -->
+            <div v-if="msg.role === 'user'" class="flex justify-end gap-2 items-end">
+              <div class="max-w-[78%]">
+                <!-- Attachments preview -->
+                <div v-if="msg.attachmentPreviews?.length" class="flex flex-wrap gap-1.5 mb-1.5 justify-end">
+                  <template v-for="(att, ai) in msg.attachmentPreviews" :key="ai">
+                    <img v-if="att.type === 'image'" :src="att.url" class="h-16 w-16 object-cover rounded-lg border border-border" />
+                    <div v-else class="h-16 px-3 flex flex-col items-center justify-center bg-muted border border-border rounded-lg gap-1">
+                      <span class="text-xl">{{ att.icon }}</span>
+                      <span class="text-[9px] text-muted-foreground truncate max-w-[60px]">{{ att.name }}</span>
+                    </div>
+                  </template>
+                </div>
+                <div class="bg-primary text-primary-foreground rounded-2xl rounded-br-sm px-4 py-2.5 text-sm leading-relaxed whitespace-pre-wrap">{{ msg.content }}</div>
+              </div>
+              <div class="w-7 h-7 rounded-full bg-primary/20 flex items-center justify-center text-xs shrink-0 mb-0.5">👤</div>
+            </div>
+
+            <!-- Assistant message -->
+            <div v-else class="flex gap-2 items-end">
+              <div class="w-7 h-7 rounded-full bg-violet-500/15 flex items-center justify-center text-xs shrink-0 mb-0.5">✦</div>
+              <div class="max-w-[82%]">
+                <div class="bg-card border border-border rounded-2xl rounded-bl-sm px-4 py-2.5 text-sm leading-relaxed whitespace-pre-wrap text-foreground">{{ msg.content }}</div>
+                <!-- Applied updates badge -->
+                <div v-if="msg.applied" class="mt-1.5 flex items-center gap-1.5">
+                  <span class="text-[10px] text-success font-semibold flex items-center gap-1">✓ Alterações aplicadas ao tema</span>
+                  <button @click="save()" class="text-[10px] px-2 py-0.5 bg-success/10 text-success rounded-full hover:bg-success/20 transition-colors">Guardar agora</button>
+                </div>
+                <div v-else-if="msg.updates && !msg.applied" class="mt-1.5 flex items-center gap-2">
+                  <button @click="applyChatUpdates(msg.updates, i)"
+                    class="text-[10px] px-2.5 py-1 bg-primary text-primary-foreground rounded-full font-semibold hover:opacity-90 transition-opacity">
+                    ✦ Aplicar alterações
+                  </button>
+                  <span class="text-[10px] text-muted-foreground">A IA sugeriu mudanças ao tema</span>
+                </div>
+              </div>
+            </div>
+
+          </template>
+
+          <!-- Typing indicator -->
+          <div v-if="chatLoading" class="flex gap-2 items-end">
+            <div class="w-7 h-7 rounded-full bg-violet-500/15 flex items-center justify-center text-xs shrink-0">✦</div>
+            <div class="bg-card border border-border rounded-2xl rounded-bl-sm px-4 py-3 flex items-center gap-1">
+              <span class="w-1.5 h-1.5 bg-muted-foreground rounded-full animate-bounce" style="animation-delay:0ms"></span>
+              <span class="w-1.5 h-1.5 bg-muted-foreground rounded-full animate-bounce" style="animation-delay:150ms"></span>
+              <span class="w-1.5 h-1.5 bg-muted-foreground rounded-full animate-bounce" style="animation-delay:300ms"></span>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- File attachment previews -->
+        <div v-if="chatAttachments.length" class="flex flex-wrap gap-2 px-1">
+          <div v-for="(att, i) in chatAttachments" :key="i"
+            class="relative group flex items-center gap-2 px-2 py-1.5 bg-muted border border-border rounded-xl">
+            <img v-if="att.type === 'image'" :src="att.url" class="w-8 h-8 object-cover rounded-md" />
+            <span v-else class="text-lg">{{ att.icon }}</span>
+            <div class="min-w-0">
+              <p class="text-[10px] font-semibold text-foreground truncate max-w-[100px]">{{ att.name }}</p>
+              <p class="text-[9px] text-muted-foreground">{{ att.sizeLabel }}</p>
+            </div>
+            <button @click="chatAttachments.splice(i, 1)"
+              class="absolute -top-1.5 -right-1.5 w-4 h-4 bg-destructive text-white rounded-full text-[8px] flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">✕</button>
+          </div>
+        </div>
+
+        <!-- Drag & drop zone (shows when dragging) -->
+        <div v-if="chatDragging"
+          class="border-2 border-dashed border-primary rounded-2xl p-8 text-center text-primary text-sm font-semibold"
+          @dragover.prevent @dragleave="chatDragging = false"
+          @drop.prevent="onChatDrop($event)">
+          📎 Solta os ficheiros aqui
+        </div>
+
+        <!-- Input row -->
+        <div v-else class="flex gap-2 items-end"
+          @dragover.prevent="chatDragging = true">
+          <!-- Attach button -->
+          <button @click="$refs.chatFileInput.click()"
+            class="w-9 h-9 rounded-xl bg-muted border border-border flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-border transition-colors shrink-0 mb-0.5"
+            title="Anexar ficheiro">
+            📎
+          </button>
+          <input ref="chatFileInput" type="file" class="hidden" multiple
+            accept="image/*,video/*,audio/*,.pdf,.txt,.md,.csv,.docx"
+            @change="onChatFileSelect($event)" />
+
+          <!-- Text area -->
+          <div class="flex-1 relative">
+            <textarea v-model="chatInput"
+              ref="chatTextarea"
+              rows="1"
+              placeholder="Escreve uma instrução ou pergunta… (Enter para enviar)"
+              class="w-full px-4 py-2.5 bg-muted border border-border rounded-2xl text-sm resize-none focus:outline-none focus:border-primary transition-colors leading-relaxed"
+              style="max-height: 120px; overflow-y: auto;"
+              @keydown.enter.exact.prevent="sendChatMessage"
+              @keydown.enter.shift.exact="chatInput += '\n'"
+              @input="autoResizeChatTextarea"
+            ></textarea>
+          </div>
+
+          <!-- Send button -->
+          <button @click="sendChatMessage" :disabled="chatLoading || !chatInput.trim()"
+            class="w-9 h-9 rounded-xl bg-primary text-primary-foreground flex items-center justify-center shrink-0 mb-0.5 disabled:opacity-40 hover:opacity-90 transition-opacity"
+            title="Enviar (Enter)">
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/>
+            </svg>
+          </button>
+        </div>
+
+        <!-- Hints -->
+        <p class="text-[10px] text-muted-foreground text-center">
+          Suporta imagens (JPG, PNG, GIF, WebP), PDFs, áudios, vídeos e documentos de texto · Enter envia · Shift+Enter nova linha
+        </p>
+
+      </div>
+
     </div>
 
     <!-- Add section modal -->
@@ -1502,7 +1660,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed } from 'vue';
+import { ref, reactive, computed, nextTick } from 'vue';
 import { router } from '@inertiajs/vue3';
 import { useI18n } from 'vue-i18n';
 import AppLayout from '@/Layouts/AppLayout.vue';
@@ -1531,6 +1689,7 @@ const tabs = [
   { id: 'icons',        icon: '✦',  label: 'Ícones'      },
   { id: 'demo',         icon: '🎭', label: 'Demo Data'   },
   { id: 'preview',      icon: '👁️',  label: 'Preview'     },
+  { id: 'chat',         icon: '💬', label: 'Chat IA'     },
 ];
 
 // ── Workflow stepper ──────────────────────────────────────────────
@@ -3058,6 +3217,157 @@ async function publishTheme() {
     else { feedback.success = t('themes.publish_success'); setTimeout(() => router.reload(), 1500); }
   } catch(e) { feedback.error = e.message; }
   finally { publishing.value = false; }
+}
+
+// ── Chat IA ──────────────────────────────────────────────────────────────
+
+const chatMessages       = ref([]);   // [{role, content, attachmentPreviews?, updates?, applied?}]
+const chatInput          = ref('');
+const chatLoading        = ref(false);
+const chatAttachments    = ref([]);   // [{file, type, name, icon, url, sizeLabel}]
+const chatDragging       = ref(false);
+const chatPendingUpdates = ref(null);
+const chatScrollEl       = ref(null);
+const chatTextarea       = ref(null);
+const chatFileInput      = ref(null);
+
+const chatQuickPrompts = [
+  'Torna o tema mais minimalista',
+  'Sugere uma paleta de cores elegante',
+  'Adapta para uma loja de luxo',
+  'Adiciona suporte a dark mode',
+  'Que secções devo usar para um portfolio?',
+];
+
+function autoResizeChatTextarea() {
+  const el = chatTextarea.value;
+  if (!el) return;
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 120) + 'px';
+}
+
+function chatScrollToBottom() {
+  nextTick(() => {
+    const el = chatScrollEl.value;
+    if (el) el.scrollTop = el.scrollHeight;
+  });
+}
+
+function fileToAttachment(file) {
+  const mime = file.type;
+  const name = file.name;
+  const sizeLabel = file.size > 1024 * 1024
+    ? (file.size / 1024 / 1024).toFixed(1) + ' MB'
+    : Math.round(file.size / 1024) + ' KB';
+
+  if (mime.startsWith('image/')) {
+    return { file, type: 'image', name, icon: '🖼️', url: URL.createObjectURL(file), sizeLabel };
+  } else if (mime === 'application/pdf') {
+    return { file, type: 'document', name, icon: '📄', url: null, sizeLabel };
+  } else if (mime.startsWith('audio/')) {
+    return { file, type: 'audio', name, icon: '🎵', url: null, sizeLabel };
+  } else if (mime.startsWith('video/')) {
+    return { file, type: 'video', name, icon: '🎬', url: null, sizeLabel };
+  } else {
+    return { file, type: 'document', name, icon: '📎', url: null, sizeLabel };
+  }
+}
+
+function onChatFileSelect(event) {
+  const files = Array.from(event.target.files ?? []);
+  files.forEach(f => chatAttachments.value.push(fileToAttachment(f)));
+  event.target.value = '';
+}
+
+function onChatDrop(event) {
+  chatDragging.value = false;
+  const files = Array.from(event.dataTransfer.files ?? []);
+  files.forEach(f => chatAttachments.value.push(fileToAttachment(f)));
+}
+
+async function sendChatMessage() {
+  const text = chatInput.value.trim();
+  if (!text || chatLoading.value) return;
+
+  const attachPreviews = chatAttachments.value.map(a => ({
+    type: a.type === 'image' ? 'image' : 'other',
+    url:  a.url,
+    icon: a.icon,
+    name: a.name,
+  }));
+
+  chatMessages.value.push({ role: 'user', content: text, attachmentPreviews: attachPreviews });
+  chatScrollToBottom();
+
+  const filesToSend = [...chatAttachments.value];
+  chatInput.value = '';
+  chatAttachments.value = [];
+  chatLoading.value = true;
+
+  // Build history (role/content only, last 20 messages)
+  const history = chatMessages.value
+    .slice(-20)
+    .map(m => ({ role: m.role, content: m.content }));
+
+  try {
+    const formData = new FormData();
+    formData.append('message', text);
+    history.slice(0, -1).forEach((m, i) => {
+      formData.append(`history[${i}][role]`, m.role);
+      formData.append(`history[${i}][content]`, m.content);
+    });
+    filesToSend.forEach((att, i) => {
+      formData.append(`files[${i}]`, att.file);
+    });
+    formData.append('_token', document.querySelector('meta[name="csrf-token"]')?.content ?? '');
+
+    const res  = await fetch(`/themes/${props.theme.uuid}/chat`, { method: 'POST', body: formData });
+    const data = await res.json();
+
+    if (!res.ok || data.error) {
+      chatMessages.value.push({ role: 'assistant', content: '⚠️ ' + (data.error ?? 'Erro desconhecido.') });
+    } else {
+      chatMessages.value.push({
+        role:    'assistant',
+        content: data.reply,
+        updates: data.updates ?? null,
+        applied: data.applied ?? false,
+      });
+
+      if (data.applied && data.theme) {
+        Object.assign(form, {
+          colors:       data.theme.colors       ?? form.colors,
+          fonts:        data.theme.fonts        ?? form.fonts,
+          layout_config:data.theme.layout_config?? form.layout_config,
+          capabilities: data.theme.capabilities ?? form.capabilities,
+          sections:     data.theme.sections     ?? form.sections,
+          components:   data.theme.components   ?? form.components,
+          custom_css:   data.theme.custom_css   ?? form.custom_css,
+          custom_js:    data.theme.custom_js    ?? form.custom_js,
+          variants:     data.theme.variants     ?? form.variants,
+          label:        data.theme.label        ?? form.label,
+          description:  data.theme.description  ?? form.description,
+        });
+      }
+    }
+  } catch (e) {
+    chatMessages.value.push({ role: 'assistant', content: '⚠️ ' + e.message });
+  } finally {
+    chatLoading.value = false;
+    chatScrollToBottom();
+    nextTick(autoResizeChatTextarea);
+  }
+}
+
+function applyChatUpdates(updates, msgIdx) {
+  if (!updates) return;
+  const allowed = ['label','description','version','status','colors','fonts',
+    'layout_config','capabilities','sections','components','custom_css','custom_js','variants','assets'];
+  allowed.forEach(k => {
+    if (updates[k] !== undefined) form[k] = updates[k];
+  });
+  chatMessages.value[msgIdx] = { ...chatMessages.value[msgIdx], applied: true };
+  feedback.success = 'Alterações do chat aplicadas! Guarda para persistir.';
 }
 
 // ── Micro-componentes (registados no script setup para Vue os detectar) ───

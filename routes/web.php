@@ -38,6 +38,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/themes/{uuid}/export',        [ThemeController::class, 'export'])->name('themes.export');
     Route::get('/themes/{uuid}/export-prompt', [ThemeController::class, 'exportPrompt'])->name('themes.export-prompt');
 
+    Route::post('/themes/{uuid}/chat',           [ThemeController::class, 'chat'])->name('themes.chat');
     Route::post('/themes/{uuid}/generate-ai',   [ThemeController::class, 'generateAi'])->name('themes.generate-ai');
     Route::post('/themes/{uuid}/publish',       [ThemeController::class, 'publish'])->name('themes.publish');
     Route::post('/themes/{uuid}/install-in-cms', [ThemeController::class, 'installInCms'])->name('themes.install-cms');

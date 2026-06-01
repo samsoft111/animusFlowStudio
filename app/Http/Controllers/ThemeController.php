@@ -204,6 +204,106 @@ class ThemeController extends Controller
     }
 
     // ──────────────────────────────────────────────
+    //  Multimodal Chat
+    // ──────────────────────────────────────────────
+
+    public function chat(Request $request, string $uuid): JsonResponse
+    {
+        $theme = StudioTheme::where('uuid', $uuid)->firstOrFail();
+
+        $request->validate([
+            'message'   => 'required|string|min:1|max:4000',
+            'history'   => 'nullable|array',
+            'history.*.role'    => 'required|in:user,assistant',
+            'history.*.content' => 'required|string',
+            'files'     => 'nullable|array|max:5',
+            'files.*'   => 'file|max:20480', // 20 MB per file
+        ]);
+
+        $history = $request->input('history', []);
+        $history[] = ['role' => 'user', 'content' => $request->input('message')];
+
+        // Process uploaded files into attachment descriptors
+        $attachments = [];
+        foreach ($request->file('files', []) as $file) {
+            $mime = $file->getMimeType() ?? '';
+            $name = $file->getClientOriginalName();
+            $size = $file->getSize();
+
+            if (in_array($mime, ['image/jpeg', 'image/png', 'image/gif', 'image/webp'])) {
+                $attachments[] = [
+                    'type' => 'image',
+                    'mime' => $mime,
+                    'data' => base64_encode(file_get_contents($file->getRealPath())),
+                ];
+            } elseif ($mime === 'application/pdf') {
+                $attachments[] = [
+                    'type' => 'document',
+                    'data' => base64_encode(file_get_contents($file->getRealPath())),
+                ];
+            } elseif (str_starts_with($mime, 'audio/')) {
+                $dur = $size > 0 ? round($size / 1024) . ' KB' : 'desconhecida';
+                $attachments[] = [
+                    'type'        => 'text_description',
+                    'description' => "[Ficheiro de áudio anexado: {$name}, tipo: {$mime}, tamanho: {$dur}. Analisa este contexto para sugestões de design sonoro ou ambiente do tema.]",
+                ];
+            } elseif (str_starts_with($mime, 'video/')) {
+                $attachments[] = [
+                    'type'        => 'text_description',
+                    'description' => "[Vídeo anexado: {$name}, tipo: {$mime}, tamanho: " . round($size / 1024 / 1024, 1) . " MB. Usa este contexto para sugestões de tema visual, motion design e atmosfera do site.]",
+                ];
+            } else {
+                // Generic text/document
+                $preview = '';
+                if ($size < 100000) {
+                    $content = @file_get_contents($file->getRealPath());
+                    if ($content !== false) {
+                        $preview = substr($content, 0, 2000);
+                    }
+                }
+                $attachments[] = [
+                    'type'        => 'text_description',
+                    'description' => "[Documento anexado: {$name}" . ($preview ? "\n\nConteúdo:\n{$preview}" : '') . "]",
+                ];
+            }
+        }
+
+        // Build compact theme JSON for context (omit heavy html sections)
+        $themeData = $theme->toArray();
+        unset($themeData['sections'], $themeData['components']);
+        $themeJson = json_encode($themeData, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
+
+        try {
+            $result = AIEngine::chatTheme($history, $themeJson, $attachments);
+        } catch (\Throwable $e) {
+            return response()->json(['error' => $e->getMessage()], 422);
+        }
+
+        // If AI returned theme updates, apply them immediately
+        $applied = false;
+        if (!empty($result['updates'])) {
+            $allowed = [
+                'label', 'description', 'version', 'status',
+                'colors', 'fonts', 'layout_config', 'capabilities',
+                'sections', 'components', 'custom_css', 'custom_js',
+                'variants', 'assets',
+            ];
+            $updates = array_intersect_key($result['updates'], array_flip($allowed));
+            if (!empty($updates)) {
+                $theme->update($updates);
+                $applied = true;
+            }
+        }
+
+        return response()->json([
+            'reply'   => $result['reply'],
+            'updates' => $result['updates'] ?? null,
+            'applied' => $applied,
+            'theme'   => $applied ? $theme->fresh() : null,
+        ]);
+    }
+
+    // ──────────────────────────────────────────────
     //  Live Preview (Phase 2)
     // ──────────────────────────────────────────────
 
