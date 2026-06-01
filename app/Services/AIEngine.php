@@ -201,6 +201,133 @@ PROMPT;
     }
 
     // ──────────────────────────────────────────────
+    //  Theme Inspiration (category-based)
+    // ──────────────────────────────────────────────
+
+    /**
+     * Generate a complete theme spec based on site category and visual style.
+     *
+     * Returns a full theme data array with:
+     *   label, description, colors (light+dark), fonts, layout_config,
+     *   capabilities, sections, custom_css
+     */
+    public static function generateThemeFromCategory(string $category, string $style = 'moderno'): array
+    {
+        $systemPrompt = <<<SYSTEM
+Você é um designer de temas web especialista com profundo conhecimento de tendências de design para diferentes sectores de negócio. Você conhece os melhores sites e temas de cada categoria (restaurantes, e-commerce, agências, portfolios, etc.) e usa esse conhecimento para criar temas inspirados nas melhores práticas do sector.
+
+Quando o utilizador pede inspiração para um tema da categoria "{$category}" com estilo "{$style}", você deve:
+1. Basear-se nos melhores sites reais dessa categoria (ex: para restaurante: Noma, Eleven Madison Park, etc.)
+2. Gerar um tema COMPLETO e PROFISSIONAL com identidade visual forte
+3. As cores devem ser coerentes com a psicologia da categoria (restaurante = tons quentes, clínica = azul/branco limpo, etc.)
+4. As secções HTML devem usar CSS custom properties (var(--color-primary), etc.)
+
+CSS Custom Properties obrigatórias (usa oklch ou hex):
+--color-primary, --color-primary-foreground
+--color-secondary, --color-accent
+--color-background, --color-foreground
+--color-card, --color-muted, --color-muted-foreground
+--color-border, --color-success, --color-warning, --color-destructive
+--font-heading, --font-body (Google Fonts)
+
+A resposta DEVE ser JSON válido apenas — sem markdown, sem code fences, sem explicações.
+
+Retorna exactamente esta estrutura:
+{
+  "label": "Nome do Tema",
+  "description": "Descrição breve do tema e sua inspiração",
+  "inspiration": "Inspirado em: [sites/referências reais desta categoria]",
+  "colors": {
+    "light": {
+      "--color-primary": "#...",
+      "--color-primary-foreground": "#fff",
+      "--color-secondary": "#...",
+      "--color-accent": "#...",
+      "--color-background": "#...",
+      "--color-foreground": "#...",
+      "--color-card": "#...",
+      "--color-muted": "#...",
+      "--color-muted-foreground": "#...",
+      "--color-border": "#...",
+      "--color-success": "#22c55e",
+      "--color-warning": "#f59e0b",
+      "--color-destructive": "#ef4444"
+    },
+    "dark": {
+      "--color-primary": "#...",
+      "--color-primary-foreground": "#fff",
+      "--color-secondary": "#...",
+      "--color-accent": "#...",
+      "--color-background": "#...",
+      "--color-foreground": "#...",
+      "--color-card": "#...",
+      "--color-muted": "#...",
+      "--color-muted-foreground": "#...",
+      "--color-border": "#...",
+      "--color-success": "#22c55e",
+      "--color-warning": "#f59e0b",
+      "--color-destructive": "#ef4444"
+    }
+  },
+  "fonts": {
+    "heading": "Playfair Display",
+    "body": "Inter"
+  },
+  "layout_config": {
+    "header_type": "transparent|solid|minimal",
+    "nav_type": "horizontal|sidebar|centered",
+    "footer_type": "minimal|full|mega",
+    "layout_type": "boxed|full-width",
+    "max_width": "1200px",
+    "spacing": "comfortable|compact|spacious",
+    "show_dark_toggle": true,
+    "back_to_top": true,
+    "header_cta_text": "Reservar Mesa",
+    "header_cta_url": "#contacto"
+  },
+  "capabilities": {
+    "video_bg": false,
+    "parallax": true,
+    "animations": true,
+    "lightbox": false,
+    "mega_menu": false,
+    "search": false,
+    "cookie_banner": true,
+    "preloader": false,
+    "scroll_progress": false
+  },
+  "sections": {
+    "hero": "<section style=\\\"background:var(--color-primary);padding:6rem 2rem;text-align:center;\\\"><h1 style=\\\"color:var(--color-primary-foreground);font-family:var(--font-heading);font-size:3rem;\\\">{{ \$page->title ?? 'Bem-vindo' }}</h1><p style=\\\"color:var(--color-primary-foreground);opacity:.8;margin-top:1rem;\\\">{{ \$page->description ?? '' }}</p><a href='#' style=\\\"display:inline-block;margin-top:2rem;padding:.875rem 2rem;background:var(--color-accent);color:#fff;border-radius:.5rem;text-decoration:none;font-weight:600;\\\">Começar</a></section>",
+    "features": "<section style=\\\"padding:5rem 2rem;background:var(--color-background);\\\"><div style=\\\"max-width:1200px;margin:0 auto;display:grid;grid-template-columns:repeat(3,1fr);gap:2rem;\\\"><div style=\\\"padding:2rem;background:var(--color-card);border-radius:1rem;border:1px solid var(--color-border);\\\"><h3 style=\\\"color:var(--color-foreground);font-family:var(--font-heading);\\\">Qualidade</h3><p style=\\\"color:var(--color-muted-foreground);margin-top:.5rem;\\\">Comprometidos com a excelência em cada detalhe.</p></div><div style=\\\"padding:2rem;background:var(--color-card);border-radius:1rem;border:1px solid var(--color-border);\\\"><h3 style=\\\"color:var(--color-foreground);font-family:var(--font-heading);\\\">Experiência</h3><p style=\\\"color:var(--color-muted-foreground);margin-top:.5rem;\\\">Anos de experiência ao seu serviço.</p></div><div style=\\\"padding:2rem;background:var(--color-card);border-radius:1rem;border:1px solid var(--color-border);\\\"><h3 style=\\\"color:var(--color-foreground);font-family:var(--font-heading);\\\">Confiança</h3><p style=\\\"color:var(--color-muted-foreground);margin-top:.5rem;\\\">Centenas de clientes satisfeitos.</p></div></div></section>",
+    "cta": "<section style=\\\"padding:5rem 2rem;background:var(--color-primary);text-align:center;\\\"><h2 style=\\\"color:var(--color-primary-foreground);font-family:var(--font-heading);font-size:2.25rem;\\\">Pronto para começar?</h2><p style=\\\"color:var(--color-primary-foreground);opacity:.8;margin-top:1rem;\\\">Entre em contacto connosco hoje.</p><a href='#contacto' style=\\\"display:inline-block;margin-top:2rem;padding:.875rem 2.5rem;background:#fff;color:var(--color-primary);border-radius:.5rem;font-weight:700;\\\">Contactar</a></section>"
+  },
+  "custom_css": "/* Tema {$category} - estilo {$style} */\\n:root { font-synthesis: none; }\\n* { box-sizing: border-box; }\\nbody { font-family: var(--font-body, Inter), sans-serif; background: var(--color-background); color: var(--color-foreground); }"
+}
+SYSTEM;
+
+        $userPrompt = "Gera um tema profissional para a categoria \"{$category}\" com estilo visual \"{$style}\". "
+            . "Inspira-te nos melhores sites reais desta categoria. "
+            . "As cores devem refletir a identidade visual típica desta categoria. "
+            . "As secções HTML devem ser modernas e usar CSS custom properties.";
+
+        $raw = self::call($systemPrompt, $userPrompt, 6144);
+
+        $parsed = self::parseJson($raw, [
+            'label'         => ucfirst($category) . ' Theme',
+            'description'   => "Tema para {$category}",
+            'inspiration'   => '',
+            'colors'        => ['light' => [], 'dark' => []],
+            'fonts'         => ['heading' => 'Inter', 'body' => 'Inter'],
+            'layout_config' => [],
+            'capabilities'  => [],
+            'sections'      => [],
+            'custom_css'    => '',
+        ]);
+
+        return $parsed;
+    }
+
+    // ──────────────────────────────────────────────
     //  Plugin Inspiration (category-based examples)
     // ──────────────────────────────────────────────
 

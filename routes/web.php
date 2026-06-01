@@ -32,6 +32,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/themes',               [ThemeController::class, 'index'])->name('themes.index');
     Route::get('/themes/create',        [ThemeController::class, 'create'])->name('themes.create');
     Route::post('/themes',              [ThemeController::class, 'store'])->name('themes.store');
+    Route::post('/themes/inspire',      [ThemeController::class, 'inspire'])->name('themes.inspire');
     Route::get('/themes/{uuid}/edit',   [ThemeController::class, 'edit'])->name('themes.edit');
     Route::put('/themes/{uuid}',        [ThemeController::class, 'update'])->name('themes.update');
     Route::delete('/themes/{uuid}',     [ThemeController::class, 'destroy'])->name('themes.destroy');

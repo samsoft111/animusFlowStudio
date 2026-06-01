@@ -204,6 +204,55 @@ class ThemeController extends Controller
     }
 
     // ──────────────────────────────────────────────
+    //  Category-based Theme Inspiration
+    // ──────────────────────────────────────────────
+
+    public function inspire(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'category' => 'required|string|max:100',
+            'style'    => 'nullable|string|max:50',
+        ]);
+
+        $category = $data['category'];
+        $style    = $data['style'] ?? 'moderno';
+
+        try {
+            $generated = AIEngine::generateThemeFromCategory($category, $style);
+        } catch (\Throwable $e) {
+            return response()->json(['error' => $e->getMessage()], 422);
+        }
+
+        // Build a slug from category + style
+        $slug = \Illuminate\Support\Str::slug($category . '-' . $style . '-' . uniqid());
+
+        // Create a draft theme with the generated data
+        $theme = StudioTheme::create([
+            'name'          => $slug,
+            'label'         => $generated['label'] ?? ucfirst($category) . ' Theme',
+            'description'   => ($generated['description'] ?? '') . "\n\n" . ($generated['inspiration'] ?? ''),
+            'version'       => '1.0.0',
+            'status'        => 'draft',
+            'colors'        => $generated['colors'] ?? ['light' => [], 'dark' => []],
+            'fonts'         => $generated['fonts'] ?? ['heading' => 'Inter', 'body' => 'Inter'],
+            'layout_config' => $generated['layout_config'] ?? [],
+            'capabilities'  => $generated['capabilities'] ?? [],
+            'sections'      => $generated['sections'] ?? [],
+            'custom_css'    => $generated['custom_css'] ?? '',
+        ]);
+
+        return response()->json([
+            'success'     => true,
+            'theme_uuid'  => $theme->uuid,
+            'preview_url' => route('themes.preview', $theme->uuid),
+            'edit_url'    => route('themes.edit', $theme->uuid),
+            'label'       => $theme->label,
+            'inspiration' => $generated['inspiration'] ?? '',
+            'colors'      => $theme->colors ?? ['light' => [], 'dark' => []],
+        ]);
+    }
+
+    // ──────────────────────────────────────────────
     //  Multimodal Chat
     // ──────────────────────────────────────────────
 
