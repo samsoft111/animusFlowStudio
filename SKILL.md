@@ -76,7 +76,7 @@ Set-Location "C:\Users\samso\AntigravityWorkspace\animusFlow\core"
 & $php artisan storage:link
 ```
 
-**Test suite:** `& $php artisan test` → **207/207 passing, 558 assertions** (as of 2026-05-25)
+**Test suite:** `& $php artisan test` → **209/209 passing, 563 assertions** (as of 2026-06-18)
 
 ---
 
@@ -171,14 +171,14 @@ Block categories in overlay.js: Hero & Layout, Content, Media, Social, Conversio
 **Path:** `C:\Users\samso\AntigravityWorkspace\animusFlowStudio`  
 **Purpose:** A visual SaaS platform where designers and developers create, edit, and publish themes and plugins for the AnimusFlow marketplace. Creators log in here, build assets visually, then publish to the marketplace — separate from the CMS admin panel.
 
-### What is built (as of 2026-06-02)
+### What is built (as of 2026-06-18)
 
 - **Auth** — Login/logout via `LoginController`; all routes behind `auth` middleware
 - **Dashboard** — `DashboardController` → `Dashboard.vue`
 - **About** — `AboutController` → `About.vue`
 - **Settings** — `SettingsController` → `Settings.vue`; 6 setting groups
 
-**Themes module** — full CRUD + 11-tab visual editor:
+**Themes module** — full CRUD + 12-tab visual editor:
 
 | Tab | Feature |
 |-----|---------|
@@ -193,6 +193,7 @@ Block categories in overlay.js: Hero & Layout, Content, Media, Social, Conversio
 | Código | Custom CSS/JS injection |
 | Preview | Live iframe preview + **Modo Edição** (CSS token inspector) |
 | Chat IA | Multimodal AI assistant — text + images/PDFs/audio/video |
+| 🕐 Versões | Version history timeline — manual/auto/publish snapshots + restore |
 
 Additional theme actions (routes):
 - `GET /themes/{uuid}/export` — download ZIP (cross-platform, forward-slash paths)
@@ -276,11 +277,26 @@ Plus Jakarta Sans → plus-jakarta | Playfair Display → playfair
 Fraunces → fraunces | Sora → sora | (unknown) → inter (fallback)
 ```
 
+**Theme versioning** (`StudioThemeVersion` model, `studio_theme_versions` table):
+- Each version is a **full snapshot** of the theme state: `version`, `label`, `changelog`, `snapshot_type`, plus `colors`, `fonts`, `sections`, `layout_config`, `capabilities`, `assets`, `components`, `variants`, `custom_css`, `custom_js`, `description`
+- `StudioThemeVersion::snapshot(StudioTheme $theme, string $changelog = '', string $type = 'manual'): self` — uses `getRawOriginal()` to capture JSON columns verbatim; auto-generates `uuid` on create
+- **Snapshot types:** `manual` 📌 (created by the user) · `auto` ⚡ (created automatically before each restore) · `publish` 🚀 (created automatically when publishing to the Marketplace)
+- Restore **always creates an auto-snapshot of the current state first** (`changelog = "Antes de restaurar v{n}"`) so a restore is itself reversible
+- `StudioTheme::versions()` — HasMany relation
+- Routes:
+  - `GET /themes/{uuid}/versions` → `ThemeController::listVersions` (name `themes.versions.list`)
+  - `POST /themes/{uuid}/versions` → `ThemeController::createVersion` (name `themes.versions.create`) — `{success, version}`
+  - `POST /themes/{uuid}/versions/{versionUuid}/restore` → `ThemeController::restoreVersion` (name `themes.versions.restore`) — `{success, message, theme}`
+  - `DELETE /themes/{uuid}/versions/{versionUuid}` → `ThemeController::deleteVersion` (name `themes.versions.delete`)
+- UI: `Themes/Edit.vue` 🕐 Versões tab — timeline of snapshots, `loadVersions()`, `saveVersion()`, `restoreVersion()`, `deleteVersion()`; `themeVersions` ref; create-snapshot modal
+
 **Test scripts** (run with `php tests/<file>.php`):
 - `tests/bidir_flow_test.php` — 55 assertions; verifies Chat↔Manual bidirectional flow, deep-merge preservation
 - `tests/modo_edicao_test.php` — 102 assertions; verifies Modo Edição overlay, postMessage protocol, CSS var mapping, Edit.vue bridge
 - `tests/export_test.php` — 117 assertions; verifies ZIP structure, token mapping, injectColors, injectFonts, installInCms, publish marketplace
 - `tests/inspire_category_test.php` — 168 assertions (15 blocks); verifies AIEngine::generateThemeFromCategory system prompt + mock return, ThemeController::inspire validation + BD integration + error handling, route position/auth, all 25 categories + 5 styles in Index.vue, modal steps/animations/imports, Vite build
+- `tests/theme_version_test.php` — 49 assertions; verifies StudioThemeVersion::snapshot, ThemeController listVersions/createVersion/restoreVersion/deleteVersion, auto-snapshot before restore, publish snapshot wiring, routes, Themes/Edit.vue Versões tab
+- `tests/plugin_test.php` — 190 assertions; verifies buildPluginZip, exportPrompt, installInCms, publish, **plugin versioning** (save/list/snapshot/compare/restore), routes, Chat IA, Plugins/Edit.vue, CMS integration
 
 **Plugins module** — CRUD + editor:
 - Create, edit, delete plugins
@@ -291,7 +307,7 @@ Fraunces → fraunces | Sora → sora | (unknown) → inter (fallback)
 
 **Plugin creation flow** — same as themes: `GET /plugins/create` auto-creates a draft and redirects to editor (no separate creation form).
 
-**Plugin editor — 10 tabs** (as of 2026-06-01):
+**Plugin editor — 11 tabs**:
 
 | Tab | Feature |
 |-----|---------|
@@ -304,6 +320,7 @@ Fraunces → fraunces | Sora → sora | (unknown) → inter (fallback)
 | Docs | README.md editor |
 | ✨ IA | Quick AI generator (single prompt → PHP + widget + schema) |
 | 💬 Chat IA | Multimodal AI assistant — text + images/PDFs/audio/video |
+| 📦 Versões | Version history timeline + diff viewer + restore |
 | Exportar | Status checklist + ZIP download + Install no CMS + Publish marketplace |
 
 **Chat IA (plugins)** — `PluginController::chat`, `AIEngine::chatPlugin`:
@@ -313,6 +330,18 @@ Fraunces → fraunces | Sora → sora | (unknown) → inter (fallback)
 - Applied fields: `plugin_php`, `widget_blade`, `widget_js`, `custom_css`, `settings_schema`, `hooks`, `label`, `description`, `version`, `status`
 - Vue: `applyChatUpdates()` does direct assignment (no deep-merge needed for plugin fields)
 - Quick prompts: "Cria um plugin de barra de anúncio", "Gera um PHP scaffold para page.render", etc.
+
+**Plugin versioning** (`StudioPluginVersion` model, `studio_plugin_versions` table):
+- Each version snapshots the fields listed in `StudioPluginVersion::$snapshotFields` (`plugin_php`, `widget_blade`, `widget_js`, `custom_css`, `settings_schema`, `hooks`, …; **not** `uuid`)
+- Auto-snapshot is wired into publish via `saveVersionSnapshot()`
+- Routes:
+  - `GET /plugins/{uuid}/versions` → `PluginController::versions` (name `plugins.versions.list`)
+  - `POST /plugins/{uuid}/versions` → `PluginController::saveVersion` (name `plugins.versions.save`) — rejects duplicate version with **422**
+  - `GET /plugins/{uuid}/versions/{versionId}` → `PluginController::versionSnapshot` (name `plugins.versions.snapshot`)
+  - `POST /plugins/{uuid}/versions/{versionId}/restore` → `PluginController::restoreVersion` (name `plugins.versions.restore`)
+  - `POST /plugins/{uuid}/versions/compare` → `PluginController::compareVersions` (name `plugins.versions.compare`) — returns field-level `diff` + `changed` count
+- UI: `Plugins/Edit.vue` 📦 Versões tab — timeline, `bumpVersion()`, `createVersion()`, `restoreToVersion()`, `selectForCompare()`, `runCompare()`, `viewSnapshot()`; diff viewer (2-col grid); snapshot modal
+- ⚠️ Difference vs theme versioning: plugins support **diff/compare between two versions**; themes do not (restore + delete only). Plugins reject duplicate version numbers; theme `createVersion` does not.
 
 **buildPluginZip() Windows fix** — same forward-slash normalisation as `buildThemeZip()`: `str_replace('\\', '/', $tmpDir)` before ZIP path comparison.
 
