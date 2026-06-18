@@ -931,6 +931,53 @@ Affected fields: `layout_content_max_width`, `layout_content_animations`, `layou
 
 ---
 
+## ⚠️ Critical Blade gotcha — `@php` comments
+
+**Blade comments `{{-- --}}` inside `@php ... @endphp` blocks are NOT stripped by the Blade compiler.**
+They remain as literal text in the compiled PHP → `ParseError: syntax error`.
+
+```php
+// WRONG — causes ParseError at runtime:
+@php
+    $navCta = $layout['header_cta_text'] ?? '';  {{-- item 5 --}}
+@endphp
+
+// CORRECT — use PHP line comments:
+@php
+    $navCta = $layout['header_cta_text'] ?? '';  // item 5
+@endphp
+```
+
+This applies to ALL `@php` blocks in Blade templates. Always use `//` or `/* */` inside them.
+
+---
+
+## AI error handling — mandatory rule
+
+AI failure must NEVER block content publishing or page loading. Always wrap `AIEngine` calls and degrade gracefully (empty/manual content) on failure.
+
+```php
+try {
+    $blocks = AIEngine::generateBlocks($description);
+} catch (\Throwable $e) {
+    Log::warning('AI generation failed', ['error' => $e->getMessage()]);
+    return []; // user fills manually — never surface a 500 to the visitor
+}
+```
+
+---
+
+## Database naming conventions
+
+- Tables: `snake_case`, plural
+- Foreign keys: `{table_singular}_id`
+- Timestamps: always `created_at` + `updated_at` on every table
+- Soft deletes: `deleted_at` on content tables (pages, content_blocks, media_files)
+- UUIDs for public-facing IDs; auto-increment for internal joins
+- Encrypted fields stored via Laravel `encrypted` cast (e.g. `api_key`, `auth_token`)
+
+---
+
 ## Key files
 
 | Task | File |
