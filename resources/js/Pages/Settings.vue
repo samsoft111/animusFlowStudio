@@ -568,10 +568,9 @@ const modelsByProvider = {
     { value: 'gemini-1.5-pro',              label: 'Gemini 1.5 Pro' },
   ],
   claude: [
-    { value: 'claude-sonnet-4-5',           label: 'Claude Sonnet 4.5 (recomendado)' },
-    { value: 'claude-opus-4-5',             label: 'Claude Opus 4.5' },
-    { value: 'claude-haiku-3-5',            label: 'Claude Haiku 3.5 (rápido)' },
-    { value: 'claude-3-5-sonnet-20241022',  label: 'Claude 3.5 Sonnet' },
+    { value: 'claude-sonnet-4-6',           label: 'Claude Sonnet 4.6 (recomendado)' },
+    { value: 'claude-haiku-4-5',            label: 'Claude Haiku 4.5 (rápido e barato)' },
+    { value: 'claude-opus-4-8',             label: 'Claude Opus 4.8 (máxima qualidade)' },
   ],
   openai: [
     { value: 'gpt-4o',                      label: 'GPT-4o (recomendado)' },
