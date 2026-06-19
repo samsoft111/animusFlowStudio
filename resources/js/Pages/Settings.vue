@@ -118,9 +118,7 @@
                   </svg>
                 </button>
               </div>
-              <p v-if="props.settings.ai_api_key_masked" class="field-hint">
-                Chave actual: <span class="font-mono text-primary">{{ props.settings.ai_api_key_masked }}</span>
-              </p>
+
             </div>
           </div>
 
