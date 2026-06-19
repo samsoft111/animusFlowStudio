@@ -464,7 +464,7 @@ class ThemeController extends Controller
             $updates = array_intersect_key($result['updates'], array_flip($allowed));
 
             // Deep-merge nested array fields so AI only needs to specify changed keys
-            foreach (['colors', 'layout_config', 'capabilities', 'fonts', 'assets'] as $field) {
+            foreach (['colors', 'layout_config', 'capabilities', 'fonts', 'assets', 'sections', 'components'] as $field) {
                 if (isset($updates[$field]) && is_array($updates[$field])) {
                     $existing = is_array($theme->$field) ? $theme->$field : [];
                     $updates[$field] = array_replace_recursive($existing, $updates[$field]);
