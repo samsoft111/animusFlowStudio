@@ -465,7 +465,7 @@ SYSTEM;
 
         $raw = match ($provider) {
             'openai' => self::chatOpenAI($apiKey, $model ?: 'gpt-4o', $system, $history, $attachments),
-            'gemini' => self::chatGemini($apiKey, $model ?: 'gemini-1.5-flash', $system, $history, $attachments),
+            'gemini' => self::chatGemini($apiKey, $model ?: 'gemini-2.0-flash', $system, $history, $attachments),
             'claude' => self::chatClaude($apiKey, $model ?: 'claude-sonnet-4-5', $system, $history, $attachments),
             default  => self::chatClaude($apiKey, $model ?: 'claude-sonnet-4-5', $system, $history, $attachments),
         };
@@ -547,7 +547,7 @@ SYSTEM;
 
         $raw = match ($provider) {
             'openai' => self::chatOpenAI($apiKey, $model ?: 'gpt-4o', $system, $history, $attachments),
-            'gemini' => self::chatGemini($apiKey, $model ?: 'gemini-1.5-flash', $system, $history, $attachments),
+            'gemini' => self::chatGemini($apiKey, $model ?: 'gemini-2.0-flash', $system, $history, $attachments),
             'claude' => self::chatClaude($apiKey, $model ?: 'claude-sonnet-4-5', $system, $history, $attachments),
             default  => self::chatClaude($apiKey, $model ?: 'claude-sonnet-4-5', $system, $history, $attachments),
         };
@@ -756,7 +756,7 @@ SYSTEM;
 
         return match ($provider) {
             'openai'  => self::callOpenAI($apiKey, $model ?: 'gpt-4o', $system, $user, $maxTok, $temperature),
-            'gemini'  => self::callGemini($apiKey, $model ?: 'gemini-1.5-flash', $system, $user, $maxTok),
+            'gemini'  => self::callGemini($apiKey, $model ?: 'gemini-2.0-flash', $system, $user, $maxTok),
             'claude'  => self::callClaude($apiKey, $model ?: 'claude-sonnet-4-5', $system, $user, $maxTok),
             default   => self::callClaude($apiKey, $model ?: 'claude-sonnet-4-5', $system, $user, $maxTok),
         };
