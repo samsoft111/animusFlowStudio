@@ -14,6 +14,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
 use ZipArchive;
@@ -85,7 +86,10 @@ class ThemeController extends Controller
     {
         $theme = StudioTheme::where('uuid', $uuid)->firstOrFail();
 
-        return Inertia::render('Themes/Edit', ['theme' => $theme]);
+        return Inertia::render('Themes/Edit', [
+            'theme'       => $theme,
+            'themeAgents' => AIEngine::themeAgents(),
+        ]);
     }
 
     public function update(Request $request, string $uuid): RedirectResponse
@@ -453,31 +457,101 @@ class ThemeController extends Controller
         }
 
         // If AI returned theme updates, apply them with deep-merge for nested fields
-        $applied = false;
-        if (!empty($result['updates'])) {
-            $allowed = [
-                'label', 'description', 'version', 'status',
-                'colors', 'fonts', 'layout_config', 'capabilities',
-                'sections', 'components', 'custom_css', 'custom_js',
-                'variants', 'assets',
-            ];
-            $updates = array_intersect_key($result['updates'], array_flip($allowed));
+        $applied = $this->applyThemeUpdates($theme, $result['updates'] ?? null);
 
-            // Deep-merge nested array fields so AI only needs to specify changed keys
-            foreach (['colors', 'layout_config', 'capabilities', 'fonts', 'assets', 'sections', 'components'] as $field) {
-                if (isset($updates[$field]) && is_array($updates[$field])) {
-                    $existing = is_array($theme->$field) ? $theme->$field : [];
-                    $updates[$field] = array_replace_recursive($existing, $updates[$field]);
-                }
-            }
+        return response()->json([
+            'reply'   => $result['reply'],
+            'updates' => $result['updates'] ?? null,
+            'applied' => $applied,
+            'theme'   => $applied ? $theme->fresh() : null,
+        ]);
+    }
 
-            if (!empty($updates)) {
-                $theme->update($updates);
-                $applied = true;
+    /** Apply AI updates to a theme with deep-merge for nested array fields. */
+    private function applyThemeUpdates(StudioTheme $theme, ?array $updates): bool
+    {
+        if (empty($updates)) {
+            return false;
+        }
+
+        $allowed = [
+            'label', 'description', 'version', 'status',
+            'colors', 'fonts', 'layout_config', 'capabilities',
+            'sections', 'components', 'custom_css', 'custom_js',
+            'variants', 'assets',
+        ];
+        $updates = array_intersect_key($updates, array_flip($allowed));
+
+        foreach (['colors', 'layout_config', 'capabilities', 'fonts', 'assets', 'sections', 'components'] as $field) {
+            if (isset($updates[$field]) && is_array($updates[$field])) {
+                $existing = is_array($theme->$field) ? $theme->$field : [];
+                $updates[$field] = array_replace_recursive($existing, $updates[$field]);
             }
         }
 
+        if (empty($updates)) {
+            return false;
+        }
+
+        $theme->update($updates);
+        return true;
+    }
+
+    // ──────────────────────────────────────────────
+    //  Modo Construção — multi-agent theme builder
+    // ──────────────────────────────────────────────
+
+    /** Planner: turns a brief (+ optional skill) into an ordered agent plan. */
+    public function buildPlan(Request $request, string $uuid): JsonResponse
+    {
+        StudioTheme::where('uuid', $uuid)->firstOrFail();
+
+        $data = $request->validate([
+            'brief' => 'required|string|min:1|max:4000',
+            'skill' => 'nullable|string|max:8000',
+        ]);
+
+        try {
+            $plan = AIEngine::buildThemePlan($data['brief'], $data['skill'] ?? '');
+        } catch (\Throwable $e) {
+            return response()->json(['error' => $e->getMessage()], 422);
+        }
+
+        return response()->json($plan);
+    }
+
+    /** Run one specialised agent and apply its updates to the theme. */
+    public function buildStep(Request $request, string $uuid): JsonResponse
+    {
+        $theme = StudioTheme::where('uuid', $uuid)->firstOrFail();
+
+        $validIds = array_column(AIEngine::themeAgents(), 'id');
+        $data = $request->validate([
+            'agent'     => ['required', 'string', Rule::in($validIds)],
+            'brief'     => 'nullable|string|max:4000',
+            'direction' => 'nullable|string|max:2000',
+        ]);
+
+        // Compact context — omit heavy sections/components
+        $themeData = $theme->toArray();
+        unset($themeData['sections'], $themeData['components']);
+        $themeJson = json_encode($themeData, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
+
+        try {
+            $result = AIEngine::runThemeAgent(
+                $data['agent'],
+                $data['brief'] ?? '',
+                $data['direction'] ?? '',
+                $themeJson,
+            );
+        } catch (\Throwable $e) {
+            return response()->json(['error' => $e->getMessage()], 422);
+        }
+
+        $applied = $this->applyThemeUpdates($theme, $result['updates'] ?? null);
+
         return response()->json([
+            'agent'   => $result['agent'],
             'reply'   => $result['reply'],
             'updates' => $result['updates'] ?? null,
             'applied' => $applied,

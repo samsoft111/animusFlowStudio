@@ -560,7 +560,188 @@ SYSTEM;
         return ['reply' => $reply, 'updates' => $updates];
     }
 
-    private static function chatClaude(string $key, string $model, string $system, array $history, array $attachments): string
+    // ──────────────────────────────────────────────
+    //  Multi-agent theme builder (Modo Construção)
+    // ──────────────────────────────────────────────
+
+    /** Catalogue of specialised theme-building agents (single source of truth). */
+    public static function themeAgents(): array
+    {
+        return [
+            ['id' => 'colors',       'icon' => '🎨', 'label' => 'Cores & Marca',         'hint' => 'Paleta light + dark'],
+            ['id' => 'fonts',        'icon' => '🔤', 'label' => 'Tipografia',            'hint' => 'Fontes de título e corpo'],
+            ['id' => 'settings',     'icon' => '⚙️', 'label' => 'Configurações',         'hint' => 'Layout + capacidades'],
+            ['id' => 'menu',         'icon' => '🍔', 'label' => 'Menu / Navegação',      'hint' => 'Header, navegação, CTAs'],
+            ['id' => 'hero',         'icon' => '🦸', 'label' => 'Secção Hero',           'hint' => 'Banner principal'],
+            ['id' => 'features',     'icon' => '✨', 'label' => 'Funcionalidades',       'hint' => 'Grelha de features'],
+            ['id' => 'pricing',      'icon' => '💳', 'label' => 'Preços',                'hint' => 'Planos / tabela'],
+            ['id' => 'testimonials', 'icon' => '💬', 'label' => 'Testemunhos',           'hint' => 'Reviews de clientes'],
+            ['id' => 'gallery',      'icon' => '🖼️', 'label' => 'Galeria',               'hint' => 'Grelha de imagens'],
+            ['id' => 'cta',          'icon' => '📣', 'label' => 'Chamada à Ação',        'hint' => 'Bloco de conversão'],
+            ['id' => 'faq',          'icon' => '❓', 'label' => 'FAQ',                   'hint' => 'Perguntas frequentes'],
+            ['id' => 'contact',      'icon' => '📧', 'label' => 'Contacto',              'hint' => 'Formulário / dados'],
+            ['id' => 'footer',       'icon' => '🦶', 'label' => 'Rodapé',                'hint' => 'Footer com links'],
+            ['id' => 'code',         'icon' => '💻', 'label' => 'CSS/JS Personalizado',  'hint' => 'Animações e ajustes'],
+        ];
+    }
+
+    /** Section-producing agents (output goes into sections.{id}). */
+    private static function sectionAgents(): array
+    {
+        return ['hero', 'features', 'pricing', 'testimonials', 'gallery', 'cta', 'faq', 'contact', 'footer'];
+    }
+
+    /**
+     * Orchestrator/Planner agent — turns a brief (+ optional skill/instructions)
+     * into an ordered list of agents to run. Returns ['direction', 'agents'].
+     */
+    public static function buildThemePlan(string $brief, string $skill = '', array $attachments = []): array
+    {
+        $ids   = array_column(self::themeAgents(), 'id');
+        $list  = implode(', ', $ids);
+        $skillBlock = trim($skill) !== '' ? "INSTRUÇÕES/SKILL DO UTILIZADOR (segue à risca):\n{$skill}\n\n" : '';
+
+        $system = <<<SYSTEM
+Você é o ORQUESTRADOR de construção de temas do AnimusFlow CMS.
+A partir de um brief, planeias quais agentes especializados devem correr e por que ordem.
+
+{$skillBlock}AGENTES DISPONÍVEIS (ids): {$list}
+
+Responde APENAS com um bloco json_updates, sem texto fora dele:
+```json_updates
+{
+  "direction": "1-2 frases a descrever a direção de design (estilo, tom, público)",
+  "agents": ["lista ordenada de ids de agentes a executar"]
+}
+```
+Regras: usa só ids válidos da lista; ordena de forma lógica (cores → tipografia → configurações → menu → secções → rodapé → código); inclui apenas o que o brief justifica.
+SYSTEM;
+
+        $history = [['role' => 'user', 'content' => "BRIEF: {$brief}\n\nPlaneia os agentes."]];
+        $raw     = self::chatDispatch($system, $history, $attachments, 1500);
+
+        $plan = ['direction' => '', 'agents' => []];
+        if (preg_match('/```json_updates\s*([\s\S]*?)```/m', $raw, $m)) {
+            $parsed = json_decode(trim($m[1]), true);
+            if (is_array($parsed)) {
+                $plan['direction'] = (string) ($parsed['direction'] ?? '');
+                $plan['agents']    = array_values(array_intersect($parsed['agents'] ?? [], $ids));
+            }
+        }
+        if (empty($plan['agents'])) {
+            $plan['agents'] = ['colors', 'fonts', 'settings', 'menu', 'hero', 'features', 'cta', 'footer', 'code'];
+        }
+
+        return $plan;
+    }
+
+    /**
+     * Run ONE specialised agent. Returns ['agent', 'reply', 'updates'].
+     * Each agent produces a focused json_updates block (its field only),
+     * which keeps each call well within the output-token limit.
+     */
+    public static function runThemeAgent(string $agentId, string $brief, string $direction, string $currentThemeJson, array $attachments = []): array
+    {
+        $system = self::themeAgentSystem($agentId, $brief, $direction, $currentThemeJson);
+
+        // Section/footer/code agents emit larger HTML — give them more headroom.
+        $base  = max((int) StudioSetting::get('ai_max_tokens', '4096'), 4096);
+        $heavy = in_array($agentId, [...self::sectionAgents(), 'code'], true);
+        $maxTok = min($heavy ? max($base, 8000) : $base, 16000);
+
+        $history = [['role' => 'user', 'content' => 'Gera agora a tua parte do tema.']];
+        $raw     = self::chatDispatch($system, $history, $attachments, $maxTok);
+
+        $updates = null;
+        if (preg_match('/```json_updates\s*([\s\S]*?)```/m', $raw, $m)) {
+            $parsed = json_decode(trim($m[1]), true);
+            if (is_array($parsed)) {
+                $updates = $parsed;
+            }
+        }
+
+        $reply = trim((string) preg_replace('/```json_updates\s*[\s\S]*?```/m', '', $raw));
+
+        return ['agent' => $agentId, 'reply' => $reply, 'updates' => $updates];
+    }
+
+    /** Build the focused system prompt for one agent. */
+    private static function themeAgentSystem(string $agentId, string $brief, string $direction, string $themeJson): string
+    {
+        $base = <<<BASE
+Você é um agente especializado de construção de temas para o AnimusFlow CMS.
+Responde em português (PT-PT). Produzes UMA frase curta de resumo seguida de um bloco json_updates APENAS com os campos da tua responsabilidade — nada mais.
+Regras de HTML/CSS: HTML semântico; usa SEMPRE variáveis CSS do tema (var(--color-primary), var(--color-bg), var(--color-text), var(--font-heading), var(--font-body), etc.); nada de frameworks externos; conteúdo de demonstração realista para o contexto do brief.
+
+BRIEF: {$brief}
+DIREÇÃO DE DESIGN: {$direction}
+TEMA ACTUAL (resumo): {$themeJson}
+
+TAREFA:
+BASE;
+
+        $task = match (true) {
+            $agentId === 'colors' => <<<T
+Gera a paleta de cores (light e dark) coerente com a direção.
+```json_updates
+{"colors":{"light":{"--color-primary":"#..","--color-secondary":"#..","--color-accent":"#..","--color-bg":"#..","--color-surface":"#..","--color-text":"#..","--color-muted":"#..","--color-border":"#.."},"dark":{"--color-primary":"#..","--color-bg":"#..","--color-surface":"#..","--color-text":"#..","--color-muted":"#..","--color-border":"#.."}}}
+```
+T,
+            $agentId === 'fonts' => <<<T
+Escolhe um par tipográfico (Google Fonts) adequado.
+```json_updates
+{"fonts":{"heading":"Nome da Fonte","body":"Nome da Fonte"}}
+```
+T,
+            $agentId === 'settings' => <<<T
+Configura o layout e activa as capacidades adequadas ao tema.
+```json_updates
+{"layout_config":{"header_type":"glass|solid|transparent","nav_type":"horizontal","footer_type":"simple|columns","layout_type":"full-width|boxed","max_width":"1120","spacing":"normal","show_dark_toggle":true,"back_to_top":true},"capabilities":{"animations":true,"parallax":false,"scroll_progress":false,"search":false,"cookie_banner":false}}
+```
+T,
+            $agentId === 'menu' => <<<T
+Define o menu/navegação no header (tipo, posição e CTAs).
+```json_updates
+{"layout_config":{"header_type":"glass|solid|transparent","nav_type":"horizontal","nav_position":"right|center","header_cta_text":"Texto do botão","header_cta_url":"#"}}
+```
+T,
+            $agentId === 'code' => <<<T
+Gera CSS e (opcional) JS que complementam as secções: animações de entrada, micro-interações, ajustes responsivos. Usa as variáveis CSS do tema.
+```json_updates
+{"custom_css":"/* css aqui */","custom_js":"// js opcional aqui"}
+```
+T,
+            in_array($agentId, self::sectionAgents(), true) => <<<T
+Gera o HTML COMPLETO da secção "{$agentId}" (uma secção <section>…</section> bem estruturada, responsiva, com variáveis CSS do tema). Substitui apenas esta secção.
+```json_updates
+{"sections":{"{$agentId}":"<section class=\"af-{$agentId}\">...HTML...</section>"}}
+```
+T,
+            default => "Gera a tua parte e devolve o json_updates apropriado.",
+        };
+
+        return $base . "\n" . $task;
+    }
+
+    /** Dispatch one focused LLM call to the active provider. */
+    private static function chatDispatch(string $system, array $history, array $attachments, int $maxTokens): string
+    {
+        $provider = StudioSetting::get('ai_provider', 'claude');
+        $model    = StudioSetting::get('ai_model', '');
+        $apiKey   = self::resolveApiKey($provider);
+
+        if (empty($apiKey)) {
+            throw new RuntimeException('Chave AI não configurada. Vai a Definições → Provedor IA.');
+        }
+
+        return match ($provider) {
+            'openai' => self::chatOpenAI($apiKey, $model ?: 'gpt-4o', $system, $history, $attachments, $maxTokens),
+            'gemini' => self::chatGemini($apiKey, $model ?: 'gemini-2.0-flash', $system, $history, $attachments, $maxTokens),
+            default  => self::chatClaude($apiKey, $model ?: 'claude-sonnet-4-6', $system, $history, $attachments, $maxTokens),
+        };
+    }
+
+    private static function chatClaude(string $key, string $model, string $system, array $history, array $attachments, int $maxTokens = 4096): string
     {
         $messages = [];
 
@@ -606,9 +787,9 @@ SYSTEM;
             'anthropic-version' => '2023-06-01',
             'content-type'      => 'application/json',
             'anthropic-beta'    => 'pdfs-2024-09-25',
-        ])->timeout(60)->post('https://api.anthropic.com/v1/messages', [
+        ])->timeout(120)->post('https://api.anthropic.com/v1/messages', [
             'model'      => $model,
-            'max_tokens' => 4096,
+            'max_tokens' => $maxTokens,
             'system'     => $system,
             'messages'   => $messages,
         ]);
@@ -620,7 +801,7 @@ SYSTEM;
         return $response->json('content.0.text', '');
     }
 
-    private static function chatOpenAI(string $key, string $model, string $system, array $history, array $attachments): string
+    private static function chatOpenAI(string $key, string $model, string $system, array $history, array $attachments, int $maxTokens = 4096): string
     {
         $messages = [['role' => 'system', 'content' => $system]];
 
@@ -648,10 +829,10 @@ SYSTEM;
         }
 
         $response = Http::withToken($key)
-            ->timeout(60)
+            ->timeout(120)
             ->post('https://api.openai.com/v1/chat/completions', [
                 'model'      => $model,
-                'max_tokens' => 4096,
+                'max_tokens' => $maxTokens,
                 'messages'   => $messages,
             ]);
 
@@ -662,7 +843,7 @@ SYSTEM;
         return $response->json('choices.0.message.content', '');
     }
 
-    private static function chatGemini(string $key, string $model, string $system, array $history, array $attachments): string
+    private static function chatGemini(string $key, string $model, string $system, array $history, array $attachments, int $maxTokens = 4096): string
     {
         $contents = [];
 
@@ -701,12 +882,12 @@ SYSTEM;
 
         $url = "https://generativelanguage.googleapis.com/v1beta/models/{$model}:generateContent?key={$key}";
 
-        $response = Http::timeout(60)->post($url, [
+        $response = Http::timeout(120)->post($url, [
             'contents'          => $contents,
             'systemInstruction' => [
                 'parts' => [['text' => $system]],
             ],
-            'generationConfig'  => ['maxOutputTokens' => 4096],
+            'generationConfig'  => ['maxOutputTokens' => $maxTokens],
         ]);
 
         if (!$response->successful()) {

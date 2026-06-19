@@ -1420,6 +1420,78 @@
           </button>
         </div>
 
+        <!-- ── Modo Construção (multi-agente) ── -->
+        <div class="bg-card border border-border rounded-xl overflow-hidden">
+          <button @click="buildOpen = !buildOpen"
+            class="w-full flex items-center gap-2 px-4 py-3 text-left hover:bg-muted/40 transition-colors">
+            <span class="text-lg">🏗️</span>
+            <div class="flex-1 min-w-0">
+              <p class="text-sm font-semibold text-foreground">Modo Construção — agentes especializados</p>
+              <p class="text-xs text-muted-foreground">Escreve um brief, gera um plano e deixa os agentes construir o tema por fases.</p>
+            </div>
+            <span class="text-muted-foreground text-xs">{{ buildOpen ? '▲' : '▼' }}</span>
+          </button>
+
+          <div v-show="buildOpen" class="px-4 pb-4 space-y-3 border-t border-border">
+            <div class="pt-3">
+              <label class="block text-xs font-semibold text-muted-foreground mb-1">Brief do tema</label>
+              <textarea v-model="buildBrief" rows="2"
+                placeholder="ex: Site moderno para restaurante italiano, tom acolhedor — hero, menu, galeria e contacto"
+                class="w-full px-3 py-2 bg-muted border border-border rounded-lg text-sm resize-none focus:outline-none focus:border-primary"></textarea>
+            </div>
+
+            <details class="text-xs">
+              <summary class="cursor-pointer text-muted-foreground select-none">+ Instruções / skill (passo-a-passo, opcional)</summary>
+              <textarea v-model="buildSkill" rows="3"
+                placeholder="Cola aqui o teu skill / passos. O Planeador segue-os ao escolher e ordenar os agentes."
+                class="w-full mt-2 px-3 py-2 bg-muted border border-border rounded-lg text-xs font-mono resize-none focus:outline-none focus:border-primary"></textarea>
+            </details>
+
+            <div class="flex items-center gap-2">
+              <button @click="generatePlan" :disabled="buildPlanning || !buildBrief.trim()"
+                class="px-3 py-1.5 bg-violet-500 text-white rounded-lg text-xs font-semibold disabled:opacity-50 flex items-center gap-1.5">
+                <span v-if="buildPlanning" class="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+                {{ buildPlanning ? 'A planear…' : '✦ Gerar plano' }}
+              </button>
+              <button v-if="buildSteps.length" @click="runAll" :disabled="buildRunning"
+                class="px-3 py-1.5 bg-primary text-primary-foreground rounded-lg text-xs font-semibold disabled:opacity-50 flex items-center gap-1.5">
+                <span v-if="buildRunning" class="w-3 h-3 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin"></span>
+                {{ buildRunning ? 'A construir…' : '▶ Construir tudo' }}
+              </button>
+            </div>
+
+            <p v-if="buildDirection" class="text-xs text-muted-foreground italic bg-muted/50 rounded-lg px-3 py-2">{{ buildDirection }}</p>
+
+            <div v-if="buildSteps.length" class="space-y-1.5">
+              <div v-for="(step, i) in buildSteps" :key="step.agent + '-' + i"
+                class="flex items-center gap-2 px-3 py-2 bg-muted/40 border border-border rounded-lg">
+                <span class="text-base shrink-0">{{ step.icon }}</span>
+                <div class="flex-1 min-w-0">
+                  <p class="text-xs font-semibold text-foreground">{{ step.label }}</p>
+                  <p v-if="step.reply" class="text-[10px] text-muted-foreground truncate">{{ step.reply }}</p>
+                </div>
+                <span class="shrink-0 w-4 text-center">
+                  <span v-if="step.status === 'running'" class="w-3 h-3 inline-block border-2 border-primary/30 border-t-primary rounded-full animate-spin"></span>
+                  <span v-else-if="step.status === 'done'" class="text-success text-xs">✓</span>
+                  <span v-else-if="step.status === 'error'" class="text-destructive text-xs" :title="step.reply">⚠</span>
+                  <button v-else @click="runAgent(step)" :disabled="buildRunning" class="text-muted-foreground hover:text-primary text-xs disabled:opacity-40">▶</button>
+                </span>
+                <button @click="buildSteps.splice(i, 1)" :disabled="buildRunning" class="text-muted-foreground hover:text-destructive text-xs disabled:opacity-40 shrink-0">✕</button>
+              </div>
+            </div>
+
+            <div>
+              <p class="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">Agentes disponíveis</p>
+              <div class="flex flex-wrap gap-1.5">
+                <button v-for="a in buildAgents" :key="a.id" @click="addAgent(a)" :title="a.hint"
+                  class="px-2 py-1 bg-muted border border-border rounded-md text-[11px] font-medium hover:border-primary hover:text-primary transition-colors">
+                  {{ a.icon }} {{ a.label }}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <!-- Chat messages -->
         <div ref="chatScrollEl"
           class="flex flex-col gap-3 overflow-y-auto pr-1"
@@ -1830,7 +1902,10 @@ import {
 } from 'lucide-vue-next';
 
 const { t } = useI18n();
-const props = defineProps({ theme: { type: Object, default: null } });
+const props = defineProps({
+  theme:       { type: Object, default: null },
+  themeAgents: { type: Array,  default: () => [] },
+});
 
 // ── Tabs ──────────────────────────────────────────────────────────
 const activeTab = ref('details');
@@ -3579,6 +3654,112 @@ function autoResizeChatTextarea() {
   el.style.height = Math.min(el.scrollHeight, 120) + 'px';
 }
 
+// ── Modo Construção (multi-agente) ──────────────────────────────────────────
+const buildAgents    = computed(() => props.themeAgents ?? []);
+const buildOpen      = ref(false);
+const buildBrief     = ref('');
+const buildSkill     = ref('');
+const buildPlanning  = ref(false);
+const buildRunning   = ref(false);
+const buildDirection = ref('');
+const buildSteps     = ref([]); // [{agent, label, icon, status, reply}]
+
+function agentMeta(id) {
+  return buildAgents.value.find(a => a.id === id) ?? { id, label: id, icon: '•', hint: '' };
+}
+
+// Merge a fresh server theme into the local form (deep-merge — preserves untouched keys)
+function applyServerTheme(t) {
+  if (!t) return;
+  if (t.colors)        { form.colors        = { ...(form.colors ?? {}),        ...t.colors,        light: { ...(form.colors?.light ?? {}), ...(t.colors.light ?? {}) }, dark: { ...(form.colors?.dark ?? {}), ...(t.colors.dark ?? {}) } }; }
+  if (t.fonts)         { form.fonts         = { ...(form.fonts ?? {}),         ...t.fonts }; }
+  if (t.layout_config) { form.layout_config = { ...(form.layout_config ?? {}), ...t.layout_config }; }
+  if (t.capabilities)  { form.capabilities  = { ...(form.capabilities ?? {}),  ...t.capabilities }; }
+  if (t.assets)        { form.assets        = { ...(form.assets ?? {}),        ...t.assets }; }
+  if (t.sections)      form.sections   = t.sections;
+  if (t.components)    form.components = t.components;
+  if (t.variants)      form.variants   = t.variants;
+  if (t.custom_css !== undefined && t.custom_css !== null) form.custom_css = t.custom_css;
+  if (t.custom_js  !== undefined && t.custom_js  !== null) form.custom_js  = t.custom_js;
+  if (t.label)         form.label       = t.label;
+  if (t.description)   form.description = t.description;
+  if (t.version)       form.version     = t.version;
+  if (t.status)        form.status      = t.status;
+}
+
+function csrf() { return document.querySelector('meta[name="csrf-token"]')?.content ?? ''; }
+
+async function generatePlan() {
+  if (!buildBrief.value.trim() || buildPlanning.value) return;
+  buildPlanning.value = true;
+  try {
+    const fd = new FormData();
+    fd.append('brief', buildBrief.value);
+    if (buildSkill.value.trim()) fd.append('skill', buildSkill.value);
+    fd.append('_token', csrf());
+    const res = await fetch(`/themes/${props.theme.uuid}/build/plan`, { method: 'POST', body: fd });
+    if (!(res.headers.get('content-type') ?? '').includes('application/json')) {
+      feedback.error = 'Sessão expirada — faz login novamente.'; return;
+    }
+    const data = await res.json();
+    if (!res.ok || data.error) { feedback.error = data.error ?? 'Erro ao planear.'; return; }
+    buildDirection.value = data.direction ?? '';
+    buildSteps.value = (data.agents ?? []).map(id => {
+      const m = agentMeta(id);
+      return { agent: id, label: m.label, icon: m.icon, status: 'pending', reply: '' };
+    });
+  } catch (e) {
+    feedback.error = e.message;
+  } finally {
+    buildPlanning.value = false;
+  }
+}
+
+function addAgent(a) {
+  buildSteps.value.push({ agent: a.id, label: a.label, icon: a.icon, status: 'pending', reply: '' });
+}
+
+async function runAgent(step) {
+  step.status = 'running';
+  step.reply = '';
+  try {
+    const fd = new FormData();
+    fd.append('agent', step.agent);
+    if (buildBrief.value.trim())     fd.append('brief', buildBrief.value);
+    if (buildDirection.value.trim()) fd.append('direction', buildDirection.value);
+    fd.append('_token', csrf());
+    const res = await fetch(`/themes/${props.theme.uuid}/build/step`, { method: 'POST', body: fd });
+    if (!(res.headers.get('content-type') ?? '').includes('application/json')) {
+      step.status = 'error'; step.reply = 'Sessão expirada.'; return false;
+    }
+    const data = await res.json();
+    if (!res.ok || data.error) { step.status = 'error'; step.reply = data.error ?? 'Erro.'; return false; }
+    if (data.applied && data.theme) applyServerTheme(data.theme);
+    step.reply = data.reply ?? '';
+    step.status = 'done';
+    return true;
+  } catch (e) {
+    step.status = 'error'; step.reply = e.message; return false;
+  }
+}
+
+async function runAll() {
+  if (buildRunning.value) return;
+  buildRunning.value = true;
+  try {
+    for (const step of buildSteps.value) {
+      if (step.status === 'done') continue;
+      const ok = await runAgent(step);
+      if (!ok) break; // stop on first error
+    }
+    if (buildSteps.value.every(s => s.status === 'done')) {
+      feedback.success = 'Construção concluída! Guarda para persistir.';
+    }
+  } finally {
+    buildRunning.value = false;
+  }
+}
+
 function chatScrollToBottom() {
   nextTick(() => {
     const el = chatScrollEl.value;
@@ -3681,22 +3862,7 @@ async function sendChatMessage() {
       });
 
       if (data.applied && data.theme) {
-        const t = data.theme;
-        // Deep-merge nested objects so manual edits to untouched keys are preserved
-        if (t.colors)        { form.colors        = { ...(form.colors ?? {}),        ...t.colors,        light: { ...(form.colors?.light ?? {}), ...(t.colors.light ?? {}) }, dark: { ...(form.colors?.dark ?? {}), ...(t.colors.dark ?? {}) } }; }
-        if (t.fonts)         { form.fonts         = { ...(form.fonts ?? {}),         ...t.fonts }; }
-        if (t.layout_config) { form.layout_config = { ...(form.layout_config ?? {}), ...t.layout_config }; }
-        if (t.capabilities)  { form.capabilities  = { ...(form.capabilities ?? {}),  ...t.capabilities }; }
-        if (t.assets)        { form.assets        = { ...(form.assets ?? {}),        ...t.assets }; }
-        if (t.sections)      form.sections   = t.sections;
-        if (t.components)    form.components = t.components;
-        if (t.variants)      form.variants   = t.variants;
-        if (t.custom_css !== undefined) form.custom_css = t.custom_css;
-        if (t.custom_js  !== undefined) form.custom_js  = t.custom_js;
-        if (t.label)         form.label       = t.label;
-        if (t.description)   form.description = t.description;
-        if (t.version)       form.version     = t.version;
-        if (t.status)        form.status      = t.status;
+        applyServerTheme(data.theme);
       }
     }
   } catch (e) {
