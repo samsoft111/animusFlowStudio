@@ -453,12 +453,8 @@ SYSTEM;
 
         $provider = StudioSetting::get('ai_provider', 'claude');
         $model    = StudioSetting::get('ai_model', '');
-        $rawKey   = StudioSetting::get('ai_api_key', '');
+        $apiKey   = self::resolveApiKey($provider);
 
-        $apiKey = '';
-        if (!empty($rawKey)) {
-            try { $apiKey = decrypt($rawKey); } catch (\Throwable) { $apiKey = $rawKey; }
-        }
         if (empty($apiKey)) {
             throw new RuntimeException('Chave AI não configurada. Vai a Definições → Provedor IA.');
         }
@@ -535,12 +531,8 @@ SYSTEM;
 
         $provider = StudioSetting::get('ai_provider', 'claude');
         $model    = StudioSetting::get('ai_model', '');
-        $rawKey   = StudioSetting::get('ai_api_key', '');
+        $apiKey   = self::resolveApiKey($provider);
 
-        $apiKey = '';
-        if (!empty($rawKey)) {
-            try { $apiKey = decrypt($rawKey); } catch (\Throwable) { $apiKey = $rawKey; }
-        }
         if (empty($apiKey)) {
             throw new RuntimeException('Chave AI não configurada. Vai a Definições → Provedor IA.');
         }
@@ -730,7 +722,6 @@ SYSTEM;
     {
         $provider    = StudioSetting::get('ai_provider', 'claude');
         $model       = StudioSetting::get('ai_model', '');
-        $rawKey      = StudioSetting::get('ai_api_key', '');
         $temperature = (float) StudioSetting::get('ai_temperature', '0.7');
         $maxTok      = (int) StudioSetting::get('ai_max_tokens', (string) $maxTokens);
         $customInstr = StudioSetting::get('ai_custom_instructions', '');
@@ -740,15 +731,7 @@ SYSTEM;
             $system = trim($customInstr) . "\n\n" . $system;
         }
 
-        // Decrypt if stored encrypted
-        $apiKey = '';
-        if (!empty($rawKey)) {
-            try {
-                $apiKey = decrypt($rawKey);
-            } catch (\Throwable) {
-                $apiKey = $rawKey; // plain text fallback (legacy)
-            }
-        }
+        $apiKey = self::resolveApiKey($provider);
 
         if (empty($apiKey)) {
             throw new RuntimeException('No AI API key configured. Go to Settings → AI Provider.');
@@ -760,6 +743,29 @@ SYSTEM;
             'claude'  => self::callClaude($apiKey, $model ?: 'claude-sonnet-4-5', $system, $user, $maxTok),
             default   => self::callClaude($apiKey, $model ?: 'claude-sonnet-4-5', $system, $user, $maxTok),
         };
+    }
+
+    /**
+     * Resolve the decrypted API key for a given provider.
+     * Per-provider keys (`ai_api_key_{provider}`) take precedence; falls back to
+     * the legacy single `ai_api_key` only when it belongs to the active provider.
+     */
+    private static function resolveApiKey(string $provider): string
+    {
+        $perProvider = StudioSetting::get("ai_api_key_{$provider}", '');
+        if ($perProvider !== '') {
+            try { return decrypt($perProvider); } catch (\Throwable) { return $perProvider; }
+        }
+
+        // Legacy single key — only honoured for the currently active provider
+        if ($provider === StudioSetting::get('ai_provider', 'claude')) {
+            $legacy = StudioSetting::get('ai_api_key', '');
+            if ($legacy !== '') {
+                try { return decrypt($legacy); } catch (\Throwable) { return $legacy; }
+            }
+        }
+
+        return '';
     }
 
     private static function callClaude(string $key, string $model, string $system, string $user, int $maxTokens): string

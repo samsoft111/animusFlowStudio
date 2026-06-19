@@ -30,8 +30,12 @@ class SettingsController extends Controller
                 // ── AI ──
                 'ai_provider'            => $s('ai_provider', 'claude'),
                 'ai_model'               => $s('ai_model'),
-                'has_ai_key'             => !empty(static::decryptSafe($s('ai_api_key'))),
-                'ai_api_key_masked'      => static::maskKey(static::decryptSafe($s('ai_api_key'))),
+                // Per-provider key state — the UI reflects the SELECTED provider
+                'ai_keys'                => [
+                    'claude' => static::aiKeyState('claude'),
+                    'openai' => static::aiKeyState('openai'),
+                    'gemini' => static::aiKeyState('gemini'),
+                ],
                 'ai_temperature'         => $s('ai_temperature', '0.7'),
                 'ai_max_tokens'          => $s('ai_max_tokens', '4096'),
                 'ai_custom_instructions' => $s('ai_custom_instructions'),
@@ -85,15 +89,25 @@ class SettingsController extends Controller
      */
     public function revealKey(Request $request): \Illuminate\Http\JsonResponse
     {
-        $allowed = ['ai_api_key', 'animusflow_api_key', 'aws_secret_access_key'];
+        $allowed = [
+            'ai_api_key', 'ai_api_key_claude', 'ai_api_key_openai', 'ai_api_key_gemini',
+            'animusflow_api_key', 'aws_secret_access_key',
+        ];
         $key = $request->query('key', '');
 
         if (!in_array($key, $allowed, true)) {
             abort(403, 'Key not allowed.');
         }
 
-        $encrypted = StudioSetting::get($key, '');
-        $value = static::decryptSafe($encrypted);
+        $value = static::decryptSafe(StudioSetting::get($key, ''));
+
+        // Legacy fallback: the active provider may still use the old single key
+        if ($value === '' && str_starts_with($key, 'ai_api_key_')) {
+            $provider = substr($key, strlen('ai_api_key_'));
+            if ($provider === StudioSetting::get('ai_provider', 'claude')) {
+                $value = static::decryptSafe(StudioSetting::get('ai_api_key', ''));
+            }
+        }
 
         return response()->json(['value' => $value]);
     }
@@ -197,7 +211,9 @@ class SettingsController extends Controller
             // Encrypted keys — only update when a new non-empty value is provided
             if ($key === 'ai_api_key') {
                 if (!empty($value)) {
-                    StudioSetting::set('ai_api_key', encrypt($value), 'ai');
+                    // Store under the selected provider so each AI keeps its own key
+                    $provider = $data['ai_provider'] ?? StudioSetting::get('ai_provider', 'claude');
+                    StudioSetting::set("ai_api_key_{$provider}", encrypt($value), 'ai');
                 }
                 continue;
             }
@@ -224,6 +240,23 @@ class SettingsController extends Controller
         }
 
         return back()->with('success', 'Settings saved.');
+    }
+
+    /**
+     * Returns the saved-key state for one AI provider: whether a key exists and
+     * its masked form. Falls back to the legacy single key for the active provider.
+     *
+     * @return array{has: bool, masked: string}
+     */
+    private static function aiKeyState(string $provider): array
+    {
+        $raw = static::decryptSafe(StudioSetting::get("ai_api_key_{$provider}", ''));
+
+        if ($raw === '' && $provider === StudioSetting::get('ai_provider', 'claude')) {
+            $raw = static::decryptSafe(StudioSetting::get('ai_api_key', ''));
+        }
+
+        return ['has' => $raw !== '', 'masked' => static::maskKey($raw)];
     }
 
     /**

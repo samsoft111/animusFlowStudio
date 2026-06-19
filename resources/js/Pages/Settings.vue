@@ -58,9 +58,9 @@
             <div class="flex items-center justify-between">
               <h2 class="font-semibold text-foreground flex items-center gap-2">🤖 {{ t('settings.ai_provider') }}</h2>
               <span class="flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full"
-                :class="props.settings.has_ai_key ? 'bg-success/10 text-success' : 'bg-warning/10 text-warning'">
-                <span class="w-1.5 h-1.5 rounded-full" :class="props.settings.has_ai_key ? 'bg-success' : 'bg-warning'"></span>
-                {{ props.settings.has_ai_key ? t('settings.key_configured') : t('settings.key_missing') }}
+                :class="currentKeyState.has ? 'bg-success/10 text-success' : 'bg-warning/10 text-warning'">
+                <span class="w-1.5 h-1.5 rounded-full" :class="currentKeyState.has ? 'bg-success' : 'bg-warning'"></span>
+                {{ currentKeyState.has ? t('settings.key_configured') : t('settings.key_missing') }}
               </span>
             </div>
 
@@ -96,20 +96,20 @@
               <label class="field-label">
                 {{ t('settings.api_key') }}
                 <span class="text-muted-foreground font-normal normal-case tracking-normal ml-1">
-                  ({{ props.settings.has_ai_key ? t('settings.key_update_hint') : t('settings.key_set_hint') }})
+                  ({{ currentKeyState.has ? t('settings.key_update_hint') : t('settings.key_set_hint') }})
                 </span>
               </label>
               <div class="relative">
                 <input v-model="form.ai_api_key"
                   :type="showApiKey ? 'text' : 'password'"
-                  :placeholder="props.settings.ai_api_key_masked || (props.settings.has_ai_key ? '••••••••••••••••' : 'AIza... / sk-...')"
+                  :placeholder="currentKeyState.masked || (currentKeyState.has ? '••••••••••••••••' : 'AIza... / sk-...')"
                   class="field-input pr-20" />
 
                 <!-- Botões à direita: Revelar chave guardada + mostrar/esconder o que está a escrever -->
                 <div class="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
 
                   <!-- Botão: revelar chave guardada no servidor (só visível quando campo está vazio e há chave) -->
-                  <button v-if="!form.ai_api_key && props.settings.has_ai_key"
+                  <button v-if="!form.ai_api_key && currentKeyState.has"
                     type="button"
                     @click="toggleRevealSavedKey"
                     :title="revealedKey ? 'Esconder chave guardada' : 'Revelar chave guardada'"
@@ -583,6 +583,11 @@ const modelsByProvider = {
 
 const currentModels = computed(() => modelsByProvider[form.ai_provider] ?? []);
 
+// Saved-key state for the SELECTED provider (drives badge, placeholder, reveal button)
+const currentKeyState = computed(() =>
+  props.settings.ai_keys?.[form.ai_provider] ?? { has: false, masked: '' }
+);
+
 // Detect if saved model is a known or custom one
 const isKnownModel = (model) =>
   Object.values(modelsByProvider).flat().some(m => m.value === model);
@@ -607,6 +612,12 @@ function onModelSelectChange() {
 }
 
 function onProviderChange() {
+  // Clear the key input + reveal state — the new provider may not be configured.
+  // The badge/placeholder then reflect this provider's own saved key (via currentKeyState).
+  form.ai_api_key = '';
+  revealedKey.value = '';
+  showApiKey.value = false;
+
   const models = modelsByProvider[form.ai_provider];
   if (models?.length) {
     // Auto-select first recommended model when switching providers
@@ -630,7 +641,7 @@ async function toggleRevealSavedKey() {
   }
   try {
     revealLoading.value = true;
-    const res = await fetch('/settings/reveal-key?key=ai_api_key', {
+    const res = await fetch(`/settings/reveal-key?key=ai_api_key_${form.ai_provider}`, {
       headers: {
         'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content ?? '',
         'Accept': 'application/json',
