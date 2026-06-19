@@ -30,8 +30,8 @@ class SettingsController extends Controller
                 // ── AI ──
                 'ai_provider'            => $s('ai_provider', 'claude'),
                 'ai_model'               => $s('ai_model'),
-                'has_ai_key'             => !empty($s('ai_api_key')),
-                'ai_api_key_masked'      => static::maskKey($s('ai_api_key')),
+                'has_ai_key'             => !empty(static::decryptSafe($s('ai_api_key'))),
+                'ai_api_key_masked'      => static::maskKey(static::decryptSafe($s('ai_api_key'))),
                 'ai_temperature'         => $s('ai_temperature', '0.7'),
                 'ai_max_tokens'          => $s('ai_max_tokens', '4096'),
                 'ai_custom_instructions' => $s('ai_custom_instructions'),
@@ -208,14 +208,35 @@ class SettingsController extends Controller
     }
 
     /**
-     * Returns a masked version of a key for display purposes.
-     * Shows the first 6 chars and last 4, replaces the middle with •
+     * Safely decrypt a Laravel-encrypted value.
+     * Returns the decrypted string, or empty string on failure.
+     */
+    private static function decryptSafe(string $encrypted): string
+    {
+        if (empty($encrypted)) {
+            return '';
+        }
+        try {
+            return decrypt($encrypted);
+        } catch (\Throwable) {
+            // Value was stored unencrypted (legacy) — return as-is
+            return $encrypted;
+        }
+    }
+
+    /**
+     * Returns a masked version of the raw (decrypted) key for display.
+     * Shows first 6 chars + bullets + last 4 chars.
+     * e.g. AIzaSy••••••••••••••••5Kd8
      */
     private static function maskKey(string $raw): string
     {
-        if (strlen($raw) < 12) {
+        if (empty($raw)) {
+            return '';
+        }
+        if (strlen($raw) <= 10) {
             return str_repeat('•', strlen($raw));
         }
-        return substr($raw, 0, 6) . str_repeat('•', max(8, strlen($raw) - 10)) . substr($raw, -4);
+        return substr($raw, 0, 6) . str_repeat('•', 16) . substr($raw, -4);
     }
 }
