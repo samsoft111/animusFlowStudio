@@ -3655,7 +3655,21 @@ async function sendChatMessage() {
     formData.append('_token', document.querySelector('meta[name="csrf-token"]')?.content ?? '');
 
     const res  = await fetch(`/themes/${props.theme.uuid}/chat`, { method: 'POST', body: formData });
-    const data = await res.json();
+    const text = await res.text();
+    let data;
+    try {
+      data = JSON.parse(text);
+    } catch {
+      // Server returned HTML (e.g. session expired → redirect to login)
+      if (text.includes('<!DOCTYPE') || text.includes('<html')) {
+        chatMessages.value.push({ role: 'assistant', content: '⚠️ Sessão expirada. Por favor, <a href="/login" class="underline text-primary">faça login novamente</a> e tente outra vez.' });
+      } else {
+        chatMessages.value.push({ role: 'assistant', content: '⚠️ Resposta inválida do servidor: ' + text.slice(0, 200) });
+      }
+      chatLoading.value = false;
+      chatScrollToBottom();
+      return;
+    }
 
     if (!res.ok || data.error) {
       chatMessages.value.push({ role: 'assistant', content: '⚠️ ' + (data.error ?? 'Erro desconhecido.') });
