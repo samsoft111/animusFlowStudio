@@ -530,6 +530,7 @@ class ThemeController extends Controller
             'agent'     => ['required', 'string', Rule::in($validIds)],
             'brief'     => 'nullable|string|max:4000',
             'direction' => 'nullable|string|max:2000',
+            'note'      => 'nullable|string|max:1000',
         ]);
 
         // Compact context — omit heavy sections/components
@@ -543,6 +544,8 @@ class ThemeController extends Controller
                 $data['brief'] ?? '',
                 $data['direction'] ?? '',
                 $themeJson,
+                [],
+                $data['note'] ?? '',
             );
         } catch (\Throwable $e) {
             return response()->json(['error' => $e->getMessage()], 422);
@@ -557,6 +560,32 @@ class ThemeController extends Controller
             'applied' => $applied,
             'theme'   => $applied ? $theme->fresh() : null,
         ]);
+    }
+
+    /** Verifier: reviews the current theme and returns agents to re-run. */
+    public function buildVerify(Request $request, string $uuid): JsonResponse
+    {
+        $theme = StudioTheme::where('uuid', $uuid)->firstOrFail();
+
+        $data = $request->validate([
+            'brief'     => 'nullable|string|max:4000',
+            'direction' => 'nullable|string|max:2000',
+        ]);
+
+        // Context: keep section keys (presence) but drop their heavy HTML bodies
+        $arr      = $theme->toArray();
+        $sections = is_array($arr['sections'] ?? null) ? array_keys($arr['sections']) : [];
+        unset($arr['sections'], $arr['components']);
+        $arr['sections_present'] = $sections;
+        $themeJson = json_encode($arr, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
+
+        try {
+            $result = AIEngine::verifyTheme($data['brief'] ?? '', $data['direction'] ?? '', $themeJson);
+        } catch (\Throwable $e) {
+            return response()->json(['error' => $e->getMessage()], 422);
+        }
+
+        return response()->json($result);
     }
 
     // ──────────────────────────────────────────────

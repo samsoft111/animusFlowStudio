@@ -640,7 +640,7 @@ SYSTEM;
      * Each agent produces a focused json_updates block (its field only),
      * which keeps each call well within the output-token limit.
      */
-    public static function runThemeAgent(string $agentId, string $brief, string $direction, string $currentThemeJson, array $attachments = []): array
+    public static function runThemeAgent(string $agentId, string $brief, string $direction, string $currentThemeJson, array $attachments = [], string $note = ''): array
     {
         $system = self::themeAgentSystem($agentId, $brief, $direction, $currentThemeJson);
 
@@ -649,7 +649,11 @@ SYSTEM;
         $heavy = in_array($agentId, [...self::sectionAgents(), 'code'], true);
         $maxTok = min($heavy ? max($base, 8000) : $base, 16000);
 
-        $history = [['role' => 'user', 'content' => 'Gera agora a tua parte do tema.']];
+        $userMsg = 'Gera agora a tua parte do tema.';
+        if (trim($note) !== '') {
+            $userMsg .= "\n\nNota do verificador (corrige especificamente isto): " . $note;
+        }
+        $history = [['role' => 'user', 'content' => $userMsg]];
         $raw     = self::chatDispatch($system, $history, $attachments, $maxTok);
 
         $updates = null;
@@ -663,6 +667,58 @@ SYSTEM;
         $reply = trim((string) preg_replace('/```json_updates\s*[\s\S]*?```/m', '', $raw));
 
         return ['agent' => $agentId, 'reply' => $reply, 'updates' => $updates];
+    }
+
+    /**
+     * Verifier agent — reviews the current theme against the brief and returns
+     * which agents should be re-run to fix weak/missing parts.
+     * Returns ['summary' => string, 'issues' => [['agent','reason'], ...]].
+     */
+    public static function verifyTheme(string $brief, string $direction, string $themeJson): array
+    {
+        $ids  = array_column(self::themeAgents(), 'id');
+        $list = implode(', ', $ids);
+
+        $system = <<<SYSTEM
+Você é o agente VERIFICADOR de qualidade de temas do AnimusFlow CMS.
+Analisa o estado actual do tema face ao brief e identifica partes em falta, fracas ou incoerentes.
+
+AGENTES QUE PODEM CORRIGIR (ids válidos): {$list}
+
+BRIEF: {$brief}
+DIRECÇÃO DE DESIGN: {$direction}
+ESTADO ACTUAL DO TEMA: {$themeJson}
+
+Responde APENAS com um bloco json_updates, sem texto fora dele:
+```json_updates
+{
+  "summary": "1-2 frases sobre o estado geral do tema",
+  "issues": [ {"agent": "id_do_agente", "reason": "o que melhorar, 1 frase accionável"} ]
+}
+```
+Regras: usa só ids válidos; inclui no máximo 6 problemas REAIS e accionáveis; se o tema estiver bom, devolve "issues": [].
+SYSTEM;
+
+        $history = [['role' => 'user', 'content' => 'Verifica o tema e lista o que corrigir.']];
+        $raw     = self::chatDispatch($system, $history, [], 2000);
+
+        $out = ['summary' => '', 'issues' => []];
+        if (preg_match('/```json_updates\s*([\s\S]*?)```/m', $raw, $m)) {
+            $parsed = json_decode(trim($m[1]), true);
+            if (is_array($parsed)) {
+                $out['summary'] = (string) ($parsed['summary'] ?? '');
+                foreach (($parsed['issues'] ?? []) as $iss) {
+                    if (is_array($iss) && in_array($iss['agent'] ?? '', $ids, true)) {
+                        $out['issues'][] = [
+                            'agent'  => $iss['agent'],
+                            'reason' => (string) ($iss['reason'] ?? ''),
+                        ];
+                    }
+                }
+            }
+        }
+
+        return $out;
     }
 
     /** Build the focused system prompt for one agent. */

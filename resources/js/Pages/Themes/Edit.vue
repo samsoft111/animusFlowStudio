@@ -1447,20 +1447,34 @@
                 class="w-full mt-2 px-3 py-2 bg-muted border border-border rounded-lg text-xs font-mono resize-none focus:outline-none focus:border-primary"></textarea>
             </details>
 
-            <div class="flex items-center gap-2">
-              <button @click="generatePlan" :disabled="buildPlanning || !buildBrief.trim()"
-                class="px-3 py-1.5 bg-violet-500 text-white rounded-lg text-xs font-semibold disabled:opacity-50 flex items-center gap-1.5">
-                <span v-if="buildPlanning" class="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
-                {{ buildPlanning ? 'A planear…' : '✦ Gerar plano' }}
+            <div class="flex flex-wrap items-center gap-2">
+              <button @click="generateAndBuild" :disabled="buildPlanning || buildRunning || !buildBrief.trim()"
+                class="px-3 py-1.5 bg-gradient-to-r from-violet-500 to-indigo-500 text-white rounded-lg text-xs font-semibold disabled:opacity-50 flex items-center gap-1.5">
+                <span v-if="(buildPlanning || buildRunning)" class="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+                ⚡ Gerar e construir
+              </button>
+              <button @click="generatePlan" :disabled="buildPlanning || buildRunning || !buildBrief.trim()"
+                class="px-3 py-1.5 bg-muted text-foreground rounded-lg text-xs font-semibold disabled:opacity-50 flex items-center gap-1.5">
+                {{ buildPlanning ? 'A planear…' : '✦ Só gerar plano' }}
               </button>
               <button v-if="buildSteps.length" @click="runAll" :disabled="buildRunning"
                 class="px-3 py-1.5 bg-primary text-primary-foreground rounded-lg text-xs font-semibold disabled:opacity-50 flex items-center gap-1.5">
                 <span v-if="buildRunning" class="w-3 h-3 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin"></span>
                 {{ buildRunning ? 'A construir…' : '▶ Construir tudo' }}
               </button>
+              <button v-if="buildSteps.some(s => s.status === 'done')" @click="verifyAndFix" :disabled="buildVerifying || buildRunning"
+                class="px-3 py-1.5 bg-success/15 text-success rounded-lg text-xs font-semibold disabled:opacity-50 flex items-center gap-1.5">
+                <span v-if="buildVerifying" class="w-3 h-3 border-2 border-success/30 border-t-success rounded-full animate-spin"></span>
+                {{ buildVerifying ? 'A verificar…' : '🔍 Verificar & corrigir' }}
+              </button>
+              <label class="flex items-center gap-1.5 text-[11px] text-muted-foreground cursor-pointer select-none ml-auto">
+                <input type="checkbox" v-model="buildContinueOnError" class="accent-primary" />
+                Continuar apesar de erros
+              </label>
             </div>
 
             <p v-if="buildDirection" class="text-xs text-muted-foreground italic bg-muted/50 rounded-lg px-3 py-2">{{ buildDirection }}</p>
+            <p v-if="buildVerifySummary" class="text-xs text-success bg-success/8 border border-success/20 rounded-lg px-3 py-2">🔍 {{ buildVerifySummary }}</p>
 
             <div v-if="buildSteps.length" class="space-y-1.5">
               <div v-for="(step, i) in buildSteps" :key="step.agent + '-' + i"
@@ -3663,6 +3677,10 @@ const buildPlanning  = ref(false);
 const buildRunning   = ref(false);
 const buildDirection = ref('');
 const buildSteps     = ref([]); // [{agent, label, icon, status, reply}]
+const buildContinueOnError = ref(true);
+const buildVerifying       = ref(false);
+const buildVerifySummary   = ref('');
+const buildIssues          = ref([]);
 
 function agentMeta(id) {
   return buildAgents.value.find(a => a.id === id) ?? { id, label: id, icon: '•', hint: '' };
@@ -3719,7 +3737,7 @@ function addAgent(a) {
   buildSteps.value.push({ agent: a.id, label: a.label, icon: a.icon, status: 'pending', reply: '' });
 }
 
-async function runAgent(step) {
+async function runAgent(step, note = '') {
   step.status = 'running';
   step.reply = '';
   try {
@@ -3727,6 +3745,7 @@ async function runAgent(step) {
     fd.append('agent', step.agent);
     if (buildBrief.value.trim())     fd.append('brief', buildBrief.value);
     if (buildDirection.value.trim()) fd.append('direction', buildDirection.value);
+    if (note)                        fd.append('note', note);
     fd.append('_token', csrf());
     const res = await fetch(`/themes/${props.theme.uuid}/build/step`, { method: 'POST', body: fd });
     if (!(res.headers.get('content-type') ?? '').includes('application/json')) {
@@ -3746,16 +3765,67 @@ async function runAgent(step) {
 async function runAll() {
   if (buildRunning.value) return;
   buildRunning.value = true;
+  const failed = [];
   try {
     for (const step of buildSteps.value) {
       if (step.status === 'done') continue;
       const ok = await runAgent(step);
-      if (!ok) break; // stop on first error
+      if (!ok) {
+        failed.push(step.label);
+        if (!buildContinueOnError.value) break; // stop on first error if opted
+      }
     }
-    if (buildSteps.value.every(s => s.status === 'done')) {
+    if (failed.length) {
+      feedback.error = `Falharam ${failed.length} agente(s): ${failed.join(', ')}. Podes voltar a corrê-los individualmente.`;
+    } else if (buildSteps.value.every(s => s.status === 'done')) {
       feedback.success = 'Construção concluída! Guarda para persistir.';
     }
   } finally {
+    buildRunning.value = false;
+  }
+}
+
+// One-click: plan then build everything
+async function generateAndBuild() {
+  await generatePlan();
+  if (buildSteps.value.length) await runAll();
+}
+
+// Verifier: review the theme, then auto-fix the flagged agents
+async function verifyAndFix() {
+  if (buildVerifying.value || buildRunning.value) return;
+  buildVerifying.value = true;
+  buildIssues.value = [];
+  buildVerifySummary.value = '';
+  try {
+    const fd = new FormData();
+    if (buildBrief.value.trim())     fd.append('brief', buildBrief.value);
+    if (buildDirection.value.trim()) fd.append('direction', buildDirection.value);
+    fd.append('_token', csrf());
+    const res = await fetch(`/themes/${props.theme.uuid}/build/verify`, { method: 'POST', body: fd });
+    if (!(res.headers.get('content-type') ?? '').includes('application/json')) {
+      feedback.error = 'Sessão expirada — faz login novamente.'; return;
+    }
+    const data = await res.json();
+    if (!res.ok || data.error) { feedback.error = data.error ?? 'Erro ao verificar.'; return; }
+    buildVerifySummary.value = data.summary ?? '';
+    buildIssues.value = data.issues ?? [];
+    if (!buildIssues.value.length) { feedback.success = '✓ Verificação: o tema está bom!'; return; }
+
+    // Auto-fix: re-run each flagged agent with the verifier's note
+    buildRunning.value = true;
+    for (const iss of buildIssues.value) {
+      const m = agentMeta(iss.agent);
+      const step = { agent: iss.agent, label: '🔧 ' + m.label, icon: m.icon, status: 'pending', reply: '' };
+      buildSteps.value.push(step);
+      await runAgent(step, iss.reason);
+    }
+    buildRunning.value = false;
+    feedback.success = `Verificador corrigiu ${buildIssues.value.length} ponto(s). Guarda para persistir.`;
+  } catch (e) {
+    feedback.error = e.message;
+  } finally {
+    buildVerifying.value = false;
     buildRunning.value = false;
   }
 }
