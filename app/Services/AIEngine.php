@@ -465,6 +465,8 @@ SYSTEM;
 
         $raw = match ($provider) {
             'openai' => self::chatOpenAI($apiKey, $model ?: 'gpt-4o', $system, $history, $attachments),
+            'gemini' => self::chatGemini($apiKey, $model ?: 'gemini-1.5-flash', $system, $history, $attachments),
+            'claude' => self::chatClaude($apiKey, $model ?: 'claude-sonnet-4-5', $system, $history, $attachments),
             default  => self::chatClaude($apiKey, $model ?: 'claude-sonnet-4-5', $system, $history, $attachments),
         };
 
@@ -545,6 +547,8 @@ SYSTEM;
 
         $raw = match ($provider) {
             'openai' => self::chatOpenAI($apiKey, $model ?: 'gpt-4o', $system, $history, $attachments),
+            'gemini' => self::chatGemini($apiKey, $model ?: 'gemini-1.5-flash', $system, $history, $attachments),
+            'claude' => self::chatClaude($apiKey, $model ?: 'claude-sonnet-4-5', $system, $history, $attachments),
             default  => self::chatClaude($apiKey, $model ?: 'claude-sonnet-4-5', $system, $history, $attachments),
         };
 
@@ -666,6 +670,60 @@ SYSTEM;
         return $response->json('choices.0.message.content', '');
     }
 
+    private static function chatGemini(string $key, string $model, string $system, array $history, array $attachments): string
+    {
+        $contents = [];
+
+        foreach ($history as $i => $msg) {
+            $isLast = $i === count($history) - 1;
+            $role = $msg['role'] === 'assistant' ? 'model' : 'user';
+
+            if ($isLast && $msg['role'] === 'user' && !empty($attachments)) {
+                $parts = [['text' => $msg['content']]];
+
+                foreach ($attachments as $att) {
+                    if ($att['type'] === 'image') {
+                        $parts[] = [
+                            'inlineData' => [
+                                'mimeType' => $att['mime'],
+                                'data'     => $att['data'],
+                            ],
+                        ];
+                    } elseif ($att['type'] === 'document') {
+                        $parts[] = [
+                            'inlineData' => [
+                                'mimeType' => 'application/pdf',
+                                'data'     => $att['data'],
+                            ],
+                        ];
+                    } elseif ($att['type'] === 'text_description') {
+                        $parts[] = ['text' => $att['description']];
+                    }
+                }
+
+                $contents[] = ['role' => $role, 'parts' => $parts];
+            } else {
+                $contents[] = ['role' => $role, 'parts' => [['text' => $msg['content']]]];
+            }
+        }
+
+        $url = "https://generativelanguage.googleapis.com/v1beta/models/{$model}:generateContent?key={$key}";
+
+        $response = Http::timeout(60)->post($url, [
+            'contents'          => $contents,
+            'systemInstruction' => [
+                'parts' => [['text' => $system]],
+            ],
+            'generationConfig'  => ['maxOutputTokens' => 4096],
+        ]);
+
+        if (!$response->successful()) {
+            throw new RuntimeException('Gemini API error: ' . $response->body());
+        }
+
+        return $response->json('candidates.0.content.parts.0.text', '');
+    }
+
     // ──────────────────────────────────────────────
 
     private static function call(string $system, string $user, int $maxTokens = 2048): string
@@ -699,6 +757,7 @@ SYSTEM;
         return match ($provider) {
             'openai'  => self::callOpenAI($apiKey, $model ?: 'gpt-4o', $system, $user, $maxTok, $temperature),
             'gemini'  => self::callGemini($apiKey, $model ?: 'gemini-1.5-flash', $system, $user, $maxTok),
+            'claude'  => self::callClaude($apiKey, $model ?: 'claude-sonnet-4-5', $system, $user, $maxTok),
             default   => self::callClaude($apiKey, $model ?: 'claude-sonnet-4-5', $system, $user, $maxTok),
         };
     }

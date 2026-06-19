@@ -358,6 +358,67 @@
           </div>
         </div>
 
+        <!-- ══════════════════════════════════════
+             TAB: Storage
+        ══════════════════════════════════════ -->
+        <div v-show="activeTab === 'storage'" class="space-y-5">
+          <div class="bg-card border border-border rounded-2xl p-6 space-y-4">
+            <div class="flex items-center justify-between">
+              <h2 class="font-semibold text-foreground flex items-center gap-2">💾 Cloud Storage (S3 / R2)</h2>
+              <span class="flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full"
+                :class="props.settings.has_aws_secret_key ? 'bg-success/10 text-success' : 'bg-warning/10 text-warning'">
+                <span class="w-1.5 h-1.5 rounded-full"
+                  :class="props.settings.has_aws_secret_key ? 'bg-success' : 'bg-warning'"></span>
+                {{ props.settings.has_aws_secret_key ? t('settings.key_configured') : t('settings.key_missing') }}
+              </span>
+            </div>
+            <p class="text-xs text-muted-foreground -mt-2">Configura o armazenamento de ficheiros na nuvem para assets do Studio (imagens, logótipos, vídeos, etc.).</p>
+
+            <div>
+              <label class="field-label">Disco de Armazenamento</label>
+              <select v-model="form.media_storage_disk" class="field-input">
+                <option value="public">Local (public)</option>
+                <option value="s3">Nuvem (S3 / R2 / MinIO)</option>
+              </select>
+            </div>
+
+            <div v-show="form.media_storage_disk === 's3'" class="space-y-4 pt-2 border-t border-dashed">
+              <div class="grid grid-cols-2 gap-4">
+                <div>
+                  <label class="field-label">AWS Access Key ID</label>
+                  <input v-model="form.aws_access_key_id" placeholder="AKIA..." class="field-input" />
+                </div>
+                <div>
+                  <label class="field-label">AWS Secret Access Key</label>
+                  <input v-model="form.aws_secret_access_key" type="password" placeholder="Nova key secreta (deixa em branco se não alterada)" class="field-input" />
+                </div>
+              </div>
+
+              <div class="grid grid-cols-2 gap-4">
+                <div>
+                  <label class="field-label">AWS Default Region</label>
+                  <input v-model="form.aws_default_region" placeholder="us-east-1" class="field-input" />
+                </div>
+                <div>
+                  <label class="field-label">AWS Bucket Name</label>
+                  <input v-model="form.aws_bucket" placeholder="meu-bucket" class="field-input" />
+                </div>
+              </div>
+
+              <div class="grid grid-cols-2 gap-4">
+                <div>
+                  <label class="field-label">Custom Endpoint (R2 / MinIO / etc.)</label>
+                  <input v-model="form.aws_endpoint" placeholder="https://<accountid>.r2.cloudflarestorage.com" class="field-input" />
+                </div>
+                <div>
+                  <label class="field-label">Custom URL Pública (opcional)</label>
+                  <input v-model="form.aws_url" placeholder="https://pub-xxxx.r2.dev" class="field-input" />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <!-- Save button (all tabs) -->
         <button type="submit" :disabled="form.processing"
           class="w-full py-3 bg-primary text-primary-foreground rounded-xl text-sm font-semibold disabled:opacity-50 transition-opacity flex items-center justify-center gap-2">
@@ -389,6 +450,7 @@ const tabs = [
   { id: 'plugin',      icon: '🔌', label: 'Plugins'      },
   { id: 'marketplace', icon: '🛒', label: 'Marketplace'  },
   { id: 'export',      icon: '📦', label: 'Exportação'   },
+  { id: 'storage',     icon: '💾', label: 'Storage'      },
 ];
 
 // ── Form ──
@@ -428,6 +490,14 @@ const form = useForm({
   export_minify_html:        props.settings.export_minify_html        ?? '0',
   export_include_readme:     props.settings.export_include_readme     ?? '1',
   export_animusflow_min_ver: props.settings.export_animusflow_min_ver ?? '1.0.0',
+  // Storage
+  media_storage_disk:        props.settings.media_storage_disk        ?? 'public',
+  aws_access_key_id:         props.settings.aws_access_key_id         ?? '',
+  aws_secret_access_key:     '',
+  aws_default_region:        props.settings.aws_default_region        ?? '',
+  aws_bucket:                props.settings.aws_bucket                ?? '',
+  aws_endpoint:              props.settings.aws_endpoint              ?? '',
+  aws_url:                   props.settings.aws_url                   ?? '',
 });
 
 function save() { form.put('/settings'); }

@@ -13,6 +13,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
 use ZipArchive;
@@ -131,10 +132,14 @@ class ThemeController extends Controller
             'slot' => 'required|in:' . implode(',', $allowedSlots),
         ]);
 
+        $disk = StudioSetting::get('media_storage_disk', 'public');
         $slot = $request->input('slot');
         $dir  = "themes/{$theme->uuid}";
-        $path = $request->file('file')->store($dir, 'public');
-        $url  = '/storage/' . $path;
+        $path = $request->file('file')->store($dir, $disk);
+        
+        $url  = $disk === 'public' 
+            ? '/storage/' . $path 
+            : Storage::disk($disk)->url($path);
 
         $assets = $theme->assets ?? [];
         $assets[$slot] = $url;
@@ -150,11 +155,18 @@ class ThemeController extends Controller
 
         $assets = $theme->assets ?? [];
         if (isset($assets[$slot])) {
-            // Delete file from disk
-            $localPath = public_path(str_replace('/storage/', 'storage/', $assets[$slot]));
-            if (file_exists($localPath)) {
-                @unlink($localPath);
+            $url  = $assets[$slot];
+            $disk = StudioSetting::get('media_storage_disk', 'public');
+
+            if (preg_match('#themes/' . $theme->uuid . '/[^/]+#', $url, $m)) {
+                Storage::disk($disk)->delete($m[0]);
+            } else {
+                $localPath = public_path(str_replace('/storage/', 'storage/', $url));
+                if (file_exists($localPath)) {
+                    @unlink($localPath);
+                }
             }
+
             unset($assets[$slot]);
             $theme->update(['assets' => $assets]);
         }
@@ -879,7 +891,10 @@ PROMPT;
             $data = json_decode(file_get_contents($themeJson), true);
             return $data['blocks'] ?? [];
         }
-        return ['hero', 'features', 'text', 'cta', 'testimonials', 'pricing', 'gallery', 'faq'];
+        return [
+            'hero', 'features', 'text', 'cta', 'testimonials', 'pricing', 'gallery', 'faq',
+            'ai_chatbox', 'ai_recommendations', 'ai_summary', 'ai_faq', 'ai_search', 'ai_personalized'
+        ];
     }
 
     // ──────────────────────────────────────────────

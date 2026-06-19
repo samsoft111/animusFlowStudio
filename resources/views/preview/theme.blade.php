@@ -462,7 +462,161 @@
         {{-- Any extra AI-generated sections --}}
         @foreach($sections as $type => $html)
             @if(!in_array($type, ['hero', 'features', 'testimonials', 'pricing', 'cta']))
-                <div class="ai-section">{!! $html !!}</div>
+                <div class="ai-section">
+                    @if(empty($html))
+                        @if($type === 'ai_chatbox')
+                            <!-- AI Chatbox fallback mockup -->
+                            <section class="default-ai-chatbox" style="padding: 4rem 2rem; background: var(--color-muted); border-top: 1px solid var(--color-border); border-bottom: 1px solid var(--color-border);">
+                                <div class="container" style="max-width: 600px; margin: 0 auto;">
+                                    <div style="background: var(--color-card); border: 1px solid var(--color-border); border-radius: 1.5rem; overflow: hidden; box-shadow: 0 10px 30px -10px rgba(0,0,0,0.1); border-left: 4px solid var(--color-primary);">
+                                        <div style="background: var(--color-primary); color: var(--color-primary-foreground); padding: 1.25rem; font-weight: 700; display: flex; align-items: center; justify-content: space-between;">
+                                            <div style="display: flex; align-items: center; gap: 10px;">
+                                                <span style="font-size: 1.5rem;">🤖</span>
+                                                <div>
+                                                    <div style="font-size: 0.95rem; line-height: 1.2;">Assistente Inteligente</div>
+                                                    <div style="font-size: 0.75rem; opacity: 0.8; font-weight: normal;">Online • Responde na hora</div>
+                                                </div>
+                                            </div>
+                                            <span style="background: rgba(255,255,255,0.2); font-size: 0.7rem; padding: 2px 8px; border-radius: 9999px;">AI Chat</span>
+                                        </div>
+                                        <div style="padding: 2rem; height: 260px; display: flex; flex-direction: column; justify-content: flex-end; gap: 1rem; overflow-y: auto; background: var(--color-card);">
+                                            <div style="align-self: flex-start; max-width: 80%;">
+                                                <div style="background: var(--color-muted); color: var(--color-foreground); padding: 0.85rem 1.15rem; border-radius: 0.25rem 1rem 1rem 1rem; font-size: 0.875rem; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
+                                                    Olá! Sou o assistente virtual do site. Em que posso ser útil hoje?
+                                                </div>
+                                                <span style="font-size: 0.65rem; color: var(--color-muted-foreground); margin-left: 4px; margin-top: 4px; display: block;">Assistente • Agora mesmo</span>
+                                            </div>
+                                        </div>
+                                        <div style="padding: 1rem 1.5rem; border-top: 1px solid var(--color-border); display: flex; gap: 8px; background: var(--color-muted);">
+                                            <input type="text" placeholder="Escreva a sua pergunta aqui..." disabled style="flex: 1; padding: 0.75rem 1rem; border: 1px solid var(--color-border); border-radius: 0.75rem; font-size: 0.875rem; background: var(--color-card); color: var(--color-foreground); outline: none;">
+                                            <button disabled style="background: var(--color-primary); color: var(--color-primary-foreground); border: none; padding: 0.75rem 1.25rem; border-radius: 0.75rem; font-weight: 700; font-size: 0.875rem; opacity: 0.6; cursor: not-allowed; display: flex; align-items: center; gap: 4px;">
+                                                Enviar <span>➔</span>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </section>
+                        @elseif($type === 'ai_recommendations')
+                            <!-- AI Recommendations fallback mockup -->
+                            <section class="default-ai-reco" style="padding: 5rem 2rem; background: var(--color-background);">
+                                <div class="container" style="max-width: 1100px; margin: 0 auto;">
+                                    <div style="text-align: center; margin-bottom: 3.5rem;">
+                                        <span style="background: linear-gradient(135deg, var(--color-primary), var(--color-secondary)); color: var(--color-primary-foreground); padding: 4px 12px; border-radius: 9999px; font-size: 0.75rem; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase;">✨ Recomendado Para Si</span>
+                                        <h2 style="font-size: 2.25rem; margin-top: 0.75rem; color: var(--color-foreground);">Destaques Personalizados</h2>
+                                        <p style="color: var(--color-muted-foreground); margin-top: 0.5rem; font-size: 0.95rem;">Sugestões inteligentes com base na sua navegação</p>
+                                    </div>
+                                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 2rem;">
+                                        <div style="background: var(--color-card); border: 1px solid var(--color-border); border-radius: 1.25rem; padding: 2rem; transition: transform 0.2s, box-shadow 0.2s; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); display: flex; flex-direction: column; justify-content: space-between; border-top: 4px solid var(--color-secondary);">
+                                            <div>
+                                                <span style="font-size: 1.5rem; display: block; margin-bottom: 1rem;">📖</span>
+                                                <h3 style="font-size: 1.2rem; margin-bottom: 0.75rem; color: var(--color-foreground); font-weight: 700;">Guia Avançado de Funcionalidades</h3>
+                                                <p style="color: var(--color-muted-foreground); font-size: 0.875rem; line-height: 1.6; margin-bottom: 1.5rem;">Descubra como potenciar os seus resultados utilizando o nosso ecossistema inteligente de forma integrada.</p>
+                                            </div>
+                                            <a href="#" style="color: var(--color-primary); font-weight: 700; font-size: 0.875rem; text-decoration: none; display: inline-flex; align-items: center; gap: 4px;">Ler Artigo <span style="font-size: 1rem;">➔</span></a>
+                                        </div>
+                                        <div style="background: var(--color-card); border: 1px solid var(--color-border); border-radius: 1.25rem; padding: 2rem; transition: transform 0.2s, box-shadow 0.2s; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); display: flex; flex-direction: column; justify-content: space-between; border-top: 4px solid var(--color-primary);">
+                                            <div>
+                                                <span style="font-size: 1.5rem; display: block; margin-bottom: 1rem;">⚙️</span>
+                                                <h3 style="font-size: 1.2rem; margin-bottom: 0.75rem; color: var(--color-foreground); font-weight: 700;">Configurações Recomendadas</h3>
+                                                <p style="color: var(--color-muted-foreground); font-size: 0.875rem; line-height: 1.6; margin-bottom: 1.5rem;">Recomendado com base nas suas preferências recentes. Otimize o seu workspace com apenas 3 passos.</p>
+                                            </div>
+                                            <a href="#" style="color: var(--color-primary); font-weight: 700; font-size: 0.875rem; text-decoration: none; display: inline-flex; align-items: center; gap: 4px;">Configurar <span style="font-size: 1rem;">➔</span></a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </section>
+                        @elseif($type === 'ai_summary')
+                            <!-- AI Summary fallback mockup -->
+                            <section class="default-ai-summary" style="padding: 4rem 2rem; background: var(--color-background);">
+                                <div class="container" style="max-width: 750px; margin: 0 auto;">
+                                    <div style="background: var(--color-card); border: 1px solid var(--color-border); border-radius: 1.5rem; padding: 2.5rem; box-shadow: 0 4px 20px -2px rgba(0,0,0,0.05); position: relative; overflow: hidden;">
+                                        <div style="position: absolute; top: 0; left: 0; width: 6px; height: 100%; background: linear-gradient(to bottom, var(--color-primary), var(--color-secondary));"></div>
+                                        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 1.25rem;">
+                                            <span style="background: var(--color-primary); color: var(--color-primary-foreground); padding: 3px 10px; border-radius: 9999px; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;">🤖 RESUMO DA PÁGINA</span>
+                                            <span style="font-size: 0.75rem; color: var(--color-muted-foreground);">Atualizado automaticamente</span>
+                                        </div>
+                                        <h3 style="font-size: 1.5rem; margin-bottom: 1rem; color: var(--color-foreground);">Pontos Chave</h3>
+                                        <ul style="list-style: none; padding: 0; display: flex; flex-direction: column; gap: 12px; font-size: 0.95rem; color: var(--color-foreground);">
+                                            <li style="display: flex; align-items: flex-start; gap: 10px;">
+                                                <span style="background: rgba(16,185,129,0.1); color: #10b981; width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 0.75rem; flex-shrink: 0; margin-top: 2px;">✓</span>
+                                                <span><strong>Otimização de Fluxo:</strong> A arquitetura nativa permite gerir secções e templates sem impacto nos tempos de carregamento do utilizador.</span>
+                                            </li>
+                                            <li style="display: flex; align-items: flex-start; gap: 10px;">
+                                                <span style="background: rgba(16,185,129,0.1); color: #10b981; width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 0.75rem; flex-shrink: 0; margin-top: 2px;">✓</span>
+                                                <span><strong>Estilo Dinâmico:</strong> Integração fluida com as variáveis CSS de cores oklch e tipografias do tema ativo.</span>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </section>
+                        @elseif($type === 'ai_faq')
+                            <!-- AI FAQ fallback mockup -->
+                            <section class="default-ai-faq" style="padding: 5rem 2rem; background: var(--color-muted); border-top: 1px solid var(--color-border); border-bottom: 1px solid var(--color-border);">
+                                <div class="container" style="max-width: 800px; margin: 0 auto;">
+                                    <div style="text-align: center; margin-bottom: 3rem;">
+                                        <span style="background: var(--color-primary); color: var(--color-primary-foreground); padding: 4px 12px; border-radius: 9999px; font-size: 0.75rem; font-weight: 700; text-transform: uppercase;">❓ FAQ IA</span>
+                                        <h2 style="font-size: 2rem; margin-top: 0.75rem; color: var(--color-foreground);">Dúvidas Frequentes Resolvidas</h2>
+                                        <p style="color: var(--color-muted-foreground); margin-top: 0.5rem; font-size: 0.9rem;">Perguntas geradas de forma dinâmica e automática sobre esta secção</p>
+                                    </div>
+                                    <div style="display: flex; flex-direction: column; gap: 12px;">
+                                        <div style="background: var(--color-card); border: 1px solid var(--color-border); border-radius: 1rem; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
+                                            <div style="padding: 1.25rem 1.5rem; font-weight: 700; color: var(--color-foreground); display: flex; justify-content: space-between; align-items: center; font-size: 0.95rem;">
+                                                <span>Como configuro o chatbot com o Pinecone?</span>
+                                                <span style="color: var(--color-primary); font-size: 1.25rem;">▾</span>
+                                            </div>
+                                            <div style="padding: 0 1.5rem 1.25rem 1.5rem; color: var(--color-muted-foreground); font-size: 0.875rem; line-height: 1.6;">
+                                                A configuração é feita no painel administrativo do AnimusFlow CMS em Definições de IA, inserindo a API key do Pinecone, a região/host do index e ativando o serviço.
+                                            </div>
+                                        </div>
+                                        <div style="background: var(--color-card); border: 1px solid var(--color-border); border-radius: 1rem; overflow: hidden; opacity: 0.9;">
+                                            <div style="padding: 1.25rem 1.5rem; font-weight: 700; color: var(--color-foreground); display: flex; justify-content: space-between; align-items: center; font-size: 0.95rem; cursor: not-allowed;">
+                                                <span>Posso personalizar os templates blade destas secções?</span>
+                                                <span style="color: var(--color-primary); font-size: 1.25rem;">▸</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </section>
+                        @elseif($type === 'ai_search')
+                            <!-- AI Search fallback mockup -->
+                            <section class="default-ai-search" style="padding: 5rem 2rem; background: var(--color-background);">
+                                <div class="container" style="max-width: 700px; margin: 0 auto; text-align: center;">
+                                    <span style="background: var(--color-secondary); color: var(--color-primary-foreground); padding: 4px 12px; border-radius: 9999px; font-size: 0.75rem; font-weight: 700; text-transform: uppercase;">🔍 Procura Inteligente</span>
+                                    <h2 style="font-size: 2rem; margin-top: 0.75rem; margin-bottom: 2rem; color: var(--color-foreground);">O que procura hoje?</h2>
+                                    <div style="display: flex; border: 2px solid var(--color-primary); border-radius: 9999px; overflow: hidden; background: var(--color-card); box-shadow: 0 10px 25px -5px rgba(0,0,0,0.05); padding: 6px;">
+                                        <span style="display: flex; align-items: center; padding-left: 1.25rem; font-size: 1.2rem;">🔍</span>
+                                        <input type="text" placeholder="Pergunte-me qualquer detalhe sobre o serviço..." disabled style="flex: 1; padding: 0.85rem 1rem; border: none; background: transparent; font-size: 1rem; outline: none; color: var(--color-foreground);">
+                                        <button disabled style="background: var(--color-primary); color: var(--color-primary-foreground); border: none; padding: 0.85rem 2rem; border-radius: 9999px; font-weight: 700; font-size: 0.95rem; opacity: 0.9; cursor: not-allowed;">Pesquisar</button>
+                                    </div>
+                                    <div style="display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 1.25rem; flex-wrap: wrap;">
+                                        <span style="font-size: 0.8rem; color: var(--color-muted-foreground);">Sugestões:</span>
+                                        <button disabled style="background: var(--color-muted); border: 1px solid var(--color-border); padding: 4px 12px; border-radius: 9999px; font-size: 0.75rem; color: var(--color-foreground);">Preços de adesão</button>
+                                        <button disabled style="background: var(--color-muted); border: 1px solid var(--color-border); padding: 4px 12px; border-radius: 9999px; font-size: 0.75rem; color: var(--color-foreground);">Funcionalidades SaaS</button>
+                                    </div>
+                                </div>
+                            </section>
+                        @elseif($type === 'ai_personalized')
+                            <!-- AI Personalized fallback mockup -->
+                            <section class="default-ai-perso" style="padding: 6rem 2rem; background: linear-gradient(135deg, var(--color-primary), var(--color-secondary)); color: var(--color-primary-foreground); text-align: center;">
+                                <div class="container" style="max-width: 800px; margin: 0 auto;">
+                                    <span style="background: var(--color-primary-foreground); color: var(--color-primary); padding: 4px 14px; border-radius: 9999px; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;">👤 Experiência Customizada</span>
+                                    <h2 style="font-size: 2.5rem; font-weight: 800; margin-top: 1.5rem; line-height: 1.1;">Olá! Obrigado por regressar ao nosso site.</h2>
+                                    <p style="opacity: 0.9; margin-top: 1rem; font-size: 1.2rem; max-width: 600px; margin-left: auto; margin-right: auto; line-height: 1.6;">Esta secção adaptou-se automaticamente com base na sua visita anterior. Temos novas sugestões preparadas especificamente para si.</p>
+                                    <div style="margin-top: 2.5rem; display: flex; gap: 1rem; justify-content: center;">
+                                        <a href="#" style="background: var(--color-primary-foreground); color: var(--color-primary); padding: 0.85rem 2rem; border-radius: 0.75rem; font-weight: 700; text-decoration: none; font-size: 0.95rem; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">Ver O Que Há De Novo</a>
+                                        <a href="#" style="background: transparent; color: var(--color-primary-foreground); border: 2px solid var(--color-primary-foreground); padding: 0.85rem 2rem; border-radius: 0.75rem; font-weight: 700; text-decoration: none; font-size: 0.95rem;">Saber Mais</a>
+                                    </div>
+                                </div>
+                            </section>
+                        @else
+                            <div style="padding: 3rem; background: var(--color-muted); border: 2px dashed var(--color-border); text-align: center; border-radius: 1.5rem; font-size: 0.875rem; color: var(--color-muted-foreground); margin: 2rem auto; max-width: 600px;">
+                                Bloco Personalizado Activo: <strong>{{ $type }}</strong> (Vazio)
+                            </div>
+                        @endif
+                    @else
+                        {!! $html !!}
+                    @endif
+                </div>
             @endif
         @endforeach
 

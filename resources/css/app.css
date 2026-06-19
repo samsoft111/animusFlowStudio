@@ -60,3 +60,35 @@
 
 * { box-sizing: border-box; }
 body { background-color: var(--color-background); color: var(--color-foreground); }
+
+/* Garantir cursor de dedo em todas as telas e abas do Studio */
+* {
+  cursor: pointer !important;
+}
+
+/* Preservar cursor de texto para campos de escrita */
+input[type="text"],
+input[type="password"],
+input[type="email"],
+input[type="number"],
+input[type="tel"],
+input[type="url"],
+input[type="search"],
+input:not([type]),
+textarea {
+  cursor: text !important;
+}
+
+/* Preservar cursor apropriado para estados específicos */
+[disabled],
+.cursor-not-allowed,
+:disabled {
+  cursor: not-allowed !important;
+}
+.cursor-grab {
+  cursor: grab !important;
+}
+.cursor-grabbing {
+  cursor: grabbing !important;
+}
+

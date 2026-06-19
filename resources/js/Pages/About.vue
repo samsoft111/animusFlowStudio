@@ -37,7 +37,7 @@
         </h2>
         <div class="flex items-start gap-4">
           <div class="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center shrink-0 p-2">
-            <img :src="'/images/logos/animusflowstudio-icon.svg'"
+            <img :src="'/images/logos/animusflowstudio-icon.png'"
                  alt="AnimusFlowStudio" class="w-full h-full object-contain" />
           </div>
           <div class="flex-1">
@@ -74,19 +74,6 @@
         </div>
       </div>
 
-      <!-- Tech stack -->
-      <div class="bg-card border border-border rounded-2xl p-6">
-        <h2 class="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-4">
-          {{ t('about.tech_stack') }}
-        </h2>
-        <div class="flex flex-wrap gap-2">
-          <span v-for="tech in techStack" :key="tech.label"
-            class="flex items-center gap-1.5 px-3 py-1.5 bg-muted rounded-xl text-xs font-semibold text-foreground">
-            <span>{{ tech.icon }}</span>
-            <span>{{ tech.label }}</span>
-          </span>
-        </div>
-      </div>
 
       <!-- Open source -->
       <div class="bg-card border border-border rounded-2xl p-5 flex items-center gap-4">
@@ -114,14 +101,5 @@ const props = defineProps({
   stats: { type: Object, default: () => ({ themes: 0, plugins: 0, published: 0 }) },
 });
 
-const techStack = [
-  { icon: '⚡', label: 'Laravel 12' },
-  { icon: '🐘', label: 'PHP 8.2' },
-  { icon: '💚', label: 'Vue 3' },
-  { icon: '🔗', label: 'Inertia.js' },
-  { icon: '🎨', label: 'Tailwind v4' },
-  { icon: '🗄️', label: 'MySQL 8' },
-  { icon: '🤖', label: 'Claude AI' },
-  { icon: '🏗️', label: 'Vite 6' },
-];
+
 </script>

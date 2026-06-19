@@ -13,7 +13,7 @@ use Inertia\Response;
 class SettingsController extends Controller
 {
     /** Keys that are stored encrypted and never returned raw to the frontend. */
-    private const ENCRYPTED_KEYS = ['ai_api_key', 'animusflow_api_key', 'cms_api_key'];
+    private const ENCRYPTED_KEYS = ['ai_api_key', 'animusflow_api_key', 'cms_api_key', 'aws_secret_access_key'];
 
     public function index(): Response
     {
@@ -65,6 +65,15 @@ class SettingsController extends Controller
                 'export_minify_html'          => $s('export_minify_html', '0'),
                 'export_include_readme'       => $s('export_include_readme', '1'),
                 'export_animusflow_min_ver'   => $s('export_animusflow_min_ver', '1.0.0'),
+
+                // ── Storage ──
+                'media_storage_disk'          => $s('media_storage_disk', 'public'),
+                'aws_access_key_id'           => $s('aws_access_key_id'),
+                'has_aws_secret_key'          => !empty($s('aws_secret_access_key')),
+                'aws_default_region'          => $s('aws_default_region'),
+                'aws_bucket'                  => $s('aws_bucket'),
+                'aws_endpoint'                => $s('aws_endpoint'),
+                'aws_url'                     => $s('aws_url'),
             ],
         ]);
     }
@@ -116,6 +125,15 @@ class SettingsController extends Controller
             'export_minify_html'        => 'nullable|in:0,1',
             'export_include_readme'     => 'nullable|in:0,1',
             'export_animusflow_min_ver' => 'nullable|string|max:20',
+
+            // Storage
+            'media_storage_disk'        => 'nullable|in:public,s3',
+            'aws_access_key_id'         => 'nullable|string|max:255',
+            'aws_secret_access_key'     => 'nullable|string|max:500',
+            'aws_default_region'        => 'nullable|string|max:100',
+            'aws_bucket'                => 'nullable|string|max:255',
+            'aws_endpoint'              => 'nullable|string|max:500',
+            'aws_url'                   => 'nullable|string|max:500',
         ]);
 
         $groups = [
@@ -147,6 +165,12 @@ class SettingsController extends Controller
             'export_minify_html'        => 'export',
             'export_include_readme'     => 'export',
             'export_animusflow_min_ver' => 'export',
+            'media_storage_disk'        => 'storage',
+            'aws_access_key_id'         => 'storage',
+            'aws_default_region'        => 'storage',
+            'aws_bucket'                => 'storage',
+            'aws_endpoint'              => 'storage',
+            'aws_url'                   => 'storage',
         ];
 
         foreach ($data as $key => $value) {
@@ -166,6 +190,12 @@ class SettingsController extends Controller
             if ($key === 'cms_api_key') {
                 if (!empty($value)) {
                     StudioSetting::set('cms_api_key', encrypt($value), 'cms');
+                }
+                continue;
+            }
+            if ($key === 'aws_secret_access_key') {
+                if (!empty($value)) {
+                    StudioSetting::set('aws_secret_access_key', encrypt($value), 'storage');
                 }
                 continue;
             }

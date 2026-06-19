@@ -2140,6 +2140,7 @@ const sectionCategories = [
   { id: 'conversion', icon: '🎯', label: 'Conversão'   },
   { id: 'layout',     icon: '📐', label: 'Layout'      },
   { id: 'ecommerce',  icon: '🛒', label: 'E-commerce'  },
+  { id: 'ai',         icon: '🤖', label: 'IA / Inteligente' },
 ];
 
 const sectionBlocks = [
@@ -2200,6 +2201,19 @@ const sectionBlocks = [
     variants: [{ id: 'grid', label: 'Grid' }, { id: 'carousel', label: 'Carrossel' }] },
   { id: 'cart',              cat: 'ecommerce',  icon: '🛒', label: 'Mini Carrinho',         hint: 'Widget de carrinho lateral' },
   { id: 'checkout',          cat: 'ecommerce',  icon: '💳', label: 'Checkout',             hint: 'Página de checkout integrada' },
+  // IA / Inteligente
+  { id: 'ai_chatbox',         cat: 'ai',         icon: '🤖', label: 'AI Chatbox',           hint: 'Janela de chat interativa alimentada por IA',
+    variants: [{ id: 'card', label: 'Card Integrado' }, { id: 'floating', label: 'Flutuante' }] },
+  { id: 'ai_recommendations', cat: 'ai',         icon: '✨', label: 'Recomendações IA',      hint: 'Recomendações dinâmicas de conteúdo/produtos baseadas em IA',
+    variants: [{ id: 'cards', label: 'Cards (Grid)' }, { id: 'list', label: 'Lista' }] },
+  { id: 'ai_summary',         cat: 'ai',         icon: '📄', label: 'Resumo com IA',         hint: 'Resumo inteligente do conteúdo da página gerado automaticamente',
+    variants: [{ id: 'card', label: 'Card' }, { id: 'inline', label: 'Minimalista' }] },
+  { id: 'ai_faq',             cat: 'ai',         icon: '❓', label: 'FAQ Inteligente',       hint: 'Lista de perguntas frequentes geradas e respondidas por IA',
+    variants: [{ id: 'accordion', label: 'Acordeão' }, { id: 'list', label: 'Lista' }] },
+  { id: 'ai_search',          cat: 'ai',         icon: '🔍', label: 'Pesquisa Semântica',     hint: 'Caixa de pesquisa inteligente e semântica com sugestões de IA',
+    variants: [{ id: 'bar', label: 'Barra' }, { id: 'minimal', label: 'Minimalista' }] },
+  { id: 'ai_personalized',    cat: 'ai',         icon: '👤', label: 'Conteúdo Personalizado', hint: 'Secção com conteúdo dinâmico baseado no segmento do visitante',
+    variants: [{ id: 'card', label: 'Card' }, { id: 'banner', label: 'Banner' }] },
 ];
 
 const filteredSectionBlocks = computed(() =>
