@@ -52,15 +52,33 @@ class ThemeController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $data = $request->validate([
-            'name'        => 'required|string|regex:/^[a-z0-9][a-z0-9\-_]{0,49}$/|unique:studio_themes,name',
             'label'       => 'required|string|max:200',
             'description' => 'nullable|string|max:1000',
             'version'     => 'nullable|string|max:20',
         ]);
 
-        $theme = StudioTheme::create($data);
+        $theme = StudioTheme::create([
+            'name'        => self::uniqueSlug($data['label']),
+            'label'       => $data['label'],
+            'description' => $data['description'] ?? null,
+            'version'     => ($data['version'] ?? '') ?: '1.0.0',
+            'status'      => 'draft',
+        ]);
 
-        return redirect()->route('themes.edit', $theme->uuid)->with('success', 'Theme created.');
+        return redirect()->route('themes.edit', $theme->uuid)
+            ->with('success', 'Tema criado — edita os detalhes abaixo.');
+    }
+
+    /** Generate a unique, schema-valid slug (name) from a human label. */
+    private static function uniqueSlug(string $label): string
+    {
+        $base = substr(\Illuminate\Support\Str::slug($label), 0, 40) ?: 'tema';
+        $slug = $base;
+        $i = 2;
+        while (StudioTheme::withTrashed()->where('name', $slug)->exists()) {
+            $slug = $base . '-' . $i++;
+        }
+        return $slug;
     }
 
     public function edit(string $uuid): Response

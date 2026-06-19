@@ -7,10 +7,10 @@
           <SparklesIcon class="w-4 h-4" />
           Inspiração por Categoria
         </button>
-        <Link href="/themes/create"
+        <button @click="openCreate"
           class="px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-semibold hover:opacity-90 transition-opacity">
           + {{ t('themes.new') }}
-        </Link>
+        </button>
       </div>
     </template>
 
@@ -64,11 +64,36 @@
           class="px-5 py-2.5 bg-gradient-to-r from-violet-500 to-indigo-500 text-white rounded-xl text-sm font-semibold flex items-center gap-2">
           <SparklesIcon class="w-4 h-4" /> Gerar por Categoria
         </button>
-        <Link href="/themes/create" class="px-5 py-2.5 bg-primary text-primary-foreground rounded-xl text-sm font-semibold">
+        <button @click="openCreate" class="px-5 py-2.5 bg-primary text-primary-foreground rounded-xl text-sm font-semibold">
           {{ t('themes.new') }}
-        </Link>
+        </button>
       </div>
     </div>
+
+    <!-- ── Create Modal ── -->
+    <Teleport to="body">
+      <Transition name="modal">
+        <div v-if="showCreateModal" class="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" @click="showCreateModal = false" />
+          <div class="relative bg-card border border-border rounded-2xl w-full max-w-md p-6 shadow-2xl">
+            <h3 class="font-semibold text-foreground mb-1">Novo Tema</h3>
+            <p class="text-xs text-muted-foreground mb-4">Dá um nome ao teu tema. Podes alterá-lo depois nos detalhes.</p>
+            <input ref="createInput" v-model="createForm.label" type="text"
+              placeholder="ex: Restaurante Moderno"
+              @keyup.enter="submitCreate"
+              class="w-full px-3 py-2 bg-muted border border-border rounded-lg text-sm focus:outline-none focus:border-primary" />
+            <p v-if="createForm.errors.label" class="text-xs text-destructive mt-1">{{ createForm.errors.label }}</p>
+            <div class="flex justify-end gap-2 mt-5">
+              <button @click="showCreateModal = false" class="px-4 py-2 bg-muted rounded-lg text-sm font-semibold">Cancelar</button>
+              <button @click="submitCreate" :disabled="createForm.processing || !createForm.label.trim()"
+                class="px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-semibold disabled:opacity-50">
+                {{ createForm.processing ? 'A criar…' : 'Criar tema' }}
+              </button>
+            </div>
+          </div>
+        </div>
+      </Transition>
+    </Teleport>
 
     <!-- ── Inspire Modal ── -->
     <Teleport to="body">
@@ -217,8 +242,8 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue';
-import { Link, router } from '@inertiajs/vue3';
+import { ref, computed, nextTick } from 'vue';
+import { Link, router, useForm } from '@inertiajs/vue3';
 import { useI18n } from 'vue-i18n';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import { PaletteIcon, SparklesIcon, XIcon, RefreshCwIcon } from 'lucide-vue-next';
@@ -227,6 +252,23 @@ import axios from 'axios';
 const { t } = useI18n();
 
 defineProps({ themes: { type: Array, default: () => [] } });
+
+// ── Create theme (name prompt) ──
+const showCreateModal = ref(false);
+const createInput     = ref(null);
+const createForm      = useForm({ label: '' });
+
+function openCreate() {
+  createForm.reset();
+  createForm.clearErrors();
+  showCreateModal.value = true;
+  nextTick(() => createInput.value?.focus());
+}
+
+function submitCreate() {
+  if (!createForm.label.trim() || createForm.processing) return;
+  createForm.post('/themes', { onSuccess: () => { showCreateModal.value = false; } });
+}
 
 // ── Categories & styles ──────────────────────────────────────────
 const categories = [

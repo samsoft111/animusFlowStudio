@@ -51,15 +51,34 @@ class PluginController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $data = $request->validate([
-            'name'        => 'required|string|regex:/^[a-z0-9][a-z0-9\-_]{0,49}$/|unique:studio_plugins,name',
             'label'       => 'required|string|max:200',
             'description' => 'nullable|string|max:1000',
             'version'     => 'nullable|string|max:20',
         ]);
 
-        $plugin = StudioPlugin::create($data);
+        $plugin = StudioPlugin::create([
+            'name'        => self::uniqueSlug($data['label']),
+            'label'       => $data['label'],
+            'description' => $data['description'] ?? null,
+            'version'     => ($data['version'] ?? '') ?: '1.0.0',
+            'status'      => 'draft',
+            'hooks'       => ['page.render'],
+        ]);
 
-        return redirect()->route('plugins.edit', $plugin->uuid)->with('success', 'Plugin created.');
+        return redirect()->route('plugins.edit', $plugin->uuid)
+            ->with('success', 'Plugin criado — edita os detalhes abaixo.');
+    }
+
+    /** Generate a unique, schema-valid slug (name) from a human label. */
+    private static function uniqueSlug(string $label): string
+    {
+        $base = substr(\Illuminate\Support\Str::slug($label), 0, 40) ?: 'plugin';
+        $slug = $base;
+        $i = 2;
+        while (StudioPlugin::withTrashed()->where('name', $slug)->exists()) {
+            $slug = $base . '-' . $i++;
+        }
+        return $slug;
     }
 
     public function edit(string $uuid): Response
