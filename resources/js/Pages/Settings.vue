@@ -67,7 +67,7 @@
             <div class="grid grid-cols-2 gap-4">
               <div>
                 <label class="field-label">{{ t('settings.provider') }}</label>
-                <select v-model="form.ai_provider" class="field-input">
+                <select v-model="form.ai_provider" class="field-input" @change="onProviderChange">
                   <option value="claude">Claude (Anthropic)</option>
                   <option value="openai">OpenAI</option>
                   <option value="gemini">Google Gemini</option>
@@ -75,7 +75,11 @@
               </div>
               <div>
                 <label class="field-label">{{ t('settings.model') }}</label>
-                <input v-model="form.ai_model" :placeholder="modelPlaceholder" class="field-input" />
+                <select v-model="form.ai_model" class="field-input">
+                  <option v-for="m in currentModels" :key="m.value" :value="m.value">
+                    {{ m.label }}
+                  </option>
+                </select>
               </div>
             </div>
 
@@ -86,9 +90,28 @@
                   ({{ props.settings.has_ai_key ? t('settings.key_update_hint') : t('settings.key_set_hint') }})
                 </span>
               </label>
-              <input v-model="form.ai_api_key" type="password"
-                :placeholder="props.settings.has_ai_key ? '••••••••••••••••' : 'sk-... / sk-ant-...'"
-                class="field-input" />
+              <div class="relative">
+                <input v-model="form.ai_api_key"
+                  :type="showApiKey ? 'text' : 'password'"
+                  :placeholder="props.settings.ai_api_key_masked || (props.settings.has_ai_key ? '••••••••••••••••' : 'AIza... / sk-...')"
+                  class="field-input pr-10" />
+                <button type="button" @click="showApiKey = !showApiKey"
+                  class="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                  :title="showApiKey ? 'Esconder chave' : 'Mostrar chave'">
+                  <!-- eye-off -->
+                  <svg v-if="showApiKey" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88L6.59 6.59m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+                  </svg>
+                  <!-- eye -->
+                  <svg v-else xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                  </svg>
+                </button>
+              </div>
+              <p v-if="props.settings.ai_api_key_masked" class="field-hint">
+                Chave actual: <span class="font-mono text-primary">{{ props.settings.ai_api_key_masked }}</span>
+              </p>
             </div>
           </div>
 
@@ -462,7 +485,7 @@ const form = useForm({
   studio_author_url:   props.settings.studio_author_url   ?? '',
   // AI
   ai_provider:             props.settings.ai_provider             ?? 'claude',
-  ai_model:                props.settings.ai_model                ?? '',
+  ai_model:                props.settings.ai_model                ?? 'gemini-2.0-flash',
   ai_api_key:              '',
   ai_temperature:          props.settings.ai_temperature          ?? '0.7',
   ai_max_tokens:           props.settings.ai_max_tokens           ?? '4096',
@@ -502,12 +525,42 @@ const form = useForm({
 
 function save() { form.put('/settings'); }
 
-// ── AI model placeholder ──
-const modelPlaceholder = computed(() => ({
-  claude: 'claude-sonnet-4-5',
-  openai: 'gpt-4o',
-  gemini: 'gemini-1.5-flash',
-}[form.ai_provider] ?? ''));
+// ── AI model placeholder (fallback for free text) ──
+const modelsByProvider = {
+  gemini: [
+    { value: 'gemini-2.0-flash',           label: 'Gemini 2.0 Flash (recomendado)' },
+    { value: 'gemini-2.0-flash-lite',       label: 'Gemini 2.0 Flash Lite (leve)' },
+    { value: 'gemini-2.5-flash-preview-05-20', label: 'Gemini 2.5 Flash Preview' },
+    { value: 'gemini-2.5-pro-preview-06-05',   label: 'Gemini 2.5 Pro Preview' },
+    { value: 'gemini-1.5-flash',            label: 'Gemini 1.5 Flash' },
+    { value: 'gemini-1.5-pro',              label: 'Gemini 1.5 Pro' },
+  ],
+  claude: [
+    { value: 'claude-sonnet-4-5',           label: 'Claude Sonnet 4.5 (recomendado)' },
+    { value: 'claude-opus-4-5',             label: 'Claude Opus 4.5' },
+    { value: 'claude-haiku-3-5',            label: 'Claude Haiku 3.5 (rápido)' },
+    { value: 'claude-3-5-sonnet-20241022',  label: 'Claude 3.5 Sonnet' },
+  ],
+  openai: [
+    { value: 'gpt-4o',                      label: 'GPT-4o (recomendado)' },
+    { value: 'gpt-4o-mini',                 label: 'GPT-4o Mini (rápido)' },
+    { value: 'gpt-4-turbo',                 label: 'GPT-4 Turbo' },
+    { value: 'o1-mini',                     label: 'o1-mini (raciocínio)' },
+  ],
+};
+
+const currentModels = computed(() => modelsByProvider[form.ai_provider] ?? []);
+
+function onProviderChange() {
+  // Auto-select the first recommended model for the new provider
+  const models = modelsByProvider[form.ai_provider];
+  if (models?.length && !models.find(m => m.value === form.ai_model)) {
+    form.ai_model = models[0].value;
+  }
+}
+
+// Show/hide API key
+const showApiKey = ref(false);
 
 // ── Theme sections multi-select ──
 const allSectionTypes = [

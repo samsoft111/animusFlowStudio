@@ -31,6 +31,7 @@ class SettingsController extends Controller
                 'ai_provider'            => $s('ai_provider', 'claude'),
                 'ai_model'               => $s('ai_model'),
                 'has_ai_key'             => !empty($s('ai_api_key')),
+                'ai_api_key_masked'      => static::maskKey($s('ai_api_key')),
                 'ai_temperature'         => $s('ai_temperature', '0.7'),
                 'ai_max_tokens'          => $s('ai_max_tokens', '4096'),
                 'ai_custom_instructions' => $s('ai_custom_instructions'),
@@ -204,5 +205,17 @@ class SettingsController extends Controller
         }
 
         return back()->with('success', 'Settings saved.');
+    }
+
+    /**
+     * Returns a masked version of a key for display purposes.
+     * Shows the first 6 chars and last 4, replaces the middle with •
+     */
+    private static function maskKey(string $raw): string
+    {
+        if (strlen($raw) < 12) {
+            return str_repeat('•', strlen($raw));
+        }
+        return substr($raw, 0, 6) . str_repeat('•', max(8, strlen($raw) - 10)) . substr($raw, -4);
     }
 }
