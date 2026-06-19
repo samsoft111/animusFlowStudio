@@ -3655,21 +3655,20 @@ async function sendChatMessage() {
     formData.append('_token', document.querySelector('meta[name="csrf-token"]')?.content ?? '');
 
     const res  = await fetch(`/themes/${props.theme.uuid}/chat`, { method: 'POST', body: formData });
-    const text = await res.text();
-    let data;
-    try {
-      data = JSON.parse(text);
-    } catch {
-      // Server returned HTML (e.g. session expired → redirect to login)
-      if (text.includes('<!DOCTYPE') || text.includes('<html')) {
-        chatMessages.value.push({ role: 'assistant', content: '⚠️ Sessão expirada. Por favor, <a href="/login" class="underline text-primary">faça login novamente</a> e tente outra vez.' });
-      } else {
-        chatMessages.value.push({ role: 'assistant', content: '⚠️ Resposta inválida do servidor: ' + text.slice(0, 200) });
-      }
+
+    // Se o servidor devolver HTML em vez de JSON (sessão expirada → redirect)
+    const contentType = res.headers.get('content-type') ?? '';
+    if (!contentType.includes('application/json')) {
+      chatMessages.value.push({
+        role: 'assistant',
+        content: '⚠️ Sessão expirada. Por favor, <a href="/login" class="underline text-primary font-semibold">faça login novamente</a> e tente outra vez.',
+      });
       chatLoading.value = false;
       chatScrollToBottom();
       return;
     }
+
+    const data = await res.json();
 
     if (!res.ok || data.error) {
       chatMessages.value.push({ role: 'assistant', content: '⚠️ ' + (data.error ?? 'Erro desconhecido.') });
