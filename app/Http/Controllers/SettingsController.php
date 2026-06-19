@@ -79,6 +79,25 @@ class SettingsController extends Controller
         ]);
     }
 
+    /**
+     * Reveal a saved encrypted key (on-demand, for display in the UI).
+     * Only whitelisted keys are allowed.
+     */
+    public function revealKey(Request $request): \Illuminate\Http\JsonResponse
+    {
+        $allowed = ['ai_api_key', 'animusflow_api_key', 'aws_secret_access_key'];
+        $key = $request->query('key', '');
+
+        if (!in_array($key, $allowed, true)) {
+            abort(403, 'Key not allowed.');
+        }
+
+        $encrypted = StudioSetting::get($key, '');
+        $value = static::decryptSafe($encrypted);
+
+        return response()->json(['value' => $value]);
+    }
+
     public function update(Request $request): RedirectResponse
     {
         $data = $request->validate([

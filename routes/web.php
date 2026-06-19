@@ -79,6 +79,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/plugins/{uuid}/install-in-cms', [PluginController::class, 'installInCms'])->name('plugins.install-cms');
 
     /* ── Settings ── */
-    Route::get('/settings', [SettingsController::class, 'index'])->name('settings.index');
-    Route::put('/settings', [SettingsController::class, 'update'])->name('settings.update');
+    Route::get('/settings',             [SettingsController::class, 'index'])->name('settings.index');
+    Route::put('/settings',             [SettingsController::class, 'update'])->name('settings.update');
+    Route::get('/settings/reveal-key',  [SettingsController::class, 'revealKey'])->name('settings.reveal-key');
 });
