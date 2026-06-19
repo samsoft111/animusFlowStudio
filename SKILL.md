@@ -76,7 +76,7 @@ Set-Location "C:\Users\samso\AntigravityWorkspace\animusFlow\core"
 & $php artisan storage:link
 ```
 
-**Test suite:** `& $php artisan test` → **209/209 passing, 563 assertions** (as of 2026-06-18)
+**Test suite:** `& $php artisan test` → **212/212 passing, 577 assertions** (as of 2026-06-19)
 
 ---
 
@@ -110,7 +110,7 @@ Set-Location "C:\Users\samso\AntigravityWorkspace\animusFlow\core"
 - **Block editor** — 59 block types; AI generation from prompt; overlay editor v2
 - **Theme system** — ThemeManager service; activate themes; AI generation + ZIP upload; AI-generated themes correctly use their own layout + sections
 - **Plugin system** — PluginManager service; enable/disable + AI generation + ZIP upload; `PluginManager::dispatch()` fires hooks on active plugins; `page.render` wired in PageRenderController; `content.publish` wired on publish
-- **AI providers** — store/remove Claude, OpenAI, Gemini API keys with encryption
+- **AI providers** — store/remove Claude, OpenAI, Gemini API keys with encryption; all three are fully wired in `AIEngine` for generation **and** chat (`callGemini` + `callGeminiChat` added)
 - **SEO** — SeoMetadata per page; AI auto-generated on publish (PageObserver) + manual override; rendered in `<head>` with OG/schema_json/keywords
 - **Navigation** — nav_links JSON setting; rendered in theme header
 - **Appearance** — 24 layout_* settings for header/content/footer/style; full visual configurator with card-based selectors, live preview iframe, brand color pickers, font family picker, shape selector, media background with overlay
@@ -123,7 +123,8 @@ Set-Location "C:\Users\samso\AntigravityWorkspace\animusFlow\core"
 - **API v1** — Sanctum auth + pages CRUD + blocks save + settings read/update; `POST /api/v1/events` visitor tracking (public, throttled 120/min)
 - **Billing (Stripe)** — full checkout flow, webhook handler (HMAC-verified), customer portal; `Subscription` model; Free ($0), Pro ($29/mo), Agency ($79/mo) plans; Stripe price IDs configurable via Settings; `POST /stripe/webhook` is intentionally outside CSRF middleware
 - **Plugin settings UI** — `AdminPluginSettingController` renders a dynamic settings form from the `settings[]` array declared in `animusflow-plugin.json`; field types: `text`, `textarea`, `color`, `select`, `toggle`; route: `GET /admin/plugins/{slug}/settings`
-- **Chatbot RAG** — `POST /api/v1/chat` (public, throttled 30 req/min); `chatbot_enabled` setting; `AIEngine::generateChatReply()` accepts site context; `UpdateChatbotContext` job rebuilds context on every page publish (stores as `chatbot_site_context` setting); sessions + messages stored in `chatbot_sessions` + `chatbot_messages` tables; admin page at `/admin/chatbot` shows all conversations; chatbot widget passes `visitor_id` cookie
+- **Chatbot RAG** — `POST /api/v1/chat` (public, throttled 30 req/min); `chatbot_enabled` setting; `AIEngine::generateChatReply()` accepts site context; `UpdateChatbotContext` job rebuilds context on every page publish; sessions + messages stored in `chatbot_sessions` + `chatbot_messages` tables; admin page at `/admin/chatbot` shows all conversations; chatbot widget passes `visitor_id` cookie
+  - **Vector DB RAG (Pinecone)** — `App\Services\PineconeService` (`isEnabled`, `generateEmbedding`, `upsert`, `query`, `deletePageVectors`); when `pinecone_enabled` is on (af-chatbot settings `pinecone_enabled` + `pinecone_api_key`), `UpdateChatbotContext` chunks page text (500/100 overlap) → embeds → upserts per page; `ChatController` embeds the query and pulls topK matches; **graceful fallback** to the legacy `chatbot_site_context` text summary when Pinecone is disabled or errors
 - **Analytics + AI Insights** — visitor tracking JS in default theme layout sends `pageview` events to `/api/v1/events` → stored in `visitor_events` table; `insights:generate` artisan command calls `AIEngine::generateInsights()`, stores in `ai_insights` table; scheduled weekly (Monday 08:00); dashboard shows 7-day pageview chart, top pages, latest AI insight, chatbot session count
 - **Personalisation Engine** — 4 built-in segments (`first_visit`, `returning`, `high_intent`, `mobile`) seeded in `personalisation_segments`; `VisitorSegmentResolver::resolve(visitorId)` classifies based on `visitor_events`; `PageRenderController` resolves segment from `af_vid` cookie and calls `ContentBlock::resolvedContent(segment)` to serve variants; admin variant UI at `/admin/pages/{uuid}/variants` (🎯 button in page edit topbar); `ContentVariant` stores per-block per-segment content overrides
 - **Marketplace** — `/admin/marketplace`; local JSON registry at `storage/app/marketplace.json` (12 plugins + themes); search + type filter; one-click install (downloads ZIP or creates stub for demo); AI Prompt-to-install (`POST /admin/marketplace/prompt-install`): user types "instala plugin de e-commerce" → `AIEngine::interpretMarketplacePrompt()` identifies best match → auto-download + install; keyword fallback when AI unavailable; sidebar link 🛒 Marketplace
@@ -155,14 +156,18 @@ Set-Location "C:\Users\samso\AntigravityWorkspace\animusFlow\core"
 **Total block types: 59** (theme.json v1.3.0)  
 Block categories in overlay.js: Hero & Layout, Content, Media, Social, Conversion, Specialized, 📱 Social Media, 🤖 AI Blocks, ⚡ Interactive, 🔌 Integrations
 
-### Not yet built — CMS Core (roadmap Phase 5+)
-- Multi-tenancy (stancl/tenancy) — single-tenant for now; permanent for self-hosted product
+### Recently built (Phase 5 — 2026-06-19)
+- **Multi-tenancy** — `IdentifyTenant` middleware (registered in `bootstrap/app.php`) switches the DB connection per tenant; `TenantManager` handles onboarding + provisioning; suspended tenants return 503; covered by `tests/Feature/Tenant/TenancyTest.php`
+- **Dynamic / cloud storage disk** — `TenantManager::configureStorageDisk()` applies the disk from the `media_storage_disk` setting (S3 / Cloudflare R2 / MinIO via `AWS_ENDPOINT` + `AWS_URL`); `AdminMediaController` uploads to the configured disk
+- **Vector DB RAG (Pinecone)** — see Chatbot RAG above
+- **Gemini chat provider** — `AIEngine::callGemini` + `callGeminiChat`
+- **Flutter media library** — `Api\V1\MediaController` (GET/POST/DELETE `/api/v1/media`) + Flutter `media_screen` / `home_shell`
+
+### Not yet built — CMS Core (roadmap Phase 6+)
 - AppyPay billing — Stripe is implemented; AppyPay is a future payment method
-- S3/R2 media storage (currently local public disk)
 - Headless API / Next.js rendering
-- Vector DB (pgvector/Pinecone) for proper RAG embeddings — currently uses full-text context summary (4000 chars)
 - Live marketplace sync from animus.kwantoe.com API (currently local JSON registry)
-- Flutter: media library, block editor, AI page generation, push notifications
+- Flutter: block editor, AI page generation, push notifications
 
 ---
 
@@ -397,7 +402,7 @@ Browser
                     ▼
            [Laravel 11 — Core]
                     │
-   ├── MySQL (single DB; multi-tenant DB-per-tenant future)
+   ├── MySQL (multi-tenant: DB-per-tenant via IdentifyTenant + TenantManager)
    ├── Redis (future — queues, cache)
    ├── AI Layer — Claude / OpenAI API via AIEngine service
    └── MCP Layer — HttpClient connects to any MCP Streamable HTTP server
@@ -415,10 +420,10 @@ For implementation details and file structure → see `references/implementation
 | Backend | Laravel 11 | PHP 8.2+, strict types |
 | Admin frontend | **Vue 3 + Inertia** | `resources/js/` — entry: `admin.js`; login page remains Blade |
 | Site rendering | Blade | Default theme in `resources/views/theme/default/` |
-| Database | MySQL (single DB) | Multi-tenant isolation is planned, not implemented |
+| Database | MySQL | Multi-tenant DB-per-tenant (IdentifyTenant middleware + TenantManager) |
 | AI engine | Claude API or OpenAI API | Via `App\Services\AIEngine` |
 | MCP client | `App\Services\MCP\HttpClient` | Streamable HTTP transport; stateless-first |
-| File storage | Local filesystem | S3/R2 is future |
+| File storage | Local / S3 / R2 / MinIO | Disk chosen via `media_storage_disk` setting (`TenantManager::configureStorageDisk`) |
 
 ### Code style
 - PHP 8.2+ with `declare(strict_types=1)` on every file
