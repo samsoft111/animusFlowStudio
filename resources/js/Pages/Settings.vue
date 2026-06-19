@@ -75,11 +75,20 @@
               </div>
               <div>
                 <label class="field-label">{{ t('settings.model') }}</label>
-                <select v-model="form.ai_model" class="field-input">
+                <select v-model="modelSelectValue" class="field-input" @change="onModelSelectChange">
                   <option v-for="m in currentModels" :key="m.value" :value="m.value">
                     {{ m.label }}
                   </option>
+                  <option value="__custom__">✏️ Outro (modelo personalizado)</option>
                 </select>
+                <!-- Campo livre para modelo personalizado -->
+                <div v-if="modelSelectValue === '__custom__'" class="mt-2">
+                  <input v-model="customModelInput"
+                    placeholder="ex: gemini-3.0-ultra, gpt-5, claude-opus-5..."
+                    class="field-input font-mono text-xs"
+                    @input="form.ai_model = customModelInput" />
+                  <p class="field-hint">Escreva o identificador exacto do modelo conforme a documentação do provider.</p>
+                </div>
               </div>
             </div>
 
@@ -551,11 +560,36 @@ const modelsByProvider = {
 
 const currentModels = computed(() => modelsByProvider[form.ai_provider] ?? []);
 
+// Detect if saved model is a known or custom one
+const isKnownModel = (model) =>
+  Object.values(modelsByProvider).flat().some(m => m.value === model);
+
+// The value driving the <select>: known model id OR '__custom__'
+const modelSelectValue = ref(
+  isKnownModel(form.ai_model) ? form.ai_model : (form.ai_model ? '__custom__' : currentModels.value[0]?.value ?? '')
+);
+// Free-text input for custom models
+const customModelInput = ref(
+  isKnownModel(form.ai_model) ? '' : (form.ai_model ?? '')
+);
+
+function onModelSelectChange() {
+  if (modelSelectValue.value === '__custom__') {
+    // Keep whatever was typed before or clear
+    form.ai_model = customModelInput.value;
+  } else {
+    form.ai_model = modelSelectValue.value;
+    customModelInput.value = '';
+  }
+}
+
 function onProviderChange() {
-  // Auto-select the first recommended model for the new provider
   const models = modelsByProvider[form.ai_provider];
-  if (models?.length && !models.find(m => m.value === form.ai_model)) {
+  if (models?.length) {
+    // Auto-select first recommended model when switching providers
+    modelSelectValue.value = models[0].value;
     form.ai_model = models[0].value;
+    customModelInput.value = '';
   }
 }
 
