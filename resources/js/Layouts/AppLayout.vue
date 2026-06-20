@@ -23,7 +23,7 @@
              alt="AnimusFlowStudio"
              class="h-8 w-auto object-contain transition-all" />
         <img v-else
-             :src="'/images/logos/animusflow-icon.svg'"
+             :src="'/images/logos/animusflowstudio-icon.png'"
              alt="Studio"
              class="h-7 w-auto object-contain transition-all" />
         <!-- Close button (mobile only) -->
