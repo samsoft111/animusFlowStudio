@@ -11,18 +11,23 @@
     <!-- Sidebar -->
     <aside
       :class="[
-        'fixed inset-y-0 left-0 z-40 w-64 flex-shrink-0 flex flex-col bg-sidebar text-sidebar-foreground border-r border-sidebar-border transition-transform duration-300',
-        'md:relative md:translate-x-0 md:w-60',
-        sidebarOpen ? 'translate-x-0' : '-translate-x-full'
+        'fixed inset-y-0 left-0 z-40 flex flex-col bg-sidebar text-sidebar-foreground border-r border-sidebar-border transition-all duration-300 ease-in-out shrink-0',
+        'w-64 md:relative md:translate-x-0',
+        sidebarOpen ? 'translate-x-0 md:w-60' : '-translate-x-full md:translate-x-0 md:w-16'
       ]"
     >
       <!-- Brand -->
-      <div class="px-5 py-4 border-b border-sidebar-border flex items-center justify-between">
-        <img :src="isDark ? '/images/logos/animusflowstudio-logo-white.png' : '/images/logos/animusflowstudio-logo.png'"
+      <div class="px-3 py-4 border-b border-sidebar-border flex items-center justify-between md:justify-center overflow-hidden h-14 shrink-0">
+        <img v-if="sidebarOpen"
+             :src="isDark ? '/images/logos/animusflowstudio-logo-white.png' : '/images/logos/animusflowstudio-logo.png'"
              alt="AnimusFlowStudio"
-             class="h-8 w-auto" />
+             class="h-8 w-auto object-contain transition-all" />
+        <img v-else
+             :src="'/images/logos/animusflow-icon.svg'"
+             alt="Studio"
+             class="h-7 w-auto object-contain transition-all" />
         <!-- Close button (mobile only) -->
-        <button @click="sidebarOpen = false"
+        <button v-if="sidebarOpen" @click="sidebarOpen = false"
           class="md:hidden p-1.5 rounded-lg text-sidebar-muted hover:text-sidebar-foreground hover:bg-sidebar-border/40 transition-colors">
           <XIcon class="w-4 h-4" />
         </button>
@@ -33,7 +38,7 @@
         <template v-for="(section, si) in navSections" :key="section.labelKey">
           <!-- Section Header -->
           <div :class="si === 0 ? 'mb-1' : 'mt-4 mb-1'">
-            <div
+            <div v-if="sidebarOpen"
               @click="toggleSection(section.labelKey)"
               class="px-3 pb-1 flex items-center justify-between cursor-pointer text-[10px] font-bold uppercase tracking-widest text-sidebar-muted hover:text-sidebar-foreground transition-colors group/sec select-none"
             >
@@ -43,20 +48,23 @@
                 :class="isSectionExpanded(section.labelKey) ? '' : '-rotate-90'"
               />
             </div>
+            <div v-else-if="si > 0" class="mx-1 mb-2 border-t border-sidebar-border" />
           </div>
 
           <!-- Section links -->
           <Transition name="expand">
-            <div v-show="isSectionExpanded(section.labelKey)" class="space-y-1 overflow-hidden">
+            <div v-show="!sidebarOpen || isSectionExpanded(section.labelKey)" class="space-y-1 overflow-hidden">
               <SidebarLink 
                 v-for="link in section.links"
                 :key="link.href"
                 :href="link.href"
                 :active="isActive(link.href.substring(1))"
+                :collapsed="!sidebarOpen"
+                :title="!sidebarOpen ? (link.label ?? t(link.labelKey)) : undefined"
                 @click="closeSidebarOnMobile"
               >
-                <component :is="link.icon" class="w-4 h-4" />
-                {{ link.label ?? t(link.labelKey) }}
+                <component :is="link.icon" class="w-4 h-4 shrink-0" />
+                <span v-if="sidebarOpen" class="truncate transition-all">{{ link.label ?? t(link.labelKey) }}</span>
               </SidebarLink>
             </div>
           </Transition>
@@ -64,9 +72,18 @@
       </nav>
 
       <!-- Version footer -->
-      <div class="px-5 py-3 border-t border-sidebar-border">
+      <div v-if="sidebarOpen" class="px-5 py-3 border-t border-sidebar-border">
         <p class="text-[11px] text-sidebar-muted">v1.0.0 — AnimusFlow v1+</p>
       </div>
+
+      <!-- Collapse toggle -->
+      <button
+        @click="toggleSidebar"
+        class="hidden md:flex items-center justify-center h-12 border-t border-sidebar-border hover:bg-sidebar-border/30 transition-colors"
+      >
+        <ChevronLeftIcon v-if="sidebarOpen" class="w-4 h-4 text-sidebar-muted" />
+        <ChevronRightIcon v-else class="w-4 h-4 text-sidebar-muted" />
+      </button>
     </aside>
 
     <!-- Main -->
@@ -160,7 +177,7 @@ import {
   LayoutDashboardIcon, PaletteIcon, PuzzleIcon,
   SettingsIcon, CheckCircleIcon, XCircleIcon,
   MoonIcon, SunIcon, GlobeIcon, LogOutIcon, InfoIcon, ZapIcon,
-  MenuIcon, XIcon, ChevronDownIcon,
+  MenuIcon, XIcon, ChevronDownIcon, ChevronLeftIcon, ChevronRightIcon,
 } from 'lucide-vue-next';
 
 defineProps({ title: { type: String, default: '' } });
@@ -168,7 +185,14 @@ defineProps({ title: { type: String, default: '' } });
 const { t, locale } = useI18n();
 
 const videoRef = ref(null);
-const sidebarOpen = ref(false);
+const sidebarOpen = ref(true);
+
+function toggleSidebar() {
+  sidebarOpen.value = !sidebarOpen.value;
+  if (window.innerWidth >= 768) {
+    localStorage.setItem('afs-sidebar-collapsed', (!sidebarOpen.value).toString());
+  }
+}
 
 const page  = usePage();
 const flash = computed(() => page.props.flash ?? {});
@@ -273,6 +297,11 @@ onMounted(() => {
     const saved = localStorage.getItem('afs-sidebar-sections');
     if (saved) {
       collapsedSections.value = JSON.parse(saved);
+    }
+    if (window.innerWidth >= 768) {
+      sidebarOpen.value = localStorage.getItem('afs-sidebar-collapsed') !== 'true';
+    } else {
+      sidebarOpen.value = false;
     }
   } catch (e) {
     console.error(e);
