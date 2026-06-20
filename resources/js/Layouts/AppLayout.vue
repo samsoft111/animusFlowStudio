@@ -30,36 +30,37 @@
 
       <!-- Nav -->
       <nav class="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
-        <SidebarLink href="/dashboard" :active="isActive('dashboard')" @click="closeSidebarOnMobile">
-          <LayoutDashboardIcon class="w-4 h-4" />
-          {{ t('nav.dashboard') }}
-        </SidebarLink>
-        <div class="px-3 pt-4 pb-1">
-          <p class="text-[10px] uppercase tracking-widest text-sidebar-muted font-semibold">{{ t('nav.create') }}</p>
-        </div>
-        <SidebarLink href="/themes" :active="isActive('themes')" @click="closeSidebarOnMobile">
-          <PaletteIcon class="w-4 h-4" />
-          {{ t('nav.themes') }}
-        </SidebarLink>
-        <SidebarLink href="/plugins" :active="isActive('plugins')" @click="closeSidebarOnMobile">
-          <PuzzleIcon class="w-4 h-4" />
-          {{ t('nav.plugins') }}
-        </SidebarLink>
-        <div class="px-3 pt-4 pb-1">
-          <p class="text-[10px] uppercase tracking-widest text-sidebar-muted font-semibold">{{ t('nav.system') }}</p>
-        </div>
-        <SidebarLink href="/recipes" :active="isActive('recipes')" @click="closeSidebarOnMobile">
-          <ZapIcon class="w-4 h-4" />
-          Receitas IA
-        </SidebarLink>
-        <SidebarLink href="/settings" :active="isActive('settings')" @click="closeSidebarOnMobile">
-          <SettingsIcon class="w-4 h-4" />
-          {{ t('nav.settings') }}
-        </SidebarLink>
-        <SidebarLink href="/about" :active="isActive('about')" @click="closeSidebarOnMobile">
-          <InfoIcon class="w-4 h-4" />
-          {{ t('nav.about') }}
-        </SidebarLink>
+        <template v-for="(section, si) in navSections" :key="section.labelKey">
+          <!-- Section Header -->
+          <div :class="si === 0 ? 'mb-1' : 'mt-4 mb-1'">
+            <div
+              @click="toggleSection(section.labelKey)"
+              class="px-3 pb-1 flex items-center justify-between cursor-pointer text-[10px] font-bold uppercase tracking-widest text-sidebar-muted hover:text-sidebar-foreground transition-colors group/sec select-none"
+            >
+              <span>{{ t(section.labelKey) }}</span>
+              <ChevronDownIcon
+                class="w-3.5 h-3.5 transition-transform duration-250 shrink-0 text-sidebar-muted/40 group-hover/sec:text-sidebar-foreground/60"
+                :class="isSectionExpanded(section.labelKey) ? '' : '-rotate-90'"
+              />
+            </div>
+          </div>
+
+          <!-- Section links -->
+          <Transition name="expand">
+            <div v-show="isSectionExpanded(section.labelKey)" class="space-y-1 overflow-hidden">
+              <SidebarLink 
+                v-for="link in section.links"
+                :key="link.href"
+                :href="link.href"
+                :active="isActive(link.href.substring(1))"
+                @click="closeSidebarOnMobile"
+              >
+                <component :is="link.icon" class="w-4 h-4" />
+                {{ link.label ?? t(link.labelKey) }}
+              </SidebarLink>
+            </div>
+          </Transition>
+        </template>
       </nav>
 
       <!-- Version footer -->
@@ -159,7 +160,7 @@ import {
   LayoutDashboardIcon, PaletteIcon, PuzzleIcon,
   SettingsIcon, CheckCircleIcon, XCircleIcon,
   MoonIcon, SunIcon, GlobeIcon, LogOutIcon, InfoIcon, ZapIcon,
-  MenuIcon, XIcon,
+  MenuIcon, XIcon, ChevronDownIcon,
 } from 'lucide-vue-next';
 
 defineProps({ title: { type: String, default: '' } });
@@ -225,10 +226,57 @@ function handleVisibilityChange() {
   }
 }
 
+const collapsedSections = ref({});
+
+function isSectionExpanded(key) {
+  return collapsedSections.value[key] !== true;
+}
+
+function toggleSection(key) {
+  collapsedSections.value[key] = !collapsedSections.value[key];
+  try {
+    localStorage.setItem('afs-sidebar-sections', JSON.stringify(collapsedSections.value));
+  } catch (e) {
+    console.error(e);
+  }
+}
+
+const navSections = [
+  {
+    labelKey: 'nav.general',
+    links: [
+      { href: '/dashboard', icon: LayoutDashboardIcon, labelKey: 'nav.dashboard' },
+    ],
+  },
+  {
+    labelKey: 'nav.create',
+    links: [
+      { href: '/themes',  icon: PaletteIcon, labelKey: 'nav.themes' },
+      { href: '/plugins', icon: PuzzleIcon,  labelKey: 'nav.plugins' },
+    ],
+  },
+  {
+    labelKey: 'nav.system',
+    links: [
+      { href: '/recipes',  icon: ZapIcon,      label: 'Receitas IA' },
+      { href: '/settings', icon: SettingsIcon, labelKey: 'nav.settings' },
+      { href: '/about',    icon: InfoIcon,     labelKey: 'nav.about' },
+    ],
+  },
+];
+
 onMounted(() => {
   document.addEventListener('click', closeLang);
   document.addEventListener('visibilitychange', handleVisibilityChange);
   window.addEventListener('resize', handleResize);
+  try {
+    const saved = localStorage.getItem('afs-sidebar-sections');
+    if (saved) {
+      collapsedSections.value = JSON.parse(saved);
+    }
+  } catch (e) {
+    console.error(e);
+  }
 });
 
 onBeforeUnmount(() => {
@@ -257,5 +305,18 @@ function logout() {
 .overlay-enter-from,
 .overlay-leave-to {
   opacity: 0;
+}
+
+/* Sidebar sections expand transition */
+.expand-enter-active,
+.expand-leave-active {
+  transition: all 0.25s ease-out;
+  max-height: 250px;
+}
+.expand-enter-from,
+.expand-leave-to {
+  max-height: 0;
+  opacity: 0;
+  overflow: hidden;
 }
 </style>
