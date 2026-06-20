@@ -1416,103 +1416,17 @@
       <!-- ════════════════════ TAB: Chat IA ════════════════════ -->
       <div v-show="activeTab === 'chat'" class="flex flex-col gap-4">
 
-        <!-- Header info -->
+        <!-- Header -->
         <div class="flex items-center gap-3 px-4 py-3 bg-violet-500/8 border border-violet-500/20 rounded-xl">
-          <span class="text-lg">💬</span>
+          <div class="w-8 h-8 rounded-lg bg-violet-500/15 flex items-center justify-center shrink-0 text-base">✦</div>
           <div class="flex-1 min-w-0">
             <p class="text-sm font-semibold text-foreground">Assistente de Design IA</p>
-            <p class="text-xs text-muted-foreground">Descreve o que queres em linguagem natural. Podes anexar imagens, vídeos, áudios e documentos para inspiração.</p>
+            <p class="text-xs text-muted-foreground">Descreve o que queres — eu trato do resto. Podes anexar imagens, vídeos ou documentos para inspiração.</p>
           </div>
-          <button @click="chatMessages = []; chatPendingUpdates = null"
+          <button v-if="chatMessages.length" @click="chatMessages = []"
             class="text-xs text-muted-foreground hover:text-foreground px-2 py-1 rounded-lg hover:bg-muted transition-colors shrink-0">
-            🗑 Limpar
+            Limpar
           </button>
-        </div>
-
-        <!-- ── Modo Construção (multi-agente) ── -->
-        <div class="bg-card border border-border rounded-xl overflow-hidden">
-          <button @click="buildOpen = !buildOpen"
-            class="w-full flex items-center gap-2 px-4 py-3 text-left hover:bg-muted/40 transition-colors">
-            <span class="text-lg">🏗️</span>
-            <div class="flex-1 min-w-0">
-              <p class="text-sm font-semibold text-foreground">Modo Construção — agentes especializados</p>
-              <p class="text-xs text-muted-foreground">Escreve um brief, gera um plano e deixa os agentes construir o tema por fases.</p>
-            </div>
-            <span class="text-muted-foreground text-xs">{{ buildOpen ? '▲' : '▼' }}</span>
-          </button>
-
-          <div v-show="buildOpen" class="px-4 pb-4 space-y-3 border-t border-border">
-            <div class="pt-3">
-              <label class="block text-xs font-semibold text-muted-foreground mb-1">Brief do tema</label>
-              <textarea v-model="buildBrief" rows="2"
-                placeholder="ex: Site moderno para restaurante italiano, tom acolhedor — hero, menu, galeria e contacto"
-                class="w-full px-3 py-2 bg-muted border border-border rounded-lg text-sm resize-none focus:outline-none focus:border-primary"></textarea>
-            </div>
-
-            <details class="text-xs">
-              <summary class="cursor-pointer text-muted-foreground select-none">+ Instruções / skill (passo-a-passo, opcional)</summary>
-              <textarea v-model="buildSkill" rows="3"
-                placeholder="Cola aqui o teu skill / passos. O Planeador segue-os ao escolher e ordenar os agentes."
-                class="w-full mt-2 px-3 py-2 bg-muted border border-border rounded-lg text-xs font-mono resize-none focus:outline-none focus:border-primary"></textarea>
-            </details>
-
-            <div class="flex flex-wrap items-center gap-2">
-              <button @click="generateAndBuild" :disabled="buildPlanning || buildRunning || !buildBrief.trim()"
-                class="px-3 py-1.5 bg-gradient-to-r from-violet-500 to-indigo-500 text-white rounded-lg text-xs font-semibold disabled:opacity-50 flex items-center gap-1.5">
-                <span v-if="(buildPlanning || buildRunning)" class="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
-                ⚡ Gerar e construir
-              </button>
-              <button @click="generatePlan" :disabled="buildPlanning || buildRunning || !buildBrief.trim()"
-                class="px-3 py-1.5 bg-muted text-foreground rounded-lg text-xs font-semibold disabled:opacity-50 flex items-center gap-1.5">
-                {{ buildPlanning ? 'A planear…' : '✦ Só gerar plano' }}
-              </button>
-              <button v-if="buildSteps.length" @click="runAll" :disabled="buildRunning"
-                class="px-3 py-1.5 bg-primary text-primary-foreground rounded-lg text-xs font-semibold disabled:opacity-50 flex items-center gap-1.5">
-                <span v-if="buildRunning" class="w-3 h-3 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin"></span>
-                {{ buildRunning ? 'A construir…' : '▶ Construir tudo' }}
-              </button>
-              <button v-if="buildSteps.some(s => s.status === 'done')" @click="verifyAndFix" :disabled="buildVerifying || buildRunning"
-                class="px-3 py-1.5 bg-success/15 text-success rounded-lg text-xs font-semibold disabled:opacity-50 flex items-center gap-1.5">
-                <span v-if="buildVerifying" class="w-3 h-3 border-2 border-success/30 border-t-success rounded-full animate-spin"></span>
-                {{ buildVerifying ? 'A verificar…' : '🔍 Verificar & corrigir' }}
-              </button>
-              <label class="flex items-center gap-1.5 text-[11px] text-muted-foreground cursor-pointer select-none ml-auto">
-                <input type="checkbox" v-model="buildContinueOnError" class="accent-primary" />
-                Continuar apesar de erros
-              </label>
-            </div>
-
-            <p v-if="buildDirection" class="text-xs text-muted-foreground italic bg-muted/50 rounded-lg px-3 py-2">{{ buildDirection }}</p>
-            <p v-if="buildVerifySummary" class="text-xs text-success bg-success/8 border border-success/20 rounded-lg px-3 py-2">🔍 {{ buildVerifySummary }}</p>
-
-            <div v-if="buildSteps.length" class="space-y-1.5">
-              <div v-for="(step, i) in buildSteps" :key="step.agent + '-' + i"
-                class="flex items-center gap-2 px-3 py-2 bg-muted/40 border border-border rounded-lg">
-                <span class="text-base shrink-0">{{ step.icon }}</span>
-                <div class="flex-1 min-w-0">
-                  <p class="text-xs font-semibold text-foreground">{{ step.label }}</p>
-                  <p v-if="step.reply" class="text-[10px] text-muted-foreground truncate">{{ step.reply }}</p>
-                </div>
-                <span class="shrink-0 w-4 text-center">
-                  <span v-if="step.status === 'running'" class="w-3 h-3 inline-block border-2 border-primary/30 border-t-primary rounded-full animate-spin"></span>
-                  <span v-else-if="step.status === 'done'" class="text-success text-xs">✓</span>
-                  <span v-else-if="step.status === 'error'" class="text-destructive text-xs" :title="step.reply">⚠</span>
-                  <button v-else @click="runAgent(step)" :disabled="buildRunning" class="text-muted-foreground hover:text-primary text-xs disabled:opacity-40">▶</button>
-                </span>
-                <button @click="buildSteps.splice(i, 1)" :disabled="buildRunning" class="text-muted-foreground hover:text-destructive text-xs disabled:opacity-40 shrink-0">✕</button>
-              </div>
-            </div>
-
-            <div>
-              <p class="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">Agentes disponíveis</p>
-              <div class="flex flex-wrap gap-1.5">
-                <button v-for="a in buildAgents" :key="a.id" @click="addAgent(a)" :title="a.hint"
-                  class="px-2 py-1 bg-muted border border-border rounded-md text-[11px] font-medium hover:border-primary hover:text-primary transition-colors">
-                  {{ a.icon }} {{ a.label }}
-                </button>
-              </div>
-            </div>
-          </div>
         </div>
 
         <!-- Chat messages -->
@@ -1522,9 +1436,9 @@
 
           <!-- Empty state -->
           <div v-if="chatMessages.length === 0" class="flex flex-col items-center justify-center py-16 gap-3 text-center">
-            <div class="w-14 h-14 rounded-2xl bg-violet-500/10 flex items-center justify-center text-2xl">💬</div>
-            <p class="text-sm font-semibold text-foreground">Começa uma conversa</p>
-            <p class="text-xs text-muted-foreground max-w-xs">Pergunta algo como "Torna o tema mais minimalista" ou "Sugere uma paleta para uma loja de luxo" e anexa imagens para inspiração.</p>
+            <div class="w-14 h-14 rounded-2xl bg-violet-500/10 flex items-center justify-center text-2xl">✦</div>
+            <p class="text-sm font-semibold text-foreground">O que vamos criar?</p>
+            <p class="text-xs text-muted-foreground max-w-xs">Pede um tema completo ("Cria um tema para um restaurante") ou um ajuste ("Torna mais minimalista"). Eu trato do resto — podes anexar imagens para inspiração.</p>
             <!-- Quick prompts -->
             <div class="flex flex-wrap gap-2 justify-center mt-2">
               <button v-for="qp in chatQuickPrompts" :key="qp"
@@ -1556,6 +1470,54 @@
               <div class="w-7 h-7 rounded-full bg-primary/20 flex items-center justify-center text-xs shrink-0 mb-0.5">👤</div>
             </div>
 
+            <!-- Build progress card (Modo Construção inline, estilo Claude) -->
+            <div v-else-if="msg.type === 'build'" class="flex gap-2 items-start">
+              <div class="w-7 h-7 rounded-full bg-violet-500/15 flex items-center justify-center text-xs shrink-0 mt-0.5">✦</div>
+              <div class="max-w-[88%] w-full">
+                <div class="bg-card border border-border rounded-2xl rounded-bl-sm px-4 py-3">
+                  <div class="flex items-center gap-2 mb-2">
+                    <span v-if="msg.building" class="w-3.5 h-3.5 border-2 border-violet-500/30 border-t-violet-500 rounded-full animate-spin"></span>
+                    <span v-else-if="msg.failed" class="text-destructive text-sm">⚠</span>
+                    <span v-else class="text-success text-sm">✓</span>
+                    <span class="text-sm font-semibold text-foreground">{{ msg.building ? 'A construir o teu tema…' : (msg.failed ? 'Construção interrompida' : 'Tema construído') }}</span>
+                  </div>
+
+                  <div class="space-y-0.5">
+                    <div v-for="(ph, pi) in msg.phases" :key="pi" class="flex items-center gap-2 py-1">
+                      <span class="shrink-0 w-4 text-center">
+                        <span v-if="ph.status === 'running'" class="w-3 h-3 inline-block border-2 border-violet-500/30 border-t-violet-500 rounded-full animate-spin"></span>
+                        <span v-else-if="ph.status === 'done'" class="text-success text-sm">✓</span>
+                        <span v-else-if="ph.status === 'error'" class="text-destructive text-sm">⚠</span>
+                        <span v-else class="text-muted-foreground/40 text-sm">○</span>
+                      </span>
+                      <span class="text-sm" :class="ph.status === 'running' ? 'text-foreground font-medium' : (ph.status === 'pending' ? 'text-muted-foreground/50' : 'text-muted-foreground')">{{ ph.label }}</span>
+                    </div>
+                  </div>
+
+                  <!-- Detalhes técnicos (opcional) -->
+                  <div v-if="msg.phases && msg.phases.some(p => p.reply)" class="border-t border-border mt-2 pt-2">
+                    <button @click="msg.showDetails = !msg.showDetails"
+                      class="text-[11px] text-muted-foreground hover:text-foreground flex items-center gap-1 transition-colors">
+                      <span class="text-[9px]">{{ msg.showDetails ? '▾' : '▸' }}</span> Ver detalhes técnicos
+                    </button>
+                    <div v-if="msg.showDetails" class="mt-2 space-y-1.5">
+                      <template v-for="(ph, pi) in msg.phases" :key="pi">
+                        <div v-if="ph.reply" class="text-[11px] leading-relaxed">
+                          <span class="font-semibold text-foreground">{{ ph.label }}:</span>
+                          <span class="text-muted-foreground"> {{ ph.reply }}</span>
+                        </div>
+                      </template>
+                    </div>
+                  </div>
+                </div>
+
+                <div v-if="!msg.building && !msg.failed" class="mt-1.5 flex items-center gap-1.5">
+                  <span class="text-[10px] text-success font-semibold flex items-center gap-1">✓ Aplicadas e guardadas automaticamente</span>
+                </div>
+                <p v-if="msg.error" class="mt-1.5 text-[10px] text-destructive">{{ msg.error }}</p>
+              </div>
+            </div>
+
             <!-- Assistant message -->
             <div v-else class="flex gap-2 items-end">
               <div class="w-7 h-7 rounded-full bg-violet-500/15 flex items-center justify-center text-xs shrink-0 mb-0.5">✦</div>
@@ -1578,7 +1540,7 @@
           </template>
 
           <!-- Typing indicator -->
-          <div v-if="chatLoading" class="flex gap-2 items-end">
+          <div v-if="chatLoading && !lastMsgBuilding" class="flex gap-2 items-end">
             <div class="w-7 h-7 rounded-full bg-violet-500/15 flex items-center justify-center text-xs shrink-0">✦</div>
             <div class="bg-card border border-border rounded-2xl rounded-bl-sm px-4 py-3 flex items-center gap-1">
               <span class="w-1.5 h-1.5 bg-muted-foreground rounded-full animate-bounce" style="animation-delay:0ms"></span>
@@ -3663,11 +3625,11 @@ const chatTextarea       = ref(null);
 const chatFileInput      = ref(null);
 
 const chatQuickPrompts = [
+  'Cria um tema para um restaurante italiano',
+  'Constrói um site moderno para uma clínica',
   'Torna o tema mais minimalista',
   'Sugere uma paleta de cores elegante',
-  'Adapta para uma loja de luxo',
   'Adiciona suporte a dark mode',
-  'Que secções devo usar para um portfolio?',
 ];
 
 function autoResizeChatTextarea() {
@@ -3678,22 +3640,23 @@ function autoResizeChatTextarea() {
 }
 
 // ── Modo Construção (multi-agente) ──────────────────────────────────────────
-const buildAgents    = computed(() => props.themeAgents ?? []);
-const buildOpen      = ref(false);
-const buildBrief     = ref('');
-const buildSkill     = ref('');
-const buildPlanning  = ref(false);
-const buildRunning   = ref(false);
-const buildDirection = ref('');
-const buildSteps     = ref([]); // [{agent, label, icon, status, reply}]
-const buildContinueOnError = ref(true);
-const buildVerifying       = ref(false);
-const buildVerifySummary   = ref('');
-const buildIssues          = ref([]);
-
-function agentMeta(id) {
-  return buildAgents.value.find(a => a.id === id) ?? { id, label: id, icon: '•', hint: '' };
+// Mapa de agentes técnicos → fases legíveis para o utilizador final.
+// O trabalho multi-agente corre em segundo plano; o utilizador só vê estas fases.
+const PHASE_META = {
+  design:     'A definir estilo, cores e tipografia',
+  intro:      'A criar a apresentação (hero, funcionalidades…)',
+  conversion: 'A criar as secções de negócio',
+  code:       'A afinar os detalhes visuais',
+};
+function phaseLabel(agentId) {
+  return PHASE_META[agentId] ?? 'A trabalhar no tema';
 }
+
+// Esconde o indicador genérico de "a escrever" quando há um cartão de construção activo
+const lastMsgBuilding = computed(() => {
+  const m = chatMessages.value[chatMessages.value.length - 1];
+  return !!(m && m.type === 'build' && m.building);
+});
 
 // Merge a fresh server theme into the local form (deep-merge — preserves untouched keys)
 function applyServerTheme(t) {
@@ -3716,141 +3679,111 @@ function applyServerTheme(t) {
 
 function csrf() { return document.querySelector('meta[name="csrf-token"]')?.content ?? ''; }
 
-async function generatePlan() {
-  if (!buildBrief.value.trim() || buildPlanning.value) return;
-  buildPlanning.value = true;
+// Executa um agente (segundo plano); actualiza a fase e devolve {ok, isFatal}
+async function runBuildAgent(phase, ctx) {
+  phase.status = 'running';
   try {
     const fd = new FormData();
-    fd.append('brief', buildBrief.value);
-    if (buildSkill.value.trim()) fd.append('skill', buildSkill.value);
-    fd.append('_token', csrf());
-    const res = await fetch(`/themes/${props.theme.uuid}/build/plan`, { method: 'POST', body: fd });
-    if (!(res.headers.get('content-type') ?? '').includes('application/json')) {
-      feedback.error = 'Sessão expirada — faz login novamente.'; return;
-    }
-    const data = await res.json();
-    if (!res.ok || data.error) { feedback.error = data.error ?? 'Erro ao planear.'; return; }
-    buildDirection.value = data.direction ?? '';
-    buildSteps.value = (data.agents ?? []).map(id => {
-      const m = agentMeta(id);
-      return { agent: id, label: m.label, icon: m.icon, status: 'pending', reply: '' };
-    });
-  } catch (e) {
-    feedback.error = e.message;
-  } finally {
-    buildPlanning.value = false;
-  }
-}
-
-function addAgent(a) {
-  buildSteps.value.push({ agent: a.id, label: a.label, icon: a.icon, status: 'pending', reply: '' });
-}
-
-async function runAgent(step, note = '') {
-  step.status = 'running';
-  step.reply = '';
-  try {
-    const fd = new FormData();
-    fd.append('agent', step.agent);
-    if (buildBrief.value.trim())     fd.append('brief', buildBrief.value);
-    if (buildDirection.value.trim()) fd.append('direction', buildDirection.value);
-    if (note)                        fd.append('note', note);
+    fd.append('agent', phase.agent);
+    if (ctx.brief)     fd.append('brief', ctx.brief);
+    if (ctx.direction) fd.append('direction', ctx.direction);
+    if (ctx.note)      fd.append('note', ctx.note);
     fd.append('_token', csrf());
     const res = await fetch(`/themes/${props.theme.uuid}/build/step`, { method: 'POST', body: fd });
     if (!(res.headers.get('content-type') ?? '').includes('application/json')) {
-      step.status = 'error'; step.reply = 'Sessão expirada.'; return { ok: false, isFatal: true };
+      phase.status = 'error'; return { ok: false, isFatal: true };
     }
     const data = await res.json();
     if (!res.ok || data.error) {
-      step.status = 'error';
-      step.reply = data.error ?? 'Erro.';
+      phase.status = 'error'; phase.reply = data.error ?? 'Erro.';
       return { ok: false, isFatal: !!data.is_fatal };
     }
     if (data.applied && data.theme) applyServerTheme(data.theme);
-    step.reply = data.reply ?? '';
-    step.status = 'done';
+    phase.reply = data.reply ?? '';
+    phase.status = 'done';
     return { ok: true, isFatal: false };
   } catch (e) {
-    step.status = 'error'; step.reply = e.message; return { ok: false, isFatal: false };
+    phase.status = 'error'; phase.reply = e.message;
+    return { ok: false, isFatal: false };
   }
 }
 
-async function runAll() {
-  if (buildRunning.value) return;
-  buildRunning.value = true;
-  const failed = [];
-  try {
-    for (const step of buildSteps.value) {
-      if (step.status === 'done') continue;
-      const res = await runAgent(step);
-      if (!res.ok) {
-        failed.push(step.label);
-        if (res.isFatal) {
-          feedback.error = `Erro fatal no sistema: ${step.reply}. A abortar a construção.`;
-          break; // Stop running remaining agents on fatal error
-        }
-        if (!buildContinueOnError.value) break; // stop on first error if opted
-      }
-    }
-    if (failed.length && !feedback.error) {
-      feedback.error = `Falharam ${failed.length} agente(s): ${failed.join(', ')}. Podes voltar a corrê-los individualmente.`;
-    } else if (!failed.length && buildSteps.value.every(s => s.status === 'done')) {
-      feedback.success = 'Construção concluída! Guarda para persistir.';
-    }
-  } finally {
-    buildRunning.value = false;
-  }
-}
+// Orquestra a construção completa do tema, mostrando fases legíveis na conversa.
+// Planear → agentes → rever & corrigir corre tudo em segundo plano (estilo Claude).
+async function runBuildFlow(brief, msgIdx) {
+  const msg = chatMessages.value[msgIdx];
+  msg.building = true; msg.failed = false; msg.error = '';
+  msg.phases = [{ agent: '__plan__', label: 'A planear a construção', status: 'running', reply: '' }];
+  chatScrollToBottom();
 
-// One-click: plan then build everything
-async function generateAndBuild() {
-  await generatePlan();
-  if (buildSteps.value.length) await runAll();
-}
+  let direction = '';
 
-// Verifier: review the theme, then auto-fix the flagged agents
-async function verifyAndFix() {
-  if (buildVerifying.value || buildRunning.value) return;
-  buildVerifying.value = true;
-  buildIssues.value = [];
-  buildVerifySummary.value = '';
+  // 1. Planear
   try {
     const fd = new FormData();
-    if (buildBrief.value.trim())     fd.append('brief', buildBrief.value);
-    if (buildDirection.value.trim()) fd.append('direction', buildDirection.value);
+    fd.append('brief', brief);
     fd.append('_token', csrf());
-    const res = await fetch(`/themes/${props.theme.uuid}/build/verify`, { method: 'POST', body: fd });
+    const res = await fetch(`/themes/${props.theme.uuid}/build/plan`, { method: 'POST', body: fd });
     if (!(res.headers.get('content-type') ?? '').includes('application/json')) {
-      feedback.error = 'Sessão expirada — faz login novamente.'; return;
+      msg.phases[0].status = 'error'; msg.building = false; msg.failed = true;
+      msg.error = 'Sessão expirada — faz login novamente.'; return;
     }
     const data = await res.json();
-    if (!res.ok || data.error) { feedback.error = data.error ?? 'Erro ao verificar.'; return; }
-    buildVerifySummary.value = data.summary ?? '';
-    buildIssues.value = data.issues ?? [];
-    if (!buildIssues.value.length) { feedback.success = '✓ Verificação: o tema está bom!'; return; }
+    if (!res.ok || data.error) {
+      msg.phases[0].status = 'error'; msg.building = false; msg.failed = true;
+      msg.error = data.error ?? 'Não consegui planear a construção.'; return;
+    }
+    direction = data.direction ?? '';
+    msg.phases[0].status = 'done';
+    msg.phases[0].reply = direction;
+    msg.phases.push(...(data.agents ?? []).map(id => ({ agent: id, label: phaseLabel(id), status: 'pending', reply: '' })));
+  } catch (e) {
+    msg.phases[0].status = 'error'; msg.building = false; msg.failed = true;
+    msg.error = e.message; return;
+  }
 
-    // Auto-fix: re-run each flagged agent with the verifier's note
-    buildRunning.value = true;
-    for (const iss of buildIssues.value) {
-      const m = agentMeta(iss.agent);
-      const step = { agent: iss.agent, label: '🔧 ' + m.label, icon: m.icon, status: 'pending', reply: '' };
-      buildSteps.value.push(step);
-      const resVal = await runAgent(step, iss.reason);
-      if (!resVal.ok && resVal.isFatal) {
-        feedback.error = `Erro fatal no sistema durante a correção: ${step.reply}. A abortar a correção.`;
-        break; // Stop running remaining corrections on fatal error
+  // 2. Executar agentes em sequência
+  const ctx = { brief, direction };
+  for (const phase of msg.phases) {
+    if (phase.agent === '__plan__' || phase.status === 'done') continue;
+    chatScrollToBottom();
+    const r = await runBuildAgent(phase, ctx);
+    if (!r.ok && r.isFatal) {
+      msg.building = false; msg.failed = true;
+      msg.error = 'A construção foi interrompida por um erro do sistema de IA. Tenta novamente daqui a pouco.';
+      return;
+    }
+  }
+
+  // 3. Rever a qualidade + corrigir automaticamente
+  const verifyPhase = { agent: '__verify__', label: 'A rever a qualidade', status: 'running', reply: '' };
+  msg.phases.push(verifyPhase);
+  chatScrollToBottom();
+  try {
+    const fd = new FormData();
+    fd.append('brief', brief);
+    if (direction) fd.append('direction', direction);
+    fd.append('_token', csrf());
+    const res = await fetch(`/themes/${props.theme.uuid}/build/verify`, { method: 'POST', body: fd });
+    const data = (res.headers.get('content-type') ?? '').includes('application/json') ? await res.json() : {};
+    if (res.ok && !data.error) {
+      verifyPhase.reply = data.summary ?? '';
+      for (const iss of (data.issues ?? [])) {
+        const fixPhase = { agent: iss.agent, label: 'A melhorar: ' + phaseLabel(iss.agent), status: 'running', reply: '' };
+        msg.phases.push(fixPhase);
+        chatScrollToBottom();
+        const r = await runBuildAgent(fixPhase, { brief, direction, note: iss.reason });
+        if (!r.ok && r.isFatal) break;
       }
     }
-    buildRunning.value = false;
-    if (!feedback.error) {
-      feedback.success = `Verificador corrigiu ${buildIssues.value.length} ponto(s). Guarda para persistir.`;
-    }
+    verifyPhase.status = 'done';
   } catch (e) {
-    feedback.error = e.message;
-  } finally {
-    buildVerifying.value = false;
-    buildRunning.value = false;
+    verifyPhase.status = 'done'; // não bloquear a construção por falha na revisão
   }
+
+  msg.building = false;
+  feedback.success = 'Tema construído e guardado!';
+  chatScrollToBottom();
 }
 
 function chatScrollToBottom() {
@@ -3947,15 +3880,22 @@ async function sendChatMessage() {
     if (!res.ok || data.error) {
       chatMessages.value.push({ role: 'assistant', content: '⚠️ ' + (data.error ?? 'Erro desconhecido.') });
     } else {
-      chatMessages.value.push({
-        role:    'assistant',
-        content: data.reply,
-        updates: data.updates ?? null,
-        applied: data.applied ?? false,
-      });
+      // Resposta textual do assistente (confirmação ou resposta a uma pergunta)
+      if (data.reply) {
+        chatMessages.value.push({
+          role:    'assistant',
+          content: data.reply,
+          updates: data.updates ?? null,
+          applied: data.applied ?? false,
+        });
+      }
+      if (data.applied && data.theme) applyServerTheme(data.theme);
 
-      if (data.applied && data.theme) {
-        applyServerTheme(data.theme);
+      // A IA decidiu que isto justifica uma construção completa → pipeline inline
+      if (data.build && data.build.brief) {
+        const buildIdx = chatMessages.value.length;
+        chatMessages.value.push({ role: 'assistant', type: 'build', phases: [], building: true });
+        await runBuildFlow(data.build.brief, buildIdx);
       }
     }
   } catch (e) {

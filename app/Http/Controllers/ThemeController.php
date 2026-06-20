@@ -467,6 +467,7 @@ class ThemeController extends Controller
             'updates' => $result['updates'] ?? null,
             'applied' => $applied,
             'theme'   => $applied ? $theme->fresh() : null,
+            'build'   => $result['build'] ?? null,
         ]);
     }
 

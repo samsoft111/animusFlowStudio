@@ -144,6 +144,32 @@ try {
 }
 
 // ────────────────────────────────────────────────────────────────
+//  3b. chat() detecta intenção de CONSTRUÇÃO COMPLETA → devolve build
+// ────────────────────────────────────────────────────────────────
+section('3b. chat() — IA decide construção completa (directiva build)');
+
+set_test_ai_key();
+fake_ai("Boa! Vou construir um tema para o teu restaurante.\n```build\n" . json_encode([
+    'brief' => 'Tema moderno e acolhedor para restaurante italiano com hero, menu, galeria e contacto',
+]) . "\n```");
+
+$labelBefore = StudioTheme::where('uuid', $theme->uuid)->first()->label;
+try {
+    $resp = $ctrl->chat(make_chat_request($theme->uuid, 'Cria um tema para o meu restaurante'), $theme->uuid);
+    $data = json_decode($resp->getContent(), true);
+    assert_true($resp->getStatusCode() === 200, 'chat() responde 200');
+    assert_true(isset($data['build']) && is_array($data['build']), 'Resposta inclui directiva build');
+    assert_true(!empty($data['build']['brief']) && str_contains($data['build']['brief'], 'restaurante'), 'build.brief extraído');
+    assert_true(array_key_exists('updates', $data) && $data['updates'] === null, 'Sem json_updates numa directiva build');
+    assert_true(!str_contains($data['reply'] ?? '', '```build'), 'Bloco build removido da reply');
+    assert_true(str_contains($data['reply'] ?? '', 'construir'), 'reply confirma a construção');
+    $labelAfter = StudioTheme::where('uuid', $theme->uuid)->first()->label;
+    assert_true($labelBefore === $labelAfter, 'chat() não altera o tema numa directiva build (pipeline é client-side)');
+} catch (\Throwable $e) {
+    fail('chat() build-directive lançou excepção', $e->getMessage());
+}
+
+// ────────────────────────────────────────────────────────────────
 //  4. chat() sem chave AI → 422 + is_fatal
 // ────────────────────────────────────────────────────────────────
 section('4. chat() sem chave AI → 422 + is_fatal (coerência com Modo Construção)');
@@ -198,6 +224,11 @@ section('7. ThemeController::chat — contrato');
 $ctrlFile = file_get_contents($root . '/app/Http/Controllers/ThemeController.php');
 assert_contains($ctrlFile, "'is_fatal' => self::isFatalAiError(\$e)", 'chat() devolve is_fatal em erro');
 assert_contains($ctrlFile, 'applyThemeUpdates($theme, $result', 'chat() aplica via applyThemeUpdates (deep-merge)');
+assert_contains($ctrlFile, "'build'   => \$result['build'] ?? null", 'chat() devolve a directiva build');
+
+$aiFile = file_get_contents($root . '/app/Services/AIEngine.php');
+assert_contains($aiFile, '```build', 'chatTheme deteta o bloco build');
+assert_contains($aiFile, "'build' => \$build", 'chatTheme devolve build no resultado');
 
 // ── Sumário ──
 echo "\n" . str_repeat('─', 55) . "\n";

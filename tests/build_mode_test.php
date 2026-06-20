@@ -457,23 +457,27 @@ assert_contains($controllerFile, "'themeAgents' => AIEngine::themeAgents()", 'ed
 // ────────────────────────────────────────────────────────────────
 //  12. Edit.vue — UI do Modo Construção
 // ────────────────────────────────────────────────────────────────
-section('12. Edit.vue — UI e lógica do Modo Construção');
+section('12. Edit.vue — Modo Construção inline na conversa (estilo Claude)');
 
 $vueFile = file_get_contents($root . '/resources/js/Pages/Themes/Edit.vue');
 
-assert_contains($vueFile, 'Modo Construção',  'Secção "Modo Construção" presente');
 assert_contains($vueFile, 'themeAgents:',     'Prop themeAgents declarada');
-assert_contains($vueFile, 'buildBrief',       'Estado buildBrief');
-assert_contains($vueFile, 'buildSteps',       'Estado buildSteps');
-assert_contains($vueFile, 'buildPlanning',    'Estado buildPlanning');
-assert_contains($vueFile, 'buildRunning',     'Estado buildRunning');
-assert_contains($vueFile, 'buildVerifying',   'Estado buildVerifying');
+assert_contains($vueFile, 'runBuildFlow',     'Orquestrador inline runBuildFlow');
+assert_contains($vueFile, 'runBuildAgent',    'Executor de agente runBuildAgent');
+assert_contains($vueFile, 'PHASE_META',       'Mapa de fases legíveis PHASE_META');
+assert_contains($vueFile, 'phaseLabel',       'Tradutor agente→fase phaseLabel');
 
-assert_contains($vueFile, 'generateAndBuild', 'Função generateAndBuild (um clique)');
-assert_contains($vueFile, 'generatePlan',     'Função generatePlan');
-assert_contains($vueFile, 'runAll',           'Função runAll');
-assert_contains($vueFile, 'verifyAndFix',     'Função verifyAndFix');
+// Fases legíveis para o utilizador final (sem jargão técnico)
+assert_contains($vueFile, 'A planear a construção',  'Fase legível: planear');
+assert_contains($vueFile, 'A rever a qualidade',     'Fase legível: rever');
+assert_contains($vueFile, 'A construir o teu tema',  'Estado legível: a construir');
+assert_contains($vueFile, 'A definir estilo, cores', 'Fase legível: design');
 
+// Cartão de construção inline + detalhes técnicos escondidos
+assert_contains($vueFile, "type === 'build'",        'Mensagem tipo build no stream');
+assert_contains($vueFile, 'Ver detalhes técnicos',   'Detalhe técnico recolhido (opcional)');
+
+// Pipeline reaproveita os endpoints existentes
 assert_contains($vueFile, '/build/plan',   'Chama endpoint build/plan');
 assert_contains($vueFile, '/build/step',   'Chama endpoint build/step');
 assert_contains($vueFile, '/build/verify', 'Chama endpoint build/verify');
@@ -481,6 +485,10 @@ assert_contains($vueFile, '/build/verify', 'Chama endpoint build/verify');
 // Abortamento inteligente em erro fatal
 assert_contains($vueFile, 'isFatal',     'Trata is_fatal do servidor');
 assert_contains($vueFile, 'is_fatal',    'Lê campo is_fatal da resposta');
+
+// O painel técnico antigo foi removido
+assert_true(!str_contains($vueFile, 'Modo Construção — agentes especializados'), 'Painel técnico antigo removido');
+assert_true(!str_contains($vueFile, 'Continuar apesar de erros'), 'Checkbox técnico removido');
 
 // ────────────────────────────────────────────────────────────────
 //  13. Build Vite

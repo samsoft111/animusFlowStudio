@@ -527,6 +527,11 @@ INSTRUÇÕES:
 3. Se analisares imagens, vídeos ou documentos, extrai cores, estilos e layouts para sugerir mudanças concretas.
 4. Se não há alterações, não incluis o bloco json_updates.
 5. Sê proactivo: sugere melhorias mesmo quando o utilizador faz perguntas gerais.
+6. Se o utilizador pedir para CRIAR UM TEMA COMPLETO de raiz ou uma construção grande (várias secções — ex: "cria um tema para um restaurante", "constrói um site para a minha clínica"), NÃO tentes fazer tudo nesta resposta. Em vez disso responde com UMA frase curta a confirmar que vais construir o tema e inclui um bloco:
+   ```build
+   { "brief": "resumo claro do que construir, em 1-2 frases" }
+   ```
+   Neste caso NÃO incluas o bloco json_updates.
 SYSTEM;
 
         $provider = StudioSetting::get('ai_provider', 'claude');
@@ -553,11 +558,22 @@ SYSTEM;
             }
         }
 
-        // Remove json_updates from visible reply
+        // Detect a full-build directive — the AI decides when a request warrants
+        // the multi-agent pipeline instead of an inline edit.
+        $build = null;
+        if (preg_match('/```build\s*([\s\S]*?)```/m', $raw, $bm)) {
+            $parsed = json_decode(trim($bm[1]), true);
+            if (is_array($parsed) && !empty($parsed['brief'])) {
+                $build = ['brief' => (string) $parsed['brief']];
+            }
+        }
+
+        // Remove both control blocks from the visible reply
         $reply = preg_replace('/```json_updates\s*[\s\S]*?```/m', '', $raw);
+        $reply = preg_replace('/```build\s*[\s\S]*?```/m', '', $reply);
         $reply = trim($reply ?? $raw);
 
-        return ['reply' => $reply, 'updates' => $updates];
+        return ['reply' => $reply, 'updates' => $updates, 'build' => $build];
     }
 
     // ──────────────────────────────────────────────
