@@ -61,10 +61,6 @@
       <div class="bg-card border border-border rounded-2xl p-6">
         <div class="flex items-center justify-between mb-4">
           <h2 class="font-semibold text-foreground">{{ t('dashboard.recent_themes') }}</h2>
-          <Link href="/themes/create" class="flex items-center gap-1 px-3 py-1.5 bg-primary/10 hover:bg-primary text-primary hover:text-white rounded-lg text-xs font-semibold transition-all duration-300 cursor-pointer">
-            <PlusIcon class="w-3.5 h-3.5" />
-            {{ t('common.new') }}
-          </Link>
         </div>
         <div v-if="recentThemes.length" class="space-y-2">
           <div v-for="th in recentThemes" :key="th.uuid"
@@ -84,10 +80,6 @@
       <div class="bg-card border border-border rounded-2xl p-6">
         <div class="flex items-center justify-between mb-4">
           <h2 class="font-semibold text-foreground">{{ t('dashboard.recent_plugins') }}</h2>
-          <Link href="/plugins/create" class="flex items-center gap-1 px-3 py-1.5 bg-indigo-500/10 hover:bg-indigo-500 text-indigo-500 hover:text-white rounded-lg text-xs font-semibold transition-all duration-300 cursor-pointer">
-            <PlusIcon class="w-3.5 h-3.5" />
-            {{ t('common.new') }}
-          </Link>
         </div>
         <div v-if="recentPlugins.length" class="space-y-2">
           <div v-for="pl in recentPlugins" :key="pl.uuid"
@@ -111,7 +103,7 @@ import { Link } from '@inertiajs/vue3';
 import { useI18n } from 'vue-i18n';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import StatCard from '@/Components/StatCard.vue';
-import { PaletteIcon, PuzzleIcon, ArrowRightIcon, PlusIcon } from 'lucide-vue-next';
+import { PaletteIcon, PuzzleIcon, ArrowRightIcon } from 'lucide-vue-next';
 
 const { t } = useI18n();
 
