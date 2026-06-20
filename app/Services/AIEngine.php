@@ -569,9 +569,9 @@ SYSTEM;
     }
 
     /** Run ONE specialised plugin agent. Returns ['agent','reply','updates']. */
-    public static function runPluginAgent(string $agentId, string $brief, string $direction, string $currentPluginJson, array $attachments = [], string $note = ''): array
+    public static function runPluginAgent(string $agentId, string $brief, string $direction, string $currentPluginJson, array $attachments = [], string $note = '', string $skill = ''): array
     {
-        $system = self::pluginAgentSystem($agentId, $brief, $direction, $currentPluginJson);
+        $system = self::pluginAgentSystem($agentId, $brief, $direction, $currentPluginJson, $skill);
 
         $userMsg = 'Gera agora a tua parte do plugin.';
         if (trim($note) !== '') {
@@ -594,10 +594,13 @@ SYSTEM;
     }
 
     /** Verifier: review the plugin against the brief; returns ['summary','issues']. */
-    public static function verifyPlugin(string $brief, string $direction, string $pluginJson): array
+    public static function verifyPlugin(string $brief, string $direction, string $pluginJson, string $skill = ''): array
     {
         $ids  = array_column(self::pluginAgents(), 'id');
         $list = implode(', ', $ids);
+        $skillBlock = trim($skill) !== ''
+            ? "INSTRUÇÕES/SKILL DO UTILIZADOR (o plugin TEM de cumprir isto):\n{$skill}\n\n"
+            : '';
 
         $system = <<<SYSTEM
 Você é o agente VERIFICADOR de qualidade de plugins do AnimusFlow CMS.
@@ -605,7 +608,7 @@ Analisa o estado actual do plugin face ao brief e identifica partes em falta, fr
 
 AGENTES QUE PODEM CORRIGIR (ids válidos): {$list}
 
-BRIEF: {$brief}
+{$skillBlock}BRIEF: {$brief}
 DIRECÇÃO: {$direction}
 ESTADO ACTUAL DO PLUGIN: {$pluginJson}
 
@@ -639,13 +642,17 @@ SYSTEM;
     }
 
     /** Build the focused system prompt for one plugin agent. */
-    private static function pluginAgentSystem(string $agentId, string $brief, string $direction, string $pluginJson): string
+    private static function pluginAgentSystem(string $agentId, string $brief, string $direction, string $pluginJson, string $skill = ''): string
     {
+        $skillBlock = trim($skill) !== ''
+            ? "INSTRUÇÕES/SKILL DO UTILIZADOR (segue à risca, têm prioridade sobre o brief):\n{$skill}\n\n"
+            : '';
+
         $base = <<<BASE
 Você é um agente especializado de construção de plugins para o AnimusFlow CMS.
 Responde em português (PT-PT). Produzes UMA frase curta de resumo seguida de um bloco json_updates APENAS com os campos da tua responsabilidade — nada mais.
 
-BRIEF: {$brief}
+{$skillBlock}BRIEF: {$brief}
 DIRECÇÃO: {$direction}
 PLUGIN ACTUAL (resumo): {$pluginJson}
 

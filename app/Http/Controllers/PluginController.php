@@ -338,7 +338,7 @@ class PluginController extends Controller
 
         $data = $request->validate([
             'brief' => 'required|string|min:1|max:4000',
-            'skill' => 'nullable|string|max:8000',
+            'skill' => 'nullable|string|max:60000',
         ]);
 
         $snapshot = null;
@@ -377,6 +377,7 @@ class PluginController extends Controller
             'brief'     => 'nullable|string|max:4000',
             'direction' => 'nullable|string|max:2000',
             'note'      => 'nullable|string|max:1000',
+            'skill'     => 'nullable|string|max:60000',
         ]);
 
         $pluginData = $plugin->toArray();
@@ -390,6 +391,7 @@ class PluginController extends Controller
                 $pluginJson,
                 [],
                 $data['note'] ?? '',
+                $data['skill'] ?? '',
             );
         } catch (\Throwable $e) {
             return response()->json(['error' => $e->getMessage(), 'is_fatal' => self::isFatalAiError($e)], 422);
@@ -414,12 +416,13 @@ class PluginController extends Controller
         $data = $request->validate([
             'brief'     => 'nullable|string|max:4000',
             'direction' => 'nullable|string|max:2000',
+            'skill'     => 'nullable|string|max:60000',
         ]);
 
         $pluginJson = json_encode($plugin->toArray(), JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
 
         try {
-            $result = AIEngine::verifyPlugin($data['brief'] ?? '', $data['direction'] ?? '', $pluginJson);
+            $result = AIEngine::verifyPlugin($data['brief'] ?? '', $data['direction'] ?? '', $pluginJson, $data['skill'] ?? '');
         } catch (\Throwable $e) {
             return response()->json(['error' => $e->getMessage(), 'is_fatal' => self::isFatalAiError($e)], 422);
         }

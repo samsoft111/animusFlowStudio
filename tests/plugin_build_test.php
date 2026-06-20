@@ -286,6 +286,33 @@ assert_contains($vue, '/build/step',   'Chama endpoint build/step');
 assert_contains($vue, '/build/verify', 'Chama endpoint build/verify');
 assert_true(!str_contains($vue, '>Guardar agora<'), 'Botão "Guardar agora" contraditório removido');
 
+// ────────────────────────────────────────────────────────────────
+section('12. Skill — upload + propagação ao pipeline de plugin');
+
+// UI
+assert_contains($vue, 'loadSkillFile',  'Função loadSkillFile');
+assert_contains($vue, 'buildSkill',     'Estado buildSkill');
+assert_contains($vue, 'skillFileInput', 'Input de ficheiro do skill');
+assert_contains($vue, "fd.append('skill'", 'Envia skill ao pipeline');
+// Backend aceita skill
+assert_contains($aiFile, 'string $skill = \'\'): string', 'pluginAgentSystem aceita skill');
+assert_contains($ctrlFile, "\$data['skill'] ?? ''", 'buildStep passa skill ao agente');
+
+// Runtime: o skill chega ao system prompt do agente de plugin
+set_test_ai_key();
+fake_ai("ok\n```json_updates\n{}\n```");
+$skillText = 'REGRA-PLUGIN-SKILL-7K2: usar sempre nonce nos forms';
+try {
+    AIEngine::runPluginAgent('logic', 'brief', 'dir', '{}', [], '', $skillText);
+    $rec  = Http::recorded();
+    $last = $rec[count($rec) - 1] ?? null;
+    $body = $last ? json_decode($last[0]->body(), true) : [];
+    $sys  = $body['system'] ?? '';
+    assert_true(str_contains($sys, $skillText), 'Skill aparece no system prompt do agente de plugin');
+} catch (\Throwable $e) {
+    fail('runPluginAgent com skill lançou excepção', $e->getMessage());
+}
+
 // ── Sumário ──
 echo "\n" . str_repeat('─', 55) . "\n";
 $total = $passed + $failed;
