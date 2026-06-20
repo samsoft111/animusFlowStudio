@@ -1,30 +1,32 @@
 <template>
   <AppLayout :title="theme.label">
     <template #actions>
-      <a :href="`/preview/theme/${theme.uuid}`" target="_blank"
-        class="px-3 py-2 bg-muted text-foreground rounded-lg text-sm font-semibold hover:bg-border transition-colors flex items-center gap-1.5">
-        <EyeIcon class="w-3.5 h-3.5" /> {{ t('themes.preview') }}
-      </a>
-      <a :href="`/themes/${theme.uuid}/export`"
-        class="px-3 py-2 bg-muted text-foreground rounded-lg text-sm font-semibold hover:bg-border transition-colors flex items-center gap-1.5">
-        <DownloadIcon class="w-3.5 h-3.5" /> {{ t('common.export') }}
-      </a>
-      <button @click="showPromptModal = true"
-        class="px-3 py-2 bg-violet-500/10 text-violet-600 dark:text-violet-400 border border-violet-500/20 rounded-lg text-sm font-semibold hover:bg-violet-500/20 transition-colors flex items-center gap-1.5">
-        <SparklesIcon class="w-3.5 h-3.5" /> Exportar Prompt
-      </button>
-      <button @click="installInCms" :disabled="installingCms"
-        class="px-3 py-2 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 rounded-lg text-sm font-semibold hover:bg-emerald-500/20 transition-colors flex items-center gap-1.5 disabled:opacity-50">
-        <template v-if="installingCms"><span class="w-3.5 h-3.5 border-2 border-emerald-500/30 border-t-emerald-500 rounded-full animate-spin inline-block"></span></template>
-        <template v-else>⚡</template>
-        {{ installingCms ? 'A instalar…' : 'Instalar no CMS' }}
-      </button>
-      <button @click="publishTheme" :disabled="publishing"
-        class="px-3 py-2 rounded-lg text-sm font-semibold transition-colors flex items-center gap-1.5 disabled:opacity-50"
-        :class="theme.is_published ? 'bg-success/10 text-success hover:bg-success/20' : 'bg-primary text-primary-foreground hover:opacity-90'">
-        <UploadIcon class="w-3.5 h-3.5" />
-        {{ publishing ? t('common.loading') : (theme.is_published ? t('themes.republish') : t('themes.publish')) }}
-      </button>
+      <div class="flex flex-wrap gap-1 sm:gap-1.5 justify-end items-center">
+        <a :href="`/preview/theme/${theme.uuid}`" target="_blank"
+          class="px-2 sm:px-3 py-2 bg-muted text-foreground rounded-lg text-xs sm:text-sm font-semibold hover:bg-border transition-colors flex items-center gap-1 sm:gap-1.5">
+          <EyeIcon class="w-3.5 h-3.5 shrink-0" /> <span class="hidden sm:inline">{{ t('themes.preview') }}</span>
+        </a>
+        <a :href="`/themes/${theme.uuid}/export`"
+          class="px-2 sm:px-3 py-2 bg-muted text-foreground rounded-lg text-xs sm:text-sm font-semibold hover:bg-border transition-colors flex items-center gap-1 sm:gap-1.5">
+          <DownloadIcon class="w-3.5 h-3.5 shrink-0" /> <span class="hidden sm:inline">{{ t('common.export') }}</span>
+        </a>
+        <button @click="showPromptModal = true"
+          class="px-2 sm:px-3 py-2 bg-violet-500/10 text-violet-600 dark:text-violet-400 border border-violet-500/20 rounded-lg text-xs sm:text-sm font-semibold hover:bg-violet-500/20 transition-colors flex items-center gap-1 sm:gap-1.5">
+          <SparklesIcon class="w-3.5 h-3.5 shrink-0" /> <span class="hidden md:inline">Exportar Prompt</span>
+        </button>
+        <button @click="installInCms" :disabled="installingCms"
+          class="px-2 sm:px-3 py-2 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 rounded-lg text-xs sm:text-sm font-semibold hover:bg-emerald-500/20 transition-colors flex items-center gap-1 sm:gap-1.5 disabled:opacity-50">
+          <template v-if="installingCms"><span class="w-3.5 h-3.5 border-2 border-emerald-500/30 border-t-emerald-500 rounded-full animate-spin inline-block"></span></template>
+          <template v-else>⚡</template>
+          <span class="hidden md:inline">{{ installingCms ? 'A instalar…' : 'Instalar no CMS' }}</span>
+        </button>
+        <button @click="publishTheme" :disabled="publishing"
+          class="px-2 sm:px-3 py-2 rounded-lg text-xs sm:text-sm font-semibold transition-colors flex items-center gap-1 sm:gap-1.5 disabled:opacity-50"
+          :class="theme.is_published ? 'bg-success/10 text-success hover:bg-success/20' : 'bg-primary text-primary-foreground hover:opacity-90'">
+          <UploadIcon class="w-3.5 h-3.5 shrink-0" />
+          <span class="hidden sm:inline">{{ publishing ? t('common.loading') : (theme.is_published ? t('themes.republish') : t('themes.publish')) }}</span>
+        </button>
+      </div>
     </template>
 
     <!-- EDIT TABS -->
@@ -46,9 +48,9 @@
       <div class="bg-card border border-border rounded-2xl overflow-hidden">
 
         <!-- Cabeçalho do stepper -->
-        <div class="flex items-center justify-between px-5 py-3 border-b border-border">
-          <div class="flex items-center gap-2.5">
-            <div class="w-6 h-6 rounded-full bg-primary flex items-center justify-center">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between px-4 sm:px-5 py-3 border-b border-border gap-2">
+          <div class="flex items-center gap-2">
+            <div class="w-6 h-6 rounded-full bg-primary flex items-center justify-center shrink-0">
               <span class="text-[10px] font-bold text-primary-foreground">{{ completedSteps }}/{{ workflowSteps.length }}</span>
             </div>
             <span class="text-sm font-semibold text-foreground">Progresso do tema</span>
@@ -69,45 +71,50 @@
         </div>
 
         <!-- Passos horizontais -->
-        <div class="flex overflow-x-auto px-4 py-3 gap-0 scrollbar-hide">
-          <div v-for="(step, idx) in workflowSteps" :key="step.tabId"
-            class="flex items-center shrink-0">
+        <div class="relative">
+          <!-- Gradient fade direita (indica mais conteúdo) -->
+          <div class="pointer-events-none absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-card to-transparent z-10"></div>
+          <div class="flex overflow-x-auto px-4 py-3 gap-0"
+               style="-webkit-overflow-scrolling: touch; scrollbar-width: none; -ms-overflow-style: none;">
+            <div v-for="(step, idx) in workflowSteps" :key="step.tabId"
+              class="flex items-center shrink-0">
 
-            <!-- Passo -->
-            <button @click="activeTab = step.tabId"
-              class="flex flex-col items-center gap-1 px-3 py-1 rounded-xl transition-all group relative"
-              :class="activeTab === step.tabId
-                ? 'bg-primary/10'
-                : 'hover:bg-muted'">
+              <!-- Passo -->
+              <button @click="activeTab = step.tabId"
+                class="flex flex-col items-center gap-1 px-2 sm:px-3 py-1 rounded-xl transition-all group relative"
+                :class="activeTab === step.tabId
+                  ? 'bg-primary/10'
+                  : 'hover:bg-muted'">
 
-              <!-- Círculo do passo -->
-              <div class="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold transition-all border-2"
-                :class="step.done
-                  ? 'bg-primary border-primary text-primary-foreground'
-                  : activeTab === step.tabId
-                    ? 'bg-card border-primary text-primary'
-                    : 'bg-muted border-border text-muted-foreground group-hover:border-primary/50'">
-                <span v-if="step.done">✓</span>
-                <span v-else>{{ idx + 1 }}</span>
+                <!-- Círculo do passo -->
+                <div class="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold transition-all border-2"
+                  :class="step.done
+                    ? 'bg-primary border-primary text-primary-foreground'
+                    : activeTab === step.tabId
+                      ? 'bg-card border-primary text-primary'
+                      : 'bg-muted border-border text-muted-foreground group-hover:border-primary/50'">
+                  <span v-if="step.done">✓</span>
+                  <span v-else>{{ idx + 1 }}</span>
+                </div>
+
+                <!-- Label -->
+                <span class="text-[9px] font-semibold whitespace-nowrap transition-colors"
+                  :class="activeTab === step.tabId
+                    ? 'text-primary'
+                    : step.done
+                      ? 'text-foreground'
+                      : 'text-muted-foreground group-hover:text-foreground'">
+                  {{ step.icon }} {{ step.label }}
+                </span>
+              </button>
+
+              <!-- Linha conectora -->
+              <div v-if="idx < workflowSteps.length - 1"
+                class="w-4 sm:w-6 h-0.5 shrink-0 transition-colors"
+                :class="step.done ? 'bg-primary' : 'bg-border'">
               </div>
 
-              <!-- Label -->
-              <span class="text-[9px] font-semibold whitespace-nowrap transition-colors"
-                :class="activeTab === step.tabId
-                  ? 'text-primary'
-                  : step.done
-                    ? 'text-foreground'
-                    : 'text-muted-foreground group-hover:text-foreground'">
-                {{ step.icon }} {{ step.label }}
-              </span>
-            </button>
-
-            <!-- Linha conectora -->
-            <div v-if="idx < workflowSteps.length - 1"
-              class="w-6 h-0.5 shrink-0 transition-colors"
-              :class="step.done ? 'bg-primary' : 'bg-border'">
             </div>
-
           </div>
         </div>
 
@@ -154,12 +161,14 @@
       </div>
 
       <!-- TAB BAR -->
-      <div class="flex flex-wrap gap-1 bg-muted p-1 rounded-xl w-fit">
-        <button v-for="tab in tabs" :key="tab.id" @click="activeTab = tab.id"
-          class="px-3 py-1.5 rounded-lg text-sm font-semibold transition-colors"
-          :class="activeTab === tab.id ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'">
-          {{ tab.icon }} {{ tab.label }}
-        </button>
+      <div class="overflow-x-auto rounded-xl" style="-webkit-overflow-scrolling: touch;">
+        <div class="flex gap-1 bg-muted p-1 rounded-xl min-w-max">
+          <button v-for="tab in tabs" :key="tab.id" @click="activeTab = tab.id"
+            class="px-2.5 sm:px-3 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition-colors whitespace-nowrap"
+            :class="activeTab === tab.id ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'">
+            {{ tab.icon }} {{ tab.label }}
+          </button>
+        </div>
       </div>
 
       <!-- ════════════════════ TAB: Detalhes ════════════════════ -->
