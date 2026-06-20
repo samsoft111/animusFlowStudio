@@ -3,6 +3,7 @@ define('LARAVEL_START', microtime(true));
 require __DIR__ . '/../vendor/autoload.php';
 $app = require __DIR__ . '/../bootstrap/app.php';
 $app->make('Illuminate\Contracts\Console\Kernel')->bootstrap();
+require __DIR__ . '/ai_settings_guard.php'; // preserva/restaura a chave de IA real
 
 use Illuminate\Support\Facades\Http;
 

@@ -26,6 +26,7 @@ $root = dirname(__DIR__);
 require $root . '/vendor/autoload.php';
 $app = require $root . '/bootstrap/app.php';
 $app->make(\Illuminate\Contracts\Console\Kernel::class)->bootstrap();
+require __DIR__ . '/ai_settings_guard.php'; // preserva/restaura a chave de IA real
 
 use Illuminate\Support\Facades\Http;
 use App\Models\StudioPlugin;
