@@ -499,6 +499,7 @@ SYSTEM;
                         'prompt_pattern' => $parsedRecipe['prompt_pattern'],
                         'code_templates' => $parsedRecipe['code_templates'] ?? [],
                         'reply_template' => $parsedRecipe['reply_template'] ?? 'Resolvido via receita local.',
+                        'confidence_score' => 70,
                     ]
                 );
             }
@@ -795,6 +796,7 @@ SYSTEM;
                         'prompt_pattern' => $parsedRecipe['prompt_pattern'],
                         'code_templates' => $parsedRecipe['code_templates'] ?? [],
                         'reply_template' => $parsedRecipe['reply_template'] ?? 'Resolvido via receita local.',
+                        'confidence_score' => 70,
                     ]
                 );
             }

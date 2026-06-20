@@ -30,6 +30,10 @@
         <div class="px-3 pt-4 pb-1">
           <p class="text-[10px] uppercase tracking-widest text-sidebar-muted font-semibold">{{ t('nav.system') }}</p>
         </div>
+        <SidebarLink href="/recipes" :active="isActive('recipes')">
+          <ZapIcon class="w-4 h-4" />
+          Receitas IA
+        </SidebarLink>
         <SidebarLink href="/settings" :active="isActive('settings')">
           <SettingsIcon class="w-4 h-4" />
           {{ t('nav.settings') }}
@@ -128,7 +132,7 @@ import SidebarLink from '@/Components/SidebarLink.vue';
 import {
   LayoutDashboardIcon, PaletteIcon, PuzzleIcon,
   SettingsIcon, CheckCircleIcon, XCircleIcon,
-  MoonIcon, SunIcon, GlobeIcon, LogOutIcon, InfoIcon,
+  MoonIcon, SunIcon, GlobeIcon, LogOutIcon, InfoIcon, ZapIcon,
 } from 'lucide-vue-next';
 
 defineProps({ title: { type: String, default: '' } });

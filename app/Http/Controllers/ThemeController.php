@@ -306,7 +306,7 @@ class ThemeController extends Controller
     public function recipes(string $uuid): JsonResponse
     {
         $recipes = \App\Models\StudioAiRecipe::where('recipe_type', 'theme')
-            ->select(['id', 'name', 'description', 'prompt_pattern'])
+            ->select(['id', 'name', 'description', 'prompt_pattern', 'placeholder_types'])
             ->get();
 
         return response()->json(['recipes' => $recipes]);

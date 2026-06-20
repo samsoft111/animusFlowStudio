@@ -922,9 +922,33 @@
               <div class="space-y-2.5 pt-2" v-if="extractPlaceholders(recipe.prompt_pattern).length > 0">
                 <div v-for="ph in extractPlaceholders(recipe.prompt_pattern)" :key="ph" class="flex flex-col gap-1">
                   <label class="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">{{ ph }}</label>
-                  <input v-model="recipeInputs[recipe.id][ph]" type="text" 
-                    :class="inp" class="text-xs px-2.5 py-1.5 rounded-lg" 
-                    :placeholder="'Insere o valor para ' + ph" />
+                  <template v-if="recipe.placeholder_types?.[ph] === 'color'">
+                    <div class="flex gap-2 items-center">
+                      <input v-model="recipeInputs[recipe.id][ph]" type="color" 
+                        class="w-8 h-8 rounded border border-border cursor-pointer bg-transparent p-0.5 shrink-0" />
+                      <input v-model="recipeInputs[recipe.id][ph]" type="text" 
+                        :class="inp" class="text-xs px-2.5 py-1.5 rounded-lg flex-1 font-mono" 
+                        placeholder="#ffffff" />
+                    </div>
+                  </template>
+                  
+                  <template v-else-if="recipe.placeholder_types?.[ph] === 'number'">
+                    <input v-model="recipeInputs[recipe.id][ph]" type="number" 
+                      :class="inp" class="text-xs px-2.5 py-1.5 rounded-lg" 
+                      :placeholder="'Insira um número para ' + ph" />
+                  </template>
+                  
+                  <template v-else-if="recipe.placeholder_types?.[ph] === 'url'">
+                    <input v-model="recipeInputs[recipe.id][ph]" type="url" 
+                      :class="inp" class="text-xs px-2.5 py-1.5 rounded-lg" 
+                      :placeholder="'https://exemplo.com (' + ph + ')'" />
+                  </template>
+                  
+                  <template v-else>
+                    <input v-model="recipeInputs[recipe.id][ph]" type="text" 
+                      :class="inp" class="text-xs px-2.5 py-1.5 rounded-lg" 
+                      :placeholder="'Insere o valor para ' + ph" />
+                  </template>
                 </div>
               </div>
             </div>

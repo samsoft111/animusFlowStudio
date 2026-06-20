@@ -4,6 +4,7 @@ use App\Http\Controllers\AboutController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\PluginController;
+use App\Http\Controllers\RecipeController;
 use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\ThemeController;
 use Illuminate\Support\Facades\Route;
@@ -85,6 +86,19 @@ Route::middleware('auth')->group(function () {
     Route::post('/plugins/{uuid}/generate-ai',   [PluginController::class, 'generateAi'])->name('plugins.generate-ai');
     Route::post('/plugins/{uuid}/publish',        [PluginController::class, 'publish'])->name('plugins.publish');
     Route::post('/plugins/{uuid}/install-in-cms', [PluginController::class, 'installInCms'])->name('plugins.install-cms');
+
+    /* ── Recipes ── */
+    Route::get('/recipes',               [RecipeController::class, 'index'])->name('recipes.index');
+    Route::get('/recipes/create',        [RecipeController::class, 'create'])->name('recipes.create');
+    Route::post('/recipes',              [RecipeController::class, 'store'])->name('recipes.store');
+    Route::get('/recipes/analytics',     [RecipeController::class, 'analytics'])->name('recipes.analytics');
+    Route::get('/recipes/{id}/edit',     [RecipeController::class, 'edit'])->name('recipes.edit');
+    Route::put('/recipes/{id}',          [RecipeController::class, 'update'])->name('recipes.update');
+    Route::delete('/recipes/{id}',       [RecipeController::class, 'destroy'])->name('recipes.destroy');
+    Route::post('/recipes/{id}/toggle',  [RecipeController::class, 'toggle'])->name('recipes.toggle');
+    Route::post('/recipes/{id}/test',    [RecipeController::class, 'test'])->name('recipes.test');
+    Route::post('/recipes/export',       [RecipeController::class, 'export'])->name('recipes.export');
+    Route::post('/recipes/import',       [RecipeController::class, 'import'])->name('recipes.import');
 
     /* ── Settings ── */
     Route::get('/settings',             [SettingsController::class, 'index'])->name('settings.index');
