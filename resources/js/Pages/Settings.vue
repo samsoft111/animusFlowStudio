@@ -3,7 +3,7 @@
     <div class="space-y-5">
 
       <!-- Tab bar -->
-      <div class="flex flex-wrap gap-1 bg-muted p-1 rounded-xl w-full sm:w-fit overflow-x-auto">
+      <div class="flex flex-wrap gap-1 bg-muted p-1 rounded-xl w-full overflow-x-auto">
         <button v-for="tab in tabs" :key="tab.id"
           @click="activeTab = tab.id"
           class="px-3 sm:px-4 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition-colors whitespace-nowrap"
