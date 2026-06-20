@@ -1,6 +1,7 @@
 <template>
   <Link
     :href="href"
+    :title="title"
     class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all"
     :class="[
       active
@@ -15,5 +16,5 @@
 
 <script setup>
 import { Link } from '@inertiajs/vue3';
-defineProps({ href: String, active: Boolean, collapsed: Boolean });
+defineProps({ href: String, active: Boolean, collapsed: Boolean, title: String });
 </script>
