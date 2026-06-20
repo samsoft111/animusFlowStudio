@@ -1561,10 +1561,9 @@
               <div class="w-7 h-7 rounded-full bg-violet-500/15 flex items-center justify-center text-xs shrink-0 mb-0.5">✦</div>
               <div class="max-w-[82%]">
                 <div class="bg-card border border-border rounded-2xl rounded-bl-sm px-4 py-2.5 text-sm leading-relaxed whitespace-pre-wrap text-foreground">{{ msg.content }}</div>
-                <!-- Applied updates badge -->
+                <!-- Applied updates badge — chat auto-guarda no servidor -->
                 <div v-if="msg.applied" class="mt-1.5 flex items-center gap-1.5">
-                  <span class="text-[10px] text-success font-semibold flex items-center gap-1">✓ Alterações aplicadas ao tema</span>
-                  <button @click="save()" class="text-[10px] px-2 py-0.5 bg-success/10 text-success rounded-full hover:bg-success/20 transition-colors">Guardar agora</button>
+                  <span class="text-[10px] text-success font-semibold flex items-center gap-1">✓ Aplicadas e guardadas automaticamente</span>
                 </div>
                 <div v-else-if="msg.updates && !msg.applied" class="mt-1.5 flex items-center gap-2">
                   <button @click="applyChatUpdates(msg.updates, i)"

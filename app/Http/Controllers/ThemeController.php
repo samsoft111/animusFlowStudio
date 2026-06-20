@@ -453,7 +453,10 @@ class ThemeController extends Controller
         try {
             $result = AIEngine::chatTheme($history, $themeJson, $attachments);
         } catch (\Throwable $e) {
-            return response()->json(['error' => $e->getMessage()], 422);
+            return response()->json([
+                'error'    => $e->getMessage(),
+                'is_fatal' => self::isFatalAiError($e),
+            ], 422);
         }
 
         // If AI returned theme updates, apply them with deep-merge for nested fields
