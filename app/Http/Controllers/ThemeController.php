@@ -302,6 +302,16 @@ class ThemeController extends Controller
         return response()->json(['versions' => $versions]);
     }
 
+    /** Lista todas as receitas dinâmicas de temas */
+    public function recipes(string $uuid): JsonResponse
+    {
+        $recipes = \App\Models\StudioAiRecipe::where('recipe_type', 'theme')
+            ->select(['id', 'name', 'description', 'prompt_pattern'])
+            ->get();
+
+        return response()->json(['recipes' => $recipes]);
+    }
+
     /** Cria um snapshot manual da versão actual */
     public function createVersion(Request $request, string $uuid): JsonResponse
     {
@@ -450,6 +460,42 @@ class ThemeController extends Controller
         unset($themeData['sections'], $themeData['components']);
         $themeJson = json_encode($themeData, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
 
+        $message = $request->input('message');
+        
+        // 1. Try to match a parameterized recipe first (Camada A + B)
+        if (empty($attachments)) {
+            $recipeResult = \App\Models\StudioAiRecipe::matchAndResolve('theme', $message);
+            if ($recipeResult) {
+                $applied = $this->applyThemeUpdates($theme, $recipeResult['updates']);
+                return response()->json([
+                    'reply'   => $recipeResult['reply'],
+                    'updates' => $recipeResult['updates'],
+                    'applied' => $applied,
+                    'theme'   => $applied ? $theme->fresh() : null,
+                    'build'   => null,
+                    'cached'  => true,
+                ]);
+            }
+        }
+
+        $cached = null;
+        if (empty($attachments)) {
+            $cached = \App\Models\StudioAiCommandCache::getResolution('theme', $message);
+        }
+
+        if ($cached) {
+            $cached->increment('hits');
+            $applied = $this->applyThemeUpdates($theme, $cached->updates);
+            return response()->json([
+                'reply'   => $cached->reply,
+                'updates' => $cached->updates,
+                'applied' => $applied,
+                'theme'   => $applied ? $theme->fresh() : null,
+                'build'   => $cached->build,
+                'cached'  => true,
+            ]);
+        }
+
         try {
             $result = AIEngine::chatTheme($history, $themeJson, $attachments);
         } catch (\Throwable $e) {
@@ -461,6 +507,17 @@ class ThemeController extends Controller
 
         // If AI returned theme updates, apply them with deep-merge for nested fields
         $applied = $this->applyThemeUpdates($theme, $result['updates'] ?? null);
+
+        // Cache resolution for future reuse
+        if (empty($attachments)) {
+            \App\Models\StudioAiCommandCache::cacheResolution(
+                'theme',
+                $message,
+                $result['reply'],
+                $result['updates'] ?? null,
+                $result['build'] ?? null
+            );
+        }
 
         return response()->json([
             'reply'   => $result['reply'],
@@ -508,15 +565,31 @@ class ThemeController extends Controller
     /** Planner: turns a brief (+ optional skill) into an ordered agent plan. */
     public function buildPlan(Request $request, string $uuid): JsonResponse
     {
-        StudioTheme::where('uuid', $uuid)->firstOrFail();
+        $theme = StudioTheme::where('uuid', $uuid)->firstOrFail();
 
         $data = $request->validate([
             'brief' => 'required|string|min:1|max:4000',
             'skill' => 'nullable|string|max:8000',
         ]);
 
+        $snapshot = null;
+        try {
+            $snapshotModel = StudioThemeVersion::snapshot(
+                $theme,
+                "Auto-snapshot antes do Chat IA (Modo Construção) para: " . substr($data['brief'], 0, 80),
+                'system'
+            );
+            $snapshot = [
+                'uuid' => $snapshotModel->uuid,
+                'version' => $snapshotModel->version,
+            ];
+        } catch (\Throwable $e) {
+            \Log::warning("Falha ao criar snapshot do tema: " . $e->getMessage());
+        }
+
         try {
             $plan = AIEngine::buildThemePlan($data['brief'], $data['skill'] ?? '');
+            $plan['snapshot'] = $snapshot;
         } catch (\Throwable $e) {
             return response()->json(['error' => $e->getMessage(), 'is_fatal' => self::isFatalAiError($e)], 422);
         }

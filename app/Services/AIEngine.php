@@ -449,6 +449,11 @@ INSTRUÇÕES:
 4. Se não há alterações, não incluis o bloco json_updates.
 5. Sê proactivo: sugere melhorias e boas práticas de desenvolvimento.
 6. Quando gerares PHP, inclui sempre a classe COMPLETA com declare(strict_types=1).
+7. Se o utilizador pedir para CRIAR UM PLUGIN COMPLETO de raiz ("cria um plugin de X", "constrói um plugin que faça Y"), NÃO tentes gerar tudo nesta resposta. Responde com UMA frase curta a confirmar e inclui um bloco:
+   ```build
+   { "brief": "resumo claro do plugin a construir, em 1-2 frases" }
+   ```
+   Neste caso NÃO incluas o bloco json_updates.
 SYSTEM;
 
         $provider = StudioSetting::get('ai_provider', 'claude');
@@ -474,10 +479,221 @@ SYSTEM;
             }
         }
 
+        // Detect a full-build directive — the AI decides when to run the pipeline
+        $build = null;
+        if (preg_match('/```build\s*([\s\S]*?)```/m', $raw, $bm)) {
+            $parsed = json_decode(trim($bm[1]), true);
+            if (is_array($parsed) && !empty($parsed['brief'])) {
+                $build = ['brief' => (string) $parsed['brief']];
+            }
+        }
+
+        // Detect a recipe block to register
+        if (preg_match('/```recipe\s*([\s\S]*?)```/m', $raw, $rm)) {
+            $parsedRecipe = json_decode(trim($rm[1]), true);
+            if (is_array($parsedRecipe) && !empty($parsedRecipe['name']) && !empty($parsedRecipe['prompt_pattern'])) {
+                \App\Models\StudioAiRecipe::updateOrCreate(
+                    ['recipe_type' => 'plugin', 'name' => $parsedRecipe['name']],
+                    [
+                        'description'    => $parsedRecipe['description'] ?? null,
+                        'prompt_pattern' => $parsedRecipe['prompt_pattern'],
+                        'code_templates' => $parsedRecipe['code_templates'] ?? [],
+                        'reply_template' => $parsedRecipe['reply_template'] ?? 'Resolvido via receita local.',
+                    ]
+                );
+            }
+        }
+
         $reply = preg_replace('/```json_updates\s*[\s\S]*?```/m', '', $raw);
+        $reply = preg_replace('/```build\s*[\s\S]*?```/m', '', $reply);
+        $reply = preg_replace('/```recipe\s*[\s\S]*?```/m', '', $reply);
         $reply = trim($reply ?? $raw);
 
-        return ['reply' => $reply, 'updates' => $updates];
+        return ['reply' => $reply, 'updates' => $updates, 'build' => $build];
+    }
+
+    // ──────────────────────────────────────────────
+    //  Multi-agent plugin builder (Modo Construção — plugins)
+    // ──────────────────────────────────────────────
+
+    /** Catalogue of specialised plugin-building agents (single source of truth). */
+    public static function pluginAgents(): array
+    {
+        return [
+            ['id' => 'logic',    'icon' => '🧩', 'label' => 'Lógica & Hooks',    'hint' => 'Classe PHP principal e hooks'],
+            ['id' => 'widget',   'icon' => '🎨', 'label' => 'Interface (Widget)', 'hint' => 'Blade, JS e CSS do widget'],
+            ['id' => 'settings', 'icon' => '⚙️', 'label' => 'Configurações',     'hint' => 'Esquema de campos configuráveis'],
+        ];
+    }
+
+    /** Planner: turn a brief into an ordered list of plugin agents. Returns ['direction','agents']. */
+    public static function buildPluginPlan(string $brief, string $skill = '', array $attachments = []): array
+    {
+        $ids  = array_column(self::pluginAgents(), 'id');
+        $list = implode(', ', $ids);
+        $skillBlock = trim($skill) !== '' ? "INSTRUÇÕES/SKILL DO UTILIZADOR (segue à risca):\n{$skill}\n\n" : '';
+
+        $system = <<<SYSTEM
+Você é o ORQUESTRADOR de construção de plugins do AnimusFlow CMS.
+A partir de um brief, planeias quais agentes especializados devem correr e por que ordem.
+
+{$skillBlock}AGENTES DISPONÍVEIS (ids): {$list}
+
+Responde APENAS com um bloco json_updates, sem texto fora dele:
+```json_updates
+{
+  "direction": "1-2 frases a descrever o plugin (objectivo, hooks, comportamento)",
+  "agents": ["lista ordenada de ids de agentes a executar"]
+}
+```
+Regras: usa só ids válidos da lista; ordena de forma lógica (logic → widget → settings); inclui apenas o que o brief justifica.
+SYSTEM;
+
+        $historyMsg = [['role' => 'user', 'content' => "BRIEF: {$brief}\n\nPlaneia os agentes."]];
+        $raw = self::chatDispatch($system, $historyMsg, $attachments, 1500);
+
+        $plan = ['direction' => '', 'agents' => []];
+        if (preg_match('/```json_updates\s*([\s\S]*?)```/m', $raw, $m)) {
+            $parsed = json_decode(trim($m[1]), true);
+            if (is_array($parsed)) {
+                $plan['direction'] = (string) ($parsed['direction'] ?? '');
+                $plan['agents']    = array_values(array_intersect($parsed['agents'] ?? [], $ids));
+            }
+        }
+        if (empty($plan['agents'])) {
+            $plan['agents'] = ['logic', 'widget', 'settings'];
+        }
+
+        return $plan;
+    }
+
+    /** Run ONE specialised plugin agent. Returns ['agent','reply','updates']. */
+    public static function runPluginAgent(string $agentId, string $brief, string $direction, string $currentPluginJson, array $attachments = [], string $note = ''): array
+    {
+        $system = self::pluginAgentSystem($agentId, $brief, $direction, $currentPluginJson);
+
+        $userMsg = 'Gera agora a tua parte do plugin.';
+        if (trim($note) !== '') {
+            $userMsg .= "\n\nNota do verificador (corrige especificamente isto): " . $note;
+        }
+        $historyMsg = [['role' => 'user', 'content' => $userMsg]];
+        $raw = self::chatDispatch($system, $historyMsg, $attachments, 16000);
+
+        $updates = null;
+        if (preg_match('/```json_updates\s*([\s\S]*?)```/m', $raw, $m)) {
+            $parsed = json_decode(trim($m[1]), true);
+            if (is_array($parsed)) {
+                $updates = $parsed;
+            }
+        }
+
+        $reply = trim((string) preg_replace('/```json_updates\s*[\s\S]*?```/m', '', $raw));
+
+        return ['agent' => $agentId, 'reply' => $reply, 'updates' => $updates];
+    }
+
+    /** Verifier: review the plugin against the brief; returns ['summary','issues']. */
+    public static function verifyPlugin(string $brief, string $direction, string $pluginJson): array
+    {
+        $ids  = array_column(self::pluginAgents(), 'id');
+        $list = implode(', ', $ids);
+
+        $system = <<<SYSTEM
+Você é o agente VERIFICADOR de qualidade de plugins do AnimusFlow CMS.
+Analisa o estado actual do plugin face ao brief e identifica partes em falta, fracas ou incoerentes.
+
+AGENTES QUE PODEM CORRIGIR (ids válidos): {$list}
+
+BRIEF: {$brief}
+DIRECÇÃO: {$direction}
+ESTADO ACTUAL DO PLUGIN: {$pluginJson}
+
+Responde APENAS com um bloco json_updates, sem texto fora dele:
+```json_updates
+{
+  "summary": "1-2 frases sobre o estado geral do plugin",
+  "issues": [ {"agent": "id_do_agente", "reason": "o que melhorar, 1 frase accionável"} ]
+}
+```
+Regras: usa só ids válidos; inclui no máximo 4 problemas REAIS e accionáveis; se o plugin estiver bom, devolve "issues": [].
+SYSTEM;
+
+        $historyMsg = [['role' => 'user', 'content' => 'Verifica o plugin e lista o que corrigir.']];
+        $raw = self::chatDispatch($system, $historyMsg, [], 2000);
+
+        $out = ['summary' => '', 'issues' => []];
+        if (preg_match('/```json_updates\s*([\s\S]*?)```/m', $raw, $m)) {
+            $parsed = json_decode(trim($m[1]), true);
+            if (is_array($parsed)) {
+                $out['summary'] = (string) ($parsed['summary'] ?? '');
+                foreach (($parsed['issues'] ?? []) as $iss) {
+                    if (is_array($iss) && in_array($iss['agent'] ?? '', $ids, true)) {
+                        $out['issues'][] = ['agent' => $iss['agent'], 'reason' => (string) ($iss['reason'] ?? '')];
+                    }
+                }
+            }
+        }
+
+        return $out;
+    }
+
+    /** Build the focused system prompt for one plugin agent. */
+    private static function pluginAgentSystem(string $agentId, string $brief, string $direction, string $pluginJson): string
+    {
+        $base = <<<BASE
+Você é um agente especializado de construção de plugins para o AnimusFlow CMS.
+Responde em português (PT-PT). Produzes UMA frase curta de resumo seguida de um bloco json_updates APENAS com os campos da tua responsabilidade — nada mais.
+
+BRIEF: {$brief}
+DIRECÇÃO: {$direction}
+PLUGIN ACTUAL (resumo): {$pluginJson}
+
+ESTRUTURA AnimusFlow: page.render→onPageRender(\$page):string; content.publish→onContentPublish(\$page):void; admin.sidebar→onAdminSidebar():array.
+
+TAREFA:
+BASE;
+
+        $task = match ($agentId) {
+            'logic' => <<<LOGIC
+Gera a classe PHP principal do plugin e os hooks activos (e metadados: label, description, version).
+Responsável por: plugin_php (classe COMPLETA com declare(strict_types=1)), hooks (array), label, description, version.
+```json_updates
+{
+  "label": "Nome do Plugin",
+  "description": "O que faz",
+  "version": "1.0.0",
+  "hooks": ["page.render"],
+  "plugin_php": "<?php\\ndeclare(strict_types=1);\\n..."
+}
+```
+LOGIC,
+            'widget' => <<<WIDGET
+Gera a interface do plugin: o template Blade do widget, o JavaScript e o CSS.
+Responsável por: widget_blade, widget_js, custom_css.
+```json_updates
+{
+  "widget_blade": "<div class=\"af-plugin\">...</div>",
+  "widget_js": "// JS do widget",
+  "custom_css": "/* CSS do widget */"
+}
+```
+WIDGET,
+            'settings' => <<<SETTINGS
+Gera o esquema de configurações do plugin (campos configuráveis pelo administrador).
+Responsável por: settings_schema (array de {key, label, type, default, placeholder, hint}).
+Types: text, textarea, color, select (com "options"), toggle (com "toggle_label").
+```json_updates
+{
+  "settings_schema": [
+    {"key": "titulo", "label": "Título", "type": "text", "default": "", "placeholder": "", "hint": ""}
+  ]
+}
+```
+SETTINGS,
+            default => 'Gera a tua parte e devolve o json_updates apropriado.',
+        };
+
+        return $base . "\n" . $task;
     }
 
     // ──────────────────────────────────────────────
@@ -568,9 +784,26 @@ SYSTEM;
             }
         }
 
+        // Detect a recipe block to register
+        if (preg_match('/```recipe\s*([\s\S]*?)```/m', $raw, $rm)) {
+            $parsedRecipe = json_decode(trim($rm[1]), true);
+            if (is_array($parsedRecipe) && !empty($parsedRecipe['name']) && !empty($parsedRecipe['prompt_pattern'])) {
+                \App\Models\StudioAiRecipe::updateOrCreate(
+                    ['recipe_type' => 'theme', 'name' => $parsedRecipe['name']],
+                    [
+                        'description'    => $parsedRecipe['description'] ?? null,
+                        'prompt_pattern' => $parsedRecipe['prompt_pattern'],
+                        'code_templates' => $parsedRecipe['code_templates'] ?? [],
+                        'reply_template' => $parsedRecipe['reply_template'] ?? 'Resolvido via receita local.',
+                    ]
+                );
+            }
+        }
+
         // Remove both control blocks from the visible reply
         $reply = preg_replace('/```json_updates\s*[\s\S]*?```/m', '', $raw);
         $reply = preg_replace('/```build\s*[\s\S]*?```/m', '', $reply);
+        $reply = preg_replace('/```recipe\s*[\s\S]*?```/m', '', $reply);
         $reply = trim($reply ?? $raw);
 
         return ['reply' => $reply, 'updates' => $updates, 'build' => $build];
@@ -741,7 +974,7 @@ TAREFA:
 BASE;
 
         $task = match ($agentId) {
-            'design' => <<<T
+            'design' => <<<DESIGN
 Gera o design global e branding do tema (cores light e dark, fontes de títulos/corpo, layout, capacidades e a secção do rodapé).
 Responsável por atualizar os campos: colors, fonts, layout_config, capabilities, e a secção "footer" (em sections.footer).
 Exemplo de retorno em json_updates:
@@ -798,8 +1031,8 @@ Exemplo de retorno em json_updates:
   }
 }
 ```
-T,
-            'intro' => <<<T
+DESIGN,
+            'intro' => <<<INTRO
 Gera as secções de introdução e apresentação do tema: Hero, Funcionalidades (Features), Testemunhos e Galeria.
 Responsável por atualizar: sections.hero, sections.features, sections.testimonials, sections.gallery.
 Usa as variáveis CSS globais do tema.
@@ -814,8 +1047,8 @@ Exemplo de retorno em json_updates:
   }
 }
 ```
-T,
-            'conversion' => <<<T
+INTRO,
+            'conversion' => <<<CONVERSION
 Gera as secções de negócio e conversão do tema: Tabela de Preços (pricing), Chamada à Ação (cta), Perguntas Frequentes (faq) e Contacto (contact).
 Responsável por atualizar: sections.pricing, sections.cta, sections.faq, sections.contact.
 Usa as variáveis CSS globais do tema.
@@ -830,8 +1063,8 @@ Exemplo de retorno em json_updates:
   }
 }
 ```
-T,
-            'code' => <<<T
+CONVERSION,
+            'code' => <<<CODE
 Gera o CSS personalizado e (opcional) JS complementar para micro-interações, transições e ajustes responsivos das secções do tema.
 Responsável por atualizar: custom_css, custom_js.
 Exemplo de retorno em json_updates:
@@ -841,7 +1074,7 @@ Exemplo de retorno em json_updates:
   "custom_js": "/* JS opcional aqui */"
 }
 ```
-T,
+CODE,
             default => "Gera a tua parte e devolve o json_updates apropriado.",
         };
 

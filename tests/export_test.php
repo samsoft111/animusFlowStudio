@@ -24,6 +24,12 @@ function check(string $label, bool $ok, string $debug = ''): void {
 $theme = StudioTheme::first();
 if (!$theme) { echo "ERRO: Nenhum tema no DB.\n"; exit(1); }
 
+$origAttributes = $theme->only([
+    'name', 'label', 'description', 'version', 'status', 'is_published',
+    'colors', 'fonts', 'layout_config', 'capabilities', 'custom_css',
+    'custom_js', 'sections', 'assets', 'animus_package_uuid'
+]);
+
 // Preparar tema rico para o teste
 $theme->update([
     'name'        => 'luxe-store-test',
@@ -514,13 +520,7 @@ check('showPromptModal para exportar prompt',               str_contains($vue, '
 StudioSetting::set('cms_url', '');
 StudioSetting::set('cms_api_key', '');
 StudioSetting::set('animusflow_api_key', '');
-$theme->update([
-    'name' => 'novo-tema-1', 'label' => 'Novo Tema 1', 'description' => null,
-    'version' => '1.0.0', 'status' => 'draft', 'is_published' => false,
-    'colors' => null, 'fonts' => null, 'layout_config' => null,
-    'capabilities' => null, 'custom_css' => null, 'custom_js' => null,
-    'sections' => null, 'animus_package_uuid' => null,
-]);
+$theme->update($origAttributes);
 
 echo PHP_EOL . '═══════════════════════════════════════════════════' . PHP_EOL;
 echo "RESULTADO FINAL: {$pass} passou, {$fail} falhou" . PHP_EOL;

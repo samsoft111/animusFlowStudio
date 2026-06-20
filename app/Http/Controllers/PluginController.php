@@ -13,6 +13,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
 use ZipArchive;
@@ -85,7 +86,10 @@ class PluginController extends Controller
     {
         $plugin = StudioPlugin::where('uuid', $uuid)->firstOrFail();
 
-        return Inertia::render('Plugins/Edit', ['plugin' => $plugin]);
+        return Inertia::render('Plugins/Edit', [
+            'plugin'       => $plugin,
+            'pluginAgents' => AIEngine::pluginAgents(),
+        ]);
     }
 
     public function update(Request $request, string $uuid): RedirectResponse
@@ -238,21 +242,62 @@ class PluginController extends Controller
         unset($pluginData['plugin_php'], $pluginData['widget_blade'], $pluginData['widget_js']);
         $pluginJson = json_encode($pluginData, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
 
+        $message = $request->input('message');
+        
+        // 1. Try to match a parameterized recipe first (Camada A + B)
+        if (empty($attachments)) {
+            $recipeResult = \App\Models\StudioAiRecipe::matchAndResolve('plugin', $message);
+            if ($recipeResult) {
+                $applied = $this->applyPluginUpdates($plugin, $recipeResult['updates']);
+                return response()->json([
+                    'reply'   => $recipeResult['reply'],
+                    'updates' => $recipeResult['updates'],
+                    'applied' => $applied,
+                    'plugin'  => $applied ? $plugin->fresh() : null,
+                    'build'   => null,
+                    'cached'  => true,
+                ]);
+            }
+        }
+
+        $cached = null;
+        if (empty($attachments)) {
+            $cached = \App\Models\StudioAiCommandCache::getResolution('plugin', $message);
+        }
+
+        if ($cached) {
+            $cached->increment('hits');
+            $applied = $this->applyPluginUpdates($plugin, $cached->updates);
+            return response()->json([
+                'reply'   => $cached->reply,
+                'updates' => $cached->updates,
+                'applied' => $applied,
+                'plugin'  => $applied ? $plugin->fresh() : null,
+                'build'   => $cached->build,
+                'cached'  => true,
+            ]);
+        }
+
         try {
             $result = AIEngine::chatPlugin($history, $pluginJson, $attachments);
         } catch (\Throwable $e) {
-            return response()->json(['error' => $e->getMessage()], 422);
+            return response()->json([
+                'error'    => $e->getMessage(),
+                'is_fatal' => self::isFatalAiError($e),
+            ], 422);
         }
 
-        $applied = false;
-        if (!empty($result['updates'])) {
-            $allowed = ['label', 'description', 'version', 'status', 'hooks', 'plugin_php', 'widget_blade', 'widget_js', 'custom_css', 'settings_schema'];
-            $updates = array_intersect_key($result['updates'], array_flip($allowed));
+        $applied = $this->applyPluginUpdates($plugin, $result['updates'] ?? null);
 
-            if (!empty($updates)) {
-                $plugin->update($updates);
-                $applied = true;
-            }
+        // Cache resolution for future reuse
+        if (empty($attachments)) {
+            \App\Models\StudioAiCommandCache::cacheResolution(
+                'plugin',
+                $message,
+                $result['reply'],
+                $result['updates'] ?? null,
+                $result['build'] ?? null
+            );
         }
 
         return response()->json([
@@ -260,7 +305,152 @@ class PluginController extends Controller
             'updates' => $result['updates'] ?? null,
             'applied' => $applied,
             'plugin'  => $applied ? $plugin->fresh() : null,
+            'build'   => $result['build'] ?? null,
         ]);
+    }
+
+    /** Apply AI updates to a plugin (auto-save), filtered to the allowed fields. */
+    private function applyPluginUpdates(StudioPlugin $plugin, ?array $updates): bool
+    {
+        if (empty($updates)) {
+            return false;
+        }
+
+        $allowed = ['label', 'description', 'version', 'status', 'hooks', 'plugin_php', 'widget_blade', 'widget_js', 'custom_css', 'settings_schema'];
+        $updates = array_intersect_key($updates, array_flip($allowed));
+
+        if (empty($updates)) {
+            return false;
+        }
+
+        $plugin->update($updates);
+        return true;
+    }
+
+    // ──────────────────────────────────────────────
+    //  Modo Construção — multi-agent plugin builder
+    // ──────────────────────────────────────────────
+
+    /** Planner: turns a brief into an ordered agent plan. */
+    public function buildPlan(Request $request, string $uuid): JsonResponse
+    {
+        $plugin = StudioPlugin::where('uuid', $uuid)->firstOrFail();
+
+        $data = $request->validate([
+            'brief' => 'required|string|min:1|max:4000',
+            'skill' => 'nullable|string|max:8000',
+        ]);
+
+        $snapshot = null;
+        try {
+            $this->saveVersionSnapshot($plugin, "Auto-snapshot antes do Chat IA (Modo Construção) para: " . substr($data['brief'], 0, 80));
+            $snapshotModel = StudioPluginVersion::where('studio_plugin_id', $plugin->id)
+                ->where('version', $plugin->version)->first();
+            if ($snapshotModel) {
+                $snapshot = [
+                    'id' => $snapshotModel->id,
+                    'version' => $snapshotModel->version,
+                ];
+            }
+        } catch (\Throwable $e) {
+            \Log::warning("Falha ao criar snapshot do plugin: " . $e->getMessage());
+        }
+
+        try {
+            $plan = AIEngine::buildPluginPlan($data['brief'], $data['skill'] ?? '');
+            $plan['snapshot'] = $snapshot;
+        } catch (\Throwable $e) {
+            return response()->json(['error' => $e->getMessage(), 'is_fatal' => self::isFatalAiError($e)], 422);
+        }
+
+        return response()->json($plan);
+    }
+
+    /** Run one specialised agent and apply its updates to the plugin. */
+    public function buildStep(Request $request, string $uuid): JsonResponse
+    {
+        $plugin = StudioPlugin::where('uuid', $uuid)->firstOrFail();
+
+        $validIds = array_column(AIEngine::pluginAgents(), 'id');
+        $data = $request->validate([
+            'agent'     => ['required', 'string', Rule::in($validIds)],
+            'brief'     => 'nullable|string|max:4000',
+            'direction' => 'nullable|string|max:2000',
+            'note'      => 'nullable|string|max:1000',
+        ]);
+
+        $pluginData = $plugin->toArray();
+        $pluginJson = json_encode($pluginData, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
+
+        try {
+            $result = AIEngine::runPluginAgent(
+                $data['agent'],
+                $data['brief'] ?? '',
+                $data['direction'] ?? '',
+                $pluginJson,
+                [],
+                $data['note'] ?? '',
+            );
+        } catch (\Throwable $e) {
+            return response()->json(['error' => $e->getMessage(), 'is_fatal' => self::isFatalAiError($e)], 422);
+        }
+
+        $applied = $this->applyPluginUpdates($plugin, $result['updates'] ?? null);
+
+        return response()->json([
+            'agent'   => $result['agent'],
+            'reply'   => $result['reply'],
+            'updates' => $result['updates'] ?? null,
+            'applied' => $applied,
+            'plugin'  => $applied ? $plugin->fresh() : null,
+        ]);
+    }
+
+    /** Verifier: reviews the current plugin and returns agents to re-run. */
+    public function buildVerify(Request $request, string $uuid): JsonResponse
+    {
+        $plugin = StudioPlugin::where('uuid', $uuid)->firstOrFail();
+
+        $data = $request->validate([
+            'brief'     => 'nullable|string|max:4000',
+            'direction' => 'nullable|string|max:2000',
+        ]);
+
+        $pluginJson = json_encode($plugin->toArray(), JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
+
+        try {
+            $result = AIEngine::verifyPlugin($data['brief'] ?? '', $data['direction'] ?? '', $pluginJson);
+        } catch (\Throwable $e) {
+            return response()->json(['error' => $e->getMessage(), 'is_fatal' => self::isFatalAiError($e)], 422);
+        }
+
+        return response()->json($result);
+    }
+
+    /** Classify whether an AI error is systemic (fatal) — aborts the build loop. */
+    private static function isFatalAiError(\Throwable $e): bool
+    {
+        $msg = $e->getMessage();
+
+        if (str_contains($msg, 'Chave AI não configurada') || str_contains($msg, 'No AI API key configured')) {
+            return true;
+        }
+        if (str_contains($msg, 'cURL error') || str_contains($msg, 'SSL certificate') || str_contains($msg, 'Could not resolve host') || str_contains($msg, 'Connection refused')) {
+            return true;
+        }
+        if (str_contains($msg, 'API error:')) {
+            if (stripos($msg, 'rate_limit') !== false || stripos($msg, 'quota') !== false || stripos($msg, 'exhausted') !== false || str_contains($msg, '429')) {
+                return true;
+            }
+            if (stripos($msg, 'unauthorized') !== false || stripos($msg, 'invalid_key') !== false || stripos($msg, 'invalid_api_key') !== false || str_contains($msg, '401') || str_contains($msg, '403')) {
+                return true;
+            }
+            if (str_contains($msg, '500') || str_contains($msg, '503') || stripos($msg, 'overloaded') !== false || stripos($msg, 'down') !== false) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     // ──────────────────────────────────────────────
@@ -1166,6 +1356,16 @@ HTML;
                 'created_by'       => auth()->user()?->email ?? 'studio',
             ]);
         }
+    }
+
+    /** Lista todas as receitas dinâmicas de plugins */
+    public function recipes(string $uuid): JsonResponse
+    {
+        $recipes = \App\Models\StudioAiRecipe::where('recipe_type', 'plugin')
+            ->select(['id', 'name', 'description', 'prompt_pattern'])
+            ->get();
+
+        return response()->json(['recipes' => $recipes]);
     }
 
     // ──────────────────────────────────────────────

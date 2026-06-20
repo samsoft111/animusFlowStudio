@@ -54,6 +54,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/themes/{uuid}/versions',                         [ThemeController::class, 'createVersion'])->name('themes.versions.create');
     Route::post('/themes/{uuid}/versions/{versionUuid}/restore',   [ThemeController::class, 'restoreVersion'])->name('themes.versions.restore');
     Route::delete('/themes/{uuid}/versions/{versionUuid}',         [ThemeController::class, 'deleteVersion'])->name('themes.versions.delete');
+    Route::get('/themes/{uuid}/recipes',                           [ThemeController::class, 'recipes'])->name('themes.recipes');
 
     /* ── Plugins ── */
     Route::get('/plugins',               [PluginController::class, 'index'])->name('plugins.index');
@@ -64,6 +65,7 @@ Route::middleware('auth')->group(function () {
     Route::delete('/plugins/{uuid}',     [PluginController::class, 'destroy'])->name('plugins.destroy');
     Route::get('/plugins/{uuid}/export',        [PluginController::class, 'export'])->name('plugins.export');
     Route::get('/plugins/{uuid}/export-prompt', [PluginController::class, 'exportPrompt'])->name('plugins.export-prompt');
+    Route::get('/plugins/{uuid}/recipes',       [PluginController::class, 'recipes'])->name('plugins.recipes');
 
     /* ── Plugin versioning ── */
     Route::get ('/plugins/{uuid}/versions',              [PluginController::class, 'versions'])->name('plugins.versions.list');
@@ -77,6 +79,9 @@ Route::middleware('auth')->group(function () {
     Route::post('/plugins/{uuid}/generate-docs',   [PluginController::class, 'generateDocs'])->name('plugins.generate-docs');
     Route::post('/plugins/{uuid}/inspire',         [PluginController::class, 'inspire'])->name('plugins.inspire');
     Route::post('/plugins/{uuid}/chat',           [PluginController::class, 'chat'])->name('plugins.chat');
+    Route::post('/plugins/{uuid}/build/plan',     [PluginController::class, 'buildPlan'])->name('plugins.build.plan');
+    Route::post('/plugins/{uuid}/build/step',     [PluginController::class, 'buildStep'])->name('plugins.build.step');
+    Route::post('/plugins/{uuid}/build/verify',   [PluginController::class, 'buildVerify'])->name('plugins.build.verify');
     Route::post('/plugins/{uuid}/generate-ai',   [PluginController::class, 'generateAi'])->name('plugins.generate-ai');
     Route::post('/plugins/{uuid}/publish',        [PluginController::class, 'publish'])->name('plugins.publish');
     Route::post('/plugins/{uuid}/install-in-cms', [PluginController::class, 'installInCms'])->name('plugins.install-cms');

@@ -419,7 +419,7 @@ check('create() retorna RedirectResponse', $createResult instanceof \Illuminate\
 check('create() redireciona para edit', str_contains($createResult->getTargetUrl(), '/plugins/'));
 check('create() cria novo plugin na DB', StudioPlugin::withTrashed()->count() === $countBefore + 1);
 
-$newPlugin = StudioPlugin::latest()->first();
+$newPlugin = StudioPlugin::orderBy('id', 'desc')->first();
 check('Plugin auto-criado tem nome válido (regex)',
     (bool) preg_match('/^[a-z0-9][a-z0-9\-_]{0,49}$/', $newPlugin->name));
 check('Plugin auto-criado tem status=draft',  $newPlugin->status === 'draft');
@@ -537,7 +537,7 @@ check('chatPlugin() usa system prompt em PT-PT', str_contains($aiSrc, 'PT-PT') &
 check('chatPlugin() extrai json_updates', str_contains($aiSrc, 'json_updates') && str_contains($aiSrc, 'chatPlugin'));
 check('chatPlugin() suporta Claude e OpenAI', str_contains($aiSrc, 'chatOpenAI') && str_contains($aiSrc, 'chatClaude'));
 check('chatPlugin() menciona hooks AnimusFlow no prompt', str_contains($aiSrc, 'page.render') && str_contains($aiSrc, 'chatPlugin'));
-check('chatPlugin() retorna [reply, updates]', str_contains($aiSrc, "return ['reply' => \$reply, 'updates' => \$updates]"));
+check('chatPlugin() retorna [reply, updates, build]', str_contains($aiSrc, "return ['reply' => \$reply, 'updates' => \$updates, 'build' => \$build]"));
 
 // ═══════════════════════════════════════════════════
 echo PHP_EOL . '═══════════════════════════════════════════════════' . PHP_EOL;

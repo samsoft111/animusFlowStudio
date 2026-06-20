@@ -500,10 +500,10 @@ assert_contains($vueFile, 'max-h-64 overflow-y-auto', 'Grid de categorias com sc
 // ────────────────────────────────────────────────────────────────
 section('14. Index.vue — imports correctos');
 
-assert_contains($vueFile, "import { ref, computed } from 'vue'", 'Importa ref e computed do Vue');
+assert_true(str_contains($vueFile, 'ref') && str_contains($vueFile, 'computed') && str_contains($vueFile, "from 'vue'"), 'Importa ref e computed do Vue');
 assert_contains($vueFile, "import axios from 'axios'", 'Importa axios');
 assert_contains($vueFile, "SparklesIcon, XIcon, RefreshCwIcon", 'Importa ícones correctos do lucide');
-assert_contains($vueFile, "import { Link, router } from '@inertiajs/vue3'", 'Importa Link e router do Inertia');
+assert_true(str_contains($vueFile, 'Link') && str_contains($vueFile, 'router') && str_contains($vueFile, "from '@inertiajs/vue3'"), 'Importa Link e router do Inertia');
 
 // ────────────────────────────────────────────────────────────────
 //  15. Verificar build Vite

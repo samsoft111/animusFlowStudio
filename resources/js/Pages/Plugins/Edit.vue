@@ -870,6 +870,77 @@
 
       </div>
 
+      <!-- ══════════ Tab: Macros ══════════ -->
+      <div v-show="activeTab === 'recipes'" class="max-w-3xl space-y-5">
+        
+        <!-- Header -->
+        <div class="bg-card border border-border rounded-2xl p-5">
+          <div class="flex items-center gap-2">
+            <span class="text-xl">⚡</span>
+            <div>
+              <h2 class="font-semibold text-foreground text-sm">Macros e Receitas Dinâmicas</h2>
+              <p class="text-xs text-muted-foreground mt-0.5">
+                Executa tarefas repetitivas instantaneamente utilizando as receitas aprendidas localmente.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Loading state -->
+        <div v-if="loadingRecipes" class="flex flex-col items-center justify-center py-12 gap-3">
+          <span class="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin"></span>
+          <p class="text-xs text-muted-foreground">A carregar receitas...</p>
+        </div>
+
+        <!-- Empty state -->
+        <div v-else-if="recipes.length === 0" class="bg-card border border-border rounded-2xl p-12 text-center flex flex-col items-center gap-3">
+          <div class="w-12 h-12 rounded-full bg-muted flex items-center justify-center text-lg">⚡</div>
+          <p class="text-sm font-semibold text-foreground">Nenhuma macro ou receita encontrada</p>
+          <p class="text-xs text-muted-foreground max-w-sm">
+            Podes registar receitas através do Chat IA usando o bloco de código <code>```recipe</code>. Uma vez registadas, elas aparecerão aqui para execução local sem gastar tokens.
+          </p>
+        </div>
+
+        <!-- Grid of Recipes -->
+        <div v-else class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div v-for="recipe in recipes" :key="recipe.id" class="bg-card border border-border rounded-2xl p-5 flex flex-col justify-between hover:border-primary/30 transition-colors">
+            <div class="space-y-3">
+              <div class="flex items-start gap-2">
+                <span class="text-lg shrink-0 mt-0.5 text-primary">⚡</span>
+                <div>
+                  <h3 class="font-semibold text-foreground text-sm font-mono truncate" :title="recipe.name">{{ recipe.name }}</h3>
+                  <p class="text-xs text-muted-foreground mt-0.5 leading-relaxed" v-if="recipe.description">{{ recipe.description }}</p>
+                </div>
+              </div>
+
+              <!-- Pattern -->
+              <div class="bg-muted px-2.5 py-1.5 rounded-lg border border-border/50 text-[10px] font-mono text-muted-foreground break-all">
+                {{ recipe.prompt_pattern }}
+              </div>
+
+              <!-- Form Fields for Placeholders -->
+              <div class="space-y-2.5 pt-2" v-if="extractPlaceholders(recipe.prompt_pattern).length > 0">
+                <div v-for="ph in extractPlaceholders(recipe.prompt_pattern)" :key="ph" class="flex flex-col gap-1">
+                  <label class="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">{{ ph }}</label>
+                  <input v-model="recipeInputs[recipe.id][ph]" type="text" 
+                    :class="inp" class="text-xs px-2.5 py-1.5 rounded-lg" 
+                    :placeholder="'Insere o valor para ' + ph" />
+                </div>
+              </div>
+            </div>
+
+            <!-- Execute Button -->
+            <div class="pt-4 mt-auto">
+              <button @click="executeRecipe(recipe)" 
+                class="w-full px-4 py-2 bg-primary/10 hover:bg-primary text-primary hover:text-primary-foreground rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 transition-all">
+                <span>⚡</span> Executar Macro
+              </button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
       <!-- ══════════ Tab: Exportar ══════════ -->
       <div v-show="activeTab === 'export'" class="max-w-2xl space-y-4">
         <div class="bg-card border border-border rounded-2xl p-6 space-y-5">
@@ -938,16 +1009,16 @@
       <!-- ══════════ Tab: Chat IA ══════════ -->
       <div v-show="activeTab === 'chat'" class="flex flex-col gap-4">
 
-        <!-- Header info -->
+        <!-- Header -->
         <div class="flex items-center gap-3 px-4 py-3 bg-violet-500/8 border border-violet-500/20 rounded-xl">
-          <span class="text-lg">💬</span>
+          <div class="w-8 h-8 rounded-lg bg-violet-500/15 flex items-center justify-center shrink-0 text-base">✦</div>
           <div class="flex-1 min-w-0">
             <p class="text-sm font-semibold text-foreground">Assistente de Desenvolvimento IA</p>
-            <p class="text-xs text-muted-foreground">Descreve o que queres em linguagem natural. Podes anexar imagens e documentos para inspiração.</p>
+            <p class="text-xs text-muted-foreground">Descreve o que queres — eu trato do resto. Podes anexar imagens ou documentos para inspiração.</p>
           </div>
-          <button @click="chatMessages = []; chatPendingUpdates = null"
+          <button v-if="chatMessages.length" @click="chatMessages = []"
             class="text-xs text-muted-foreground hover:text-foreground px-2 py-1 rounded-lg hover:bg-muted transition-colors shrink-0">
-            🗑 Limpar
+            Limpar
           </button>
         </div>
 
@@ -958,12 +1029,12 @@
 
           <!-- Empty state -->
           <div v-if="chatMessages.length === 0" class="flex flex-col items-center justify-center py-16 gap-3 text-center">
-            <div class="w-14 h-14 rounded-2xl bg-violet-500/10 flex items-center justify-center text-2xl">🔌</div>
-            <p class="text-sm font-semibold text-foreground">Começa uma conversa</p>
-            <p class="text-xs text-muted-foreground max-w-xs">Pergunta algo como "Cria um plugin de anúncio" ou "Adiciona um campo de cor" e descreve o comportamento pretendido.</p>
+            <div class="w-14 h-14 rounded-2xl bg-violet-500/10 flex items-center justify-center text-2xl">✦</div>
+            <p class="text-sm font-semibold text-foreground">O que vamos criar?</p>
+            <p class="text-xs text-muted-foreground max-w-xs">Pede um plugin completo ("Cria um plugin de barra de anúncio") ou um ajuste ("Adiciona um campo de cor"). Eu trato do resto.</p>
             <div class="flex flex-wrap gap-2 justify-center mt-2">
               <button v-for="qp in chatQuickPrompts" :key="qp"
-                @click="chatInput = qp"
+                @click="chatInput = qp; sendChatMessage()"
                 class="px-3 py-1.5 bg-muted hover:bg-border border border-border rounded-full text-xs text-foreground transition-colors">
                 {{ qp }}
               </button>
@@ -990,14 +1061,73 @@
               <div class="w-7 h-7 rounded-full bg-primary/20 flex items-center justify-center text-xs shrink-0 mb-0.5">👤</div>
             </div>
 
+            <!-- Build progress card (Modo Construção inline, estilo Claude) -->
+            <div v-else-if="msg.type === 'build'" class="flex gap-2 items-start">
+              <div class="w-7 h-7 rounded-full bg-violet-500/15 flex items-center justify-center text-xs shrink-0 mt-0.5">✦</div>
+              <div class="max-w-[88%] w-full">
+                <div class="bg-card border border-border rounded-2xl rounded-bl-sm px-4 py-3">
+                  <div class="flex items-center gap-2 mb-2">
+                    <span v-if="msg.building" class="w-3.5 h-3.5 border-2 border-violet-500/30 border-t-violet-500 rounded-full animate-spin"></span>
+                    <span v-else-if="msg.failed" class="text-destructive text-sm">⚠</span>
+                    <span v-else class="text-success text-sm">✓</span>
+                    <span class="text-sm font-semibold text-foreground flex-1">{{ msg.building ? 'A construir o teu plugin…' : (msg.failed ? 'Construção interrompida' : 'Plugin construído') }}</span>
+                    <button v-if="msg.building" @click="msg.aborted = true" class="text-xs text-destructive hover:underline font-semibold shrink-0">Cancelar</button>
+                  </div>
+
+                  <div class="space-y-0.5">
+                    <div v-for="(ph, pi) in msg.phases" :key="pi" class="flex items-center gap-2 py-1">
+                      <span class="shrink-0 w-4 text-center">
+                        <span v-if="ph.status === 'running'" class="w-3 h-3 inline-block border-2 border-violet-500/30 border-t-violet-500 rounded-full animate-spin"></span>
+                        <span v-else-if="ph.status === 'done'" class="text-success text-sm">✓</span>
+                        <span v-else-if="ph.status === 'error'" class="text-destructive text-sm">⚠</span>
+                        <span v-else-if="ph.status === 'cancelled'" class="text-muted-foreground/40 text-xs">✕</span>
+                        <span class="text-muted-foreground/40 text-sm" v-else>○</span>
+                      </span>
+                      <span class="text-sm" :class="ph.status === 'running' ? 'text-foreground font-medium' : (ph.status === 'pending' ? 'text-muted-foreground/50' : 'text-muted-foreground')">{{ ph.label }}</span>
+                    </div>
+                  </div>
+
+                  <div v-if="msg.phases && msg.phases.some(p => p.reply)" class="border-t border-border mt-2 pt-2">
+                    <button @click="msg.showDetails = !msg.showDetails"
+                      class="text-[11px] text-muted-foreground hover:text-foreground flex items-center gap-1 transition-colors">
+                      <span class="text-[9px]">{{ msg.showDetails ? '▾' : '▸' }}</span> Ver detalhes técnicos
+                    </button>
+                    <div v-if="msg.showDetails" class="mt-2 space-y-1.5">
+                      <template v-for="(ph, pi) in msg.phases" :key="pi">
+                        <div v-if="ph.reply" class="text-[11px] leading-relaxed">
+                          <span class="font-semibold text-foreground">{{ ph.label }}:</span>
+                          <span class="text-muted-foreground"> {{ ph.reply }}</span>
+                        </div>
+                      </template>
+                    </div>
+                  </div>
+                </div>
+
+                <div v-if="!msg.building && !msg.failed" class="mt-1.5 flex items-center gap-1.5">
+                  <span class="text-[10px] text-success font-semibold flex items-center gap-1">✓ Aplicadas e guardadas automaticamente</span>
+                </div>
+                <div v-if="msg.failed && msg.snapshot" class="mt-2 flex items-center gap-2">
+                  <button @click="restoreToVersion(msg.snapshot)"
+                    class="px-3 py-1.5 bg-amber-500/10 hover:bg-amber-500/20 text-amber-700 dark:text-amber-400 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-colors">
+                    <RotateCcwIcon class="w-3 h-3" /> Restaurar cópia de segurança (v{{ msg.snapshot.version }})
+                  </button>
+                </div>
+                <p v-if="msg.error" class="mt-1.5 text-[10px] text-destructive">{{ msg.error }}</p>
+              </div>
+            </div>
+
             <!-- Assistant message -->
             <div v-else class="flex gap-2 items-end">
               <div class="w-7 h-7 rounded-full bg-violet-500/15 flex items-center justify-center text-xs shrink-0 mb-0.5">✦</div>
               <div class="max-w-[82%]">
                 <div class="bg-card border border-border rounded-2xl rounded-bl-sm px-4 py-2.5 text-sm leading-relaxed whitespace-pre-wrap text-foreground">{{ msg.content }}</div>
+                
+                <div v-if="msg.cached" class="mt-1.5 flex items-center gap-1 text-[10px] text-indigo-500 font-semibold bg-indigo-500/5 px-2 py-0.5 rounded-full w-max border border-indigo-500/10">
+                  ⚡ Resolvido via memória local (Sem custo de tokens)
+                </div>
+
                 <div v-if="msg.applied" class="mt-1.5 flex items-center gap-1.5">
-                  <span class="text-[10px] text-success font-semibold flex items-center gap-1">✓ Alterações aplicadas ao plugin</span>
-                  <button @click="save()" class="text-[10px] px-2 py-0.5 bg-success/10 text-success rounded-full hover:bg-success/20 transition-colors">Guardar agora</button>
+                  <span class="text-[10px] text-success font-semibold flex items-center gap-1">✓ Aplicadas e guardadas automaticamente</span>
                 </div>
                 <div v-else-if="msg.updates && !msg.applied" class="mt-1.5 flex items-center gap-2">
                   <button @click="applyChatUpdates(msg.updates, i)"
@@ -1012,7 +1142,7 @@
           </template>
 
           <!-- Typing indicator -->
-          <div v-if="chatLoading" class="flex gap-2 items-end">
+          <div v-if="chatLoading && !lastMsgBuilding" class="flex gap-2 items-end">
             <div class="w-7 h-7 rounded-full bg-violet-500/15 flex items-center justify-center text-xs shrink-0">✦</div>
             <div class="bg-card border border-border rounded-2xl rounded-bl-sm px-4 py-3 flex items-center gap-1">
               <span class="w-1.5 h-1.5 bg-muted-foreground rounded-full animate-bounce" style="animation-delay:0ms"></span>
@@ -1189,14 +1319,18 @@
 import { ref, reactive, computed, nextTick, watch } from 'vue';
 import { router } from '@inertiajs/vue3';
 import { useI18n } from 'vue-i18n';
+import axios from 'axios';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import {
   DownloadIcon, UploadIcon, SparklesIcon,
-  CheckCircleIcon, XCircleIcon, PlusIcon, SlidersIcon,
+  CheckCircleIcon, XCircleIcon, PlusIcon, SlidersIcon, RotateCcwIcon,
 } from 'lucide-vue-next';
 
 const { t } = useI18n();
-const props = defineProps({ plugin: { type: Object, default: null } });
+const props = defineProps({
+  plugin:       { type: Object, default: null },
+  pluginAgents: { type: Array,  default: () => [] },
+});
 
 const inp = 'w-full px-3 py-2 bg-muted border border-border rounded-lg text-sm focus:outline-none focus:border-primary';
 
@@ -1214,6 +1348,7 @@ const tabs = [
   { id: 'ai',      label: '✨ IA'    },
   { id: 'chat',    label: '💬 Chat IA' },
   { id: 'versions', label: '📦 Versões' },
+  { id: 'recipes', label: '⚡ Macros' },
   { id: 'export',  label: 'Exportar' },
 ];
 
@@ -1725,25 +1860,22 @@ async function sendChatMessage() {
     if (!res.ok || data.error) {
       chatMessages.value.push({ role: 'assistant', content: '⚠️ ' + (data.error ?? 'Erro desconhecido.') });
     } else {
-      chatMessages.value.push({
-        role:    'assistant',
-        content: data.reply,
-        updates: data.updates ?? null,
-        applied: data.applied ?? false,
-      });
+      if (data.reply) {
+        chatMessages.value.push({
+          role:    'assistant',
+          content: data.reply,
+          updates: data.updates ?? null,
+          applied: data.applied ?? false,
+          cached:  data.cached ?? false,
+        });
+      }
+      if (data.applied && data.plugin) applyServerPlugin(data.plugin);
 
-      if (data.applied && data.plugin) {
-        const p = data.plugin;
-        if (p.plugin_php    !== undefined) form.plugin_php    = p.plugin_php;
-        if (p.widget_blade  !== undefined) form.widget_blade  = p.widget_blade;
-        if (p.widget_js     !== undefined) form.widget_js     = p.widget_js;
-        if (p.custom_css    !== undefined) form.custom_css    = p.custom_css;
-        if (p.settings_schema)             form.settings_schema.splice(0, form.settings_schema.length, ...p.settings_schema);
-        if (p.hooks)                       form.hooks         = [...p.hooks];
-        if (p.label)                       form.label         = p.label;
-        if (p.description   !== undefined) form.description   = p.description;
-        if (p.version)                     form.version       = p.version;
-        if (p.status)                      form.status        = p.status;
+      // A IA decidiu que isto justifica uma construção completa → pipeline inline
+      if (data.build && data.build.brief) {
+        const buildIdx = chatMessages.value.length;
+        chatMessages.value.push({ role: 'assistant', type: 'build', phases: [], building: true });
+        await runBuildFlow(data.build.brief, buildIdx);
       }
     }
   } catch (e) {
@@ -1753,6 +1885,189 @@ async function sendChatMessage() {
     chatScrollToBottom();
     nextTick(autoResizeChatTextarea);
   }
+}
+
+// Merge a fresh server plugin into the local form
+function applyServerPlugin(p) {
+  if (!p) return;
+  if (p.plugin_php    !== undefined) form.plugin_php    = p.plugin_php;
+  if (p.widget_blade  !== undefined) form.widget_blade  = p.widget_blade;
+  if (p.widget_js     !== undefined) form.widget_js     = p.widget_js;
+  if (p.custom_css    !== undefined) form.custom_css    = p.custom_css;
+  if (p.settings_schema)             form.settings_schema.splice(0, form.settings_schema.length, ...p.settings_schema);
+  if (p.hooks)                       form.hooks         = [...p.hooks];
+  if (p.label)                       form.label         = p.label;
+  if (p.description   !== undefined) form.description   = p.description;
+  if (p.version)                     form.version       = p.version;
+  if (p.status)                      form.status        = p.status;
+}
+
+// ── Modo Construção — pipeline inline na conversa (estilo Claude) ───────────
+const PHASE_META = {
+  logic:    'A gerar a lógica do plugin',
+  widget:   'A criar a interface (widget)',
+  settings: 'A definir as configurações',
+};
+function phaseLabel(id) { return PHASE_META[id] ?? 'A trabalhar no plugin'; }
+
+// Esconde o indicador genérico de "a escrever" quando há um cartão de construção activo
+const lastMsgBuilding = computed(() => {
+  const m = chatMessages.value[chatMessages.value.length - 1];
+  return !!(m && m.type === 'build' && m.building);
+});
+
+function chatCsrf() { return document.querySelector('meta[name="csrf-token"]')?.content ?? ''; }
+
+// Executa um agente (segundo plano); actualiza a fase e devolve {ok, isFatal}
+async function runBuildAgent(phase, ctx) {
+  phase.status = 'running';
+  try {
+    const fd = new FormData();
+    fd.append('agent', phase.agent);
+    if (ctx.brief)     fd.append('brief', ctx.brief);
+    if (ctx.direction) fd.append('direction', ctx.direction);
+    if (ctx.note)      fd.append('note', ctx.note);
+    fd.append('_token', chatCsrf());
+    const res = await fetch(`/plugins/${props.plugin.uuid}/build/step`, { method: 'POST', body: fd });
+    if (!(res.headers.get('content-type') ?? '').includes('application/json')) {
+      phase.status = 'error'; return { ok: false, isFatal: true };
+    }
+    const data = await res.json();
+    if (!res.ok || data.error) {
+      phase.status = 'error'; phase.reply = data.error ?? 'Erro.';
+      return { ok: false, isFatal: !!data.is_fatal };
+    }
+    if (data.applied && data.plugin) applyServerPlugin(data.plugin);
+    phase.reply = data.reply ?? '';
+    phase.status = 'done';
+    return { ok: true, isFatal: false };
+  } catch (e) {
+    phase.status = 'error'; phase.reply = e.message;
+    return { ok: false, isFatal: false };
+  }
+}
+
+// Orquestra a construção completa do plugin, mostrando fases legíveis na conversa.
+async function runBuildFlow(brief, msgIdx) {
+  const msg = chatMessages.value[msgIdx];
+  msg.building = true; msg.failed = false; msg.error = ''; msg.aborted = false;
+  msg.phases = [{ agent: '__plan__', label: 'A planear a construção', status: 'running', reply: '' }];
+  chatScrollToBottom();
+
+  let direction = '';
+
+  // 1. Planear
+  try {
+    const fd = new FormData();
+    fd.append('brief', brief);
+    fd.append('_token', chatCsrf());
+    const res = await fetch(`/plugins/${props.plugin.uuid}/build/plan`, { method: 'POST', body: fd });
+    if (!(res.headers.get('content-type') ?? '').includes('application/json')) {
+      msg.phases[0].status = 'error'; msg.building = false; msg.failed = true;
+      msg.error = 'Sessão expirada — faz login novamente.'; return;
+    }
+    const data = await res.json();
+    if (!res.ok || data.error) {
+      msg.phases[0].status = 'error'; msg.building = false; msg.failed = true;
+      msg.error = data.error ?? 'Não consegui planear a construção.'; return;
+    }
+    direction = data.direction ?? '';
+    msg.phases[0].status = 'done';
+    msg.phases[0].reply = direction;
+
+    if (data.snapshot) {
+      msg.snapshot = data.snapshot;
+      await loadVersions(); // Atualizar lista na aba de versões
+    }
+
+    msg.phases.push(...(data.agents ?? []).map(id => ({ agent: id, label: phaseLabel(id), status: 'pending', reply: '' })));
+  } catch (e) {
+    msg.phases[0].status = 'error'; msg.building = false; msg.failed = true;
+    msg.error = e.message; return;
+  }
+
+  // 2. Executar agentes em sequência
+  const ctx = { brief, direction };
+  for (const phase of msg.phases) {
+    if (phase.agent === '__plan__' || phase.status === 'done') continue;
+
+    if (msg.aborted) {
+      phase.status = 'cancelled';
+      phase.reply = 'Cancelado pelo utilizador.';
+      continue;
+    }
+
+    chatScrollToBottom();
+    const r = await runBuildAgent(phase, ctx);
+
+    if (msg.aborted) {
+      phase.status = 'cancelled';
+      phase.reply = 'Cancelado pelo utilizador.';
+      continue;
+    }
+
+    if (!r.ok && r.isFatal) {
+      msg.building = false; msg.failed = true;
+      msg.error = 'A construção foi interrompida por um erro do sistema de IA. Tenta novamente daqui a pouco.';
+      return;
+    }
+  }
+
+  if (msg.aborted) {
+    msg.building = false;
+    msg.failed = true;
+    msg.error = 'Construção cancelada pelo utilizador.';
+    chatScrollToBottom();
+    return;
+  }
+
+  // 3. Rever a qualidade + corrigir automaticamente
+  const verifyPhase = { agent: '__verify__', label: 'A rever a qualidade', status: 'running', reply: '' };
+  msg.phases.push(verifyPhase);
+  chatScrollToBottom();
+  try {
+    const fd = new FormData();
+    fd.append('brief', brief);
+    if (direction) fd.append('direction', direction);
+    fd.append('_token', chatCsrf());
+    const res = await fetch(`/plugins/${props.plugin.uuid}/build/verify`, { method: 'POST', body: fd });
+    if (msg.aborted) {
+      verifyPhase.status = 'cancelled';
+      msg.building = false;
+      msg.failed = true;
+      msg.error = 'Construção cancelada pelo utilizador.';
+      chatScrollToBottom();
+      return;
+    }
+    const data = (res.headers.get('content-type') ?? '').includes('application/json') ? await res.json() : {};
+    if (res.ok && !data.error) {
+      verifyPhase.reply = data.summary ?? '';
+      for (const iss of (data.issues ?? [])) {
+        if (msg.aborted) break;
+        const fixPhase = { agent: iss.agent, label: 'A melhorar: ' + phaseLabel(iss.agent), status: 'running', reply: '' };
+        msg.phases.push(fixPhase);
+        chatScrollToBottom();
+        const r = await runBuildAgent(fixPhase, { brief, direction, note: iss.reason });
+        if (msg.aborted) {
+          fixPhase.status = 'cancelled';
+          break;
+        }
+        if (!r.ok && r.isFatal) break;
+      }
+    }
+    verifyPhase.status = msg.aborted ? 'cancelled' : 'done';
+  } catch (e) {
+    verifyPhase.status = 'done';
+  }
+
+  msg.building = false;
+  if (msg.aborted) {
+    msg.failed = true;
+    msg.error = 'Construção cancelada pelo utilizador.';
+  } else {
+    feedback.success = 'Plugin construído com sucesso!';
+  }
+  chatScrollToBottom();
 }
 
 function applyChatUpdates(updates, msgIdx) {
@@ -1870,6 +2185,62 @@ async function publishPlugin() {
     else { feedback.success = t('plugins.publish_success'); setTimeout(() => router.reload(), 1500); }
   } catch (e) { feedback.error = e.message; }
   finally { publishing.value = false; }
+}
+
+// ── Receitas / Macros ─────────────────────────────────────────────
+const recipes = ref([]);
+const loadingRecipes = ref(false);
+const recipeInputs = ref({});
+
+watch(activeTab, (tab) => {
+  if (tab === 'recipes' && recipes.value.length === 0 && !loadingRecipes.value) {
+    loadRecipes();
+  }
+});
+
+async function loadRecipes() {
+  loadingRecipes.value = true;
+  try {
+    const res = await axios.get(`/plugins/${props.plugin.uuid}/recipes`);
+    recipes.value = res.data.recipes || [];
+    recipes.value.forEach(recipe => {
+      const placeholders = extractPlaceholders(recipe.prompt_pattern);
+      if (!recipeInputs.value[recipe.id]) {
+        recipeInputs.value[recipe.id] = {};
+      }
+      placeholders.forEach(ph => {
+        if (recipeInputs.value[recipe.id][ph] === undefined) {
+          recipeInputs.value[recipe.id][ph] = '';
+        }
+      });
+    });
+  } catch (e) {
+    console.error('Erro ao carregar receitas:', e);
+  } finally {
+    loadingRecipes.value = false;
+  }
+}
+
+function extractPlaceholders(pattern) {
+  if (!pattern) return [];
+  const matches = pattern.match(/\{([a-zA-Z0-9_]+)\}/g);
+  if (!matches) return [];
+  return matches.map(m => m.slice(1, -1));
+}
+
+async function executeRecipe(recipe) {
+  let prompt = recipe.prompt_pattern;
+  const inputs = recipeInputs.value[recipe.id] || {};
+  const placeholders = extractPlaceholders(recipe.prompt_pattern);
+  
+  for (const ph of placeholders) {
+    const val = inputs[ph] || '';
+    prompt = prompt.replace(`{${ph}}`, val);
+  }
+  
+  chatInput.value = prompt;
+  activeTab.value = 'chat';
+  await sendChatMessage();
 }
 </script>
 
