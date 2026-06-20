@@ -8,10 +8,6 @@
           <span class="hidden sm:inline">Inspiração por Categoria</span>
           <span class="sm:hidden">Inspirar</span>
         </button>
-        <button @click="openCreate"
-          class="px-2 sm:px-4 py-2 bg-primary text-primary-foreground rounded-lg text-xs sm:text-sm font-semibold hover:opacity-90 transition-opacity">
-          + <span class="hidden sm:inline">{{ t('themes.new') }}</span><span class="sm:hidden">Novo</span>
-        </button>
       </div>
     </template>
 

@@ -1,11 +1,6 @@
 <template>
   <AppLayout :title="t('plugins.title')">
-    <template #actions>
-      <button @click="openCreate"
-        class="px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-semibold hover:opacity-90 transition-opacity">
-        + {{ t('plugins.new') }}
-      </button>
-    </template>
+
 
     <div v-if="plugins.length" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
       <div v-for="plugin in plugins" :key="plugin.uuid"
