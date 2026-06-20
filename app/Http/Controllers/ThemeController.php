@@ -514,7 +514,7 @@ class ThemeController extends Controller
         try {
             $plan = AIEngine::buildThemePlan($data['brief'], $data['skill'] ?? '');
         } catch (\Throwable $e) {
-            return response()->json(['error' => $e->getMessage()], 422);
+            return response()->json(['error' => $e->getMessage(), 'is_fatal' => self::isFatalAiError($e)], 422);
         }
 
         return response()->json($plan);
@@ -548,7 +548,7 @@ class ThemeController extends Controller
                 $data['note'] ?? '',
             );
         } catch (\Throwable $e) {
-            return response()->json(['error' => $e->getMessage()], 422);
+            return response()->json(['error' => $e->getMessage(), 'is_fatal' => self::isFatalAiError($e)], 422);
         }
 
         $applied = $this->applyThemeUpdates($theme, $result['updates'] ?? null);
@@ -582,7 +582,7 @@ class ThemeController extends Controller
         try {
             $result = AIEngine::verifyTheme($data['brief'] ?? '', $data['direction'] ?? '', $themeJson);
         } catch (\Throwable $e) {
-            return response()->json(['error' => $e->getMessage()], 422);
+            return response()->json(['error' => $e->getMessage(), 'is_fatal' => self::isFatalAiError($e)], 422);
         }
 
         return response()->json($result);
@@ -1160,5 +1160,36 @@ PROMPT;
             . "    <link href=\"{$googleUrl}\" rel=\"stylesheet\">";
 
         return str_replace('</head>', "    {$fontLink}\n</head>", $layout);
+    }
+
+    /** Determine if an AI exception represents a systemic/fatal error (e.g. auth, quota, network). */
+    private static function isFatalAiError(\Throwable $e): bool
+    {
+        $msg = $e->getMessage();
+
+        // 1. Chave não configurada / Provedor em falta
+        if (str_contains($msg, 'Chave AI não configurada') || str_contains($msg, 'No AI API key configured')) {
+            return true;
+        }
+
+        // 2. Erros de rede ou SSL do cURL
+        if (str_contains($msg, 'cURL error') || str_contains($msg, 'SSL certificate') || str_contains($msg, 'Could not resolve host') || str_contains($msg, 'Connection refused')) {
+            return true;
+        }
+
+        // 3. Erros HTTP das APIs (401 Unauthorized, 403 Forbidden, 429 Rate Limit/Quota, 500/503 Down)
+        if (str_contains($msg, 'API error:')) {
+            if (stripos($msg, 'rate_limit') !== false || stripos($msg, 'quota') !== false || stripos($msg, 'exhausted') !== false || str_contains($msg, '429')) {
+                return true;
+            }
+            if (stripos($msg, 'unauthorized') !== false || stripos($msg, 'invalid_key') !== false || stripos($msg, 'invalid_api_key') !== false || str_contains($msg, '401') || str_contains($msg, '403')) {
+                return true;
+            }
+            if (str_contains($msg, '500') || str_contains($msg, '503') || stripos($msg, 'overloaded') !== false || stripos($msg, 'down') !== false) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }

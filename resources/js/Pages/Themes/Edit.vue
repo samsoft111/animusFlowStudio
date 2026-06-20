@@ -3749,16 +3749,20 @@ async function runAgent(step, note = '') {
     fd.append('_token', csrf());
     const res = await fetch(`/themes/${props.theme.uuid}/build/step`, { method: 'POST', body: fd });
     if (!(res.headers.get('content-type') ?? '').includes('application/json')) {
-      step.status = 'error'; step.reply = 'Sessão expirada.'; return false;
+      step.status = 'error'; step.reply = 'Sessão expirada.'; return { ok: false, isFatal: true };
     }
     const data = await res.json();
-    if (!res.ok || data.error) { step.status = 'error'; step.reply = data.error ?? 'Erro.'; return false; }
+    if (!res.ok || data.error) {
+      step.status = 'error';
+      step.reply = data.error ?? 'Erro.';
+      return { ok: false, isFatal: !!data.is_fatal };
+    }
     if (data.applied && data.theme) applyServerTheme(data.theme);
     step.reply = data.reply ?? '';
     step.status = 'done';
-    return true;
+    return { ok: true, isFatal: false };
   } catch (e) {
-    step.status = 'error'; step.reply = e.message; return false;
+    step.status = 'error'; step.reply = e.message; return { ok: false, isFatal: false };
   }
 }
 
@@ -3769,15 +3773,19 @@ async function runAll() {
   try {
     for (const step of buildSteps.value) {
       if (step.status === 'done') continue;
-      const ok = await runAgent(step);
-      if (!ok) {
+      const res = await runAgent(step);
+      if (!res.ok) {
         failed.push(step.label);
+        if (res.isFatal) {
+          feedback.error = `Erro fatal no sistema: ${step.reply}. A abortar a construção.`;
+          break; // Stop running remaining agents on fatal error
+        }
         if (!buildContinueOnError.value) break; // stop on first error if opted
       }
     }
-    if (failed.length) {
+    if (failed.length && !feedback.error) {
       feedback.error = `Falharam ${failed.length} agente(s): ${failed.join(', ')}. Podes voltar a corrê-los individualmente.`;
-    } else if (buildSteps.value.every(s => s.status === 'done')) {
+    } else if (!failed.length && buildSteps.value.every(s => s.status === 'done')) {
       feedback.success = 'Construção concluída! Guarda para persistir.';
     }
   } finally {
@@ -3818,10 +3826,16 @@ async function verifyAndFix() {
       const m = agentMeta(iss.agent);
       const step = { agent: iss.agent, label: '🔧 ' + m.label, icon: m.icon, status: 'pending', reply: '' };
       buildSteps.value.push(step);
-      await runAgent(step, iss.reason);
+      const resVal = await runAgent(step, iss.reason);
+      if (!resVal.ok && resVal.isFatal) {
+        feedback.error = `Erro fatal no sistema durante a correção: ${step.reply}. A abortar a correção.`;
+        break; // Stop running remaining corrections on fatal error
+      }
     }
     buildRunning.value = false;
-    feedback.success = `Verificador corrigiu ${buildIssues.value.length} ponto(s). Guarda para persistir.`;
+    if (!feedback.error) {
+      feedback.success = `Verificador corrigiu ${buildIssues.value.length} ponto(s). Guarda para persistir.`;
+    }
   } catch (e) {
     feedback.error = e.message;
   } finally {
