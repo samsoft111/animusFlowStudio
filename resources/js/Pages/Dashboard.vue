@@ -10,14 +10,60 @@
                 :value="stats.published_plugins"  icon="upload" color="success" />
     </div>
 
+    <!-- Quick Actions -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+      <!-- Card Criar Tema -->
+      <Link href="/themes/create" class="group relative overflow-hidden bg-card hover:bg-muted/30 border border-border hover:border-primary/50 rounded-2xl p-6 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col justify-between gap-4 cursor-pointer">
+        <div class="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-bl-full translate-x-8 -translate-y-8 group-hover:scale-110 transition-transform duration-300" />
+        <div class="relative flex items-start gap-4">
+          <div class="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center shrink-0 text-primary group-hover:bg-primary group-hover:text-white transition-all duration-300">
+            <PaletteIcon class="w-6 h-6" />
+          </div>
+          <div>
+            <h3 class="font-bold text-lg text-foreground group-hover:text-primary transition-colors flex items-center gap-1.5">
+              Criar Novo Tema
+            </h3>
+            <p class="text-sm text-muted-foreground mt-1.5 leading-relaxed">
+              Crie um novo tema visual exclusivo. Use o assistente de IA ou configure do zero layouts, cores, tipografia, seções e animações de entrada.
+            </p>
+          </div>
+        </div>
+        <div class="flex items-center text-xs font-semibold text-primary group-hover:translate-x-1.5 transition-transform duration-300 self-end mt-2">
+          Começar a desenhar <ArrowRightIcon class="w-4 h-4 ml-1" />
+        </div>
+      </Link>
+
+      <!-- Card Criar Plugin -->
+      <Link href="/plugins/create" class="group relative overflow-hidden bg-card hover:bg-muted/30 border border-border hover:border-primary/50 rounded-2xl p-6 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col justify-between gap-4 cursor-pointer">
+        <div class="absolute top-0 right-0 w-32 h-32 bg-indigo-500/5 rounded-bl-full translate-x-8 -translate-y-8 group-hover:scale-110 transition-transform duration-300" />
+        <div class="relative flex items-start gap-4">
+          <div class="w-12 h-12 rounded-xl bg-indigo-500/10 flex items-center justify-center shrink-0 text-indigo-500 group-hover:bg-indigo-500 group-hover:text-white transition-all duration-300">
+            <PuzzleIcon class="w-6 h-6" />
+          </div>
+          <div>
+            <h3 class="font-bold text-lg text-foreground group-hover:text-indigo-500 transition-colors flex items-center gap-1.5">
+              Criar Novo Plugin
+            </h3>
+            <p class="text-sm text-muted-foreground mt-1.5 leading-relaxed">
+              Desenvolva novas funcionalidades, extensões de PHP/JS, widgets interativos de conteúdo e integrações com APIs e serviços externos.
+            </p>
+          </div>
+        </div>
+        <div class="flex items-center text-xs font-semibold text-indigo-500 group-hover:translate-x-1.5 transition-transform duration-300 self-end mt-2">
+          Começar a programar <ArrowRightIcon class="w-4 h-4 ml-1" />
+        </div>
+      </Link>
+    </div>
+
     <!-- Recent items -->
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
       <!-- Recent themes -->
       <div class="bg-card border border-border rounded-2xl p-6">
         <div class="flex items-center justify-between mb-4">
           <h2 class="font-semibold text-foreground">{{ t('dashboard.recent_themes') }}</h2>
-          <Link href="/themes/create" class="text-xs text-primary hover:underline font-medium">
-            + {{ t('common.new') }}
+          <Link href="/themes/create" class="flex items-center gap-1 px-3 py-1.5 bg-primary/10 hover:bg-primary text-primary hover:text-white rounded-lg text-xs font-semibold transition-all duration-300 cursor-pointer">
+            <PlusIcon class="w-3.5 h-3.5" />
+            {{ t('common.new') }}
           </Link>
         </div>
         <div v-if="recentThemes.length" class="space-y-2">
@@ -38,8 +84,9 @@
       <div class="bg-card border border-border rounded-2xl p-6">
         <div class="flex items-center justify-between mb-4">
           <h2 class="font-semibold text-foreground">{{ t('dashboard.recent_plugins') }}</h2>
-          <Link href="/plugins/create" class="text-xs text-primary hover:underline font-medium">
-            + {{ t('common.new') }}
+          <Link href="/plugins/create" class="flex items-center gap-1 px-3 py-1.5 bg-indigo-500/10 hover:bg-indigo-500 text-indigo-500 hover:text-white rounded-lg text-xs font-semibold transition-all duration-300 cursor-pointer">
+            <PlusIcon class="w-3.5 h-3.5" />
+            {{ t('common.new') }}
           </Link>
         </div>
         <div v-if="recentPlugins.length" class="space-y-2">
@@ -64,6 +111,7 @@ import { Link } from '@inertiajs/vue3';
 import { useI18n } from 'vue-i18n';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import StatCard from '@/Components/StatCard.vue';
+import { PaletteIcon, PuzzleIcon, ArrowRightIcon, PlusIcon } from 'lucide-vue-next';
 
 const { t } = useI18n();
 
