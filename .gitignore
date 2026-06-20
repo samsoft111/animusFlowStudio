@@ -22,3 +22,7 @@
 Homestead.json
 Homestead.yaml
 Thumbs.db
+
+# Documentos de planeamento (não são assets web — manter fora do public/ e do git)
+/public/**/*Blueprint*.pdf
+/public/**/*blueprint*.pdf
