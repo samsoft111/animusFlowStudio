@@ -32,5 +32,8 @@ class StudioPlugin extends Model
     {
         parent::boot();
         static::creating(fn ($m) => $m->uuid ??= (string) Str::uuid());
+        static::saving(function ($m) {
+            $m->is_published = ($m->status === 'published');
+        });
     }
 }

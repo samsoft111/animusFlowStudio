@@ -2,12 +2,12 @@
   <AppLayout :title="t('dashboard.title')">
     <!-- Stats -->
     <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-      <StatCard :label="t('dashboard.themes')"    :value="stats.themes"           icon="palette" />
-      <StatCard :label="t('dashboard.plugins')"   :value="stats.plugins"          icon="puzzle" />
+      <StatCard :label="t('dashboard.themes')"    :value="stats.themes"           icon="palette" href="/themes" />
+      <StatCard :label="t('dashboard.plugins')"   :value="stats.plugins"          icon="puzzle" href="/plugins" />
       <StatCard :label="t('themes.status.published') + ' ' + t('nav.themes')"
-                :value="stats.published_themes"   icon="upload" color="success" />
+                :value="stats.published_themes"   icon="upload" color="success" href="/themes?status=published" />
       <StatCard :label="t('themes.status.published') + ' ' + t('nav.plugins')"
-                :value="stats.published_plugins"  icon="upload" color="success" />
+                :value="stats.published_plugins"  icon="upload" color="success" href="/plugins?status=published" />
     </div>
 
     <!-- Quick Actions -->

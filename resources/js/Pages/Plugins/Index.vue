@@ -2,8 +2,8 @@
   <AppLayout :title="t('plugins.title')">
 
 
-    <div v-if="plugins.length" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
-      <div v-for="plugin in plugins" :key="plugin.uuid"
+    <div v-if="filteredPlugins.length" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+      <div v-for="plugin in filteredPlugins" :key="plugin.uuid"
         class="group bg-card border border-border hover:border-primary/50 rounded-2xl p-5 flex flex-col justify-between shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 gap-4">
 
         <div class="flex items-start gap-4">
@@ -86,15 +86,27 @@
 </template>
 
 <script setup>
-import { ref, nextTick } from 'vue';
+import { ref, nextTick, computed } from 'vue';
 import { Link, router, useForm } from '@inertiajs/vue3';
 import { useI18n } from 'vue-i18n';
+
 import AppLayout from '@/Layouts/AppLayout.vue';
 import { PuzzleIcon } from 'lucide-vue-next';
 
 const { t } = useI18n();
 
-defineProps({ plugins: { type: Array, default: () => [] } });
+const props = defineProps({ plugins: { type: Array, default: () => [] } });
+
+// Filtro baseado na Query URL (?status=...)
+const queryStatus = computed(() => {
+  if (typeof window === 'undefined') return null;
+  return new URLSearchParams(window.location.search).get('status');
+});
+
+const filteredPlugins = computed(() => {
+  if (!queryStatus.value) return props.plugins;
+  return props.plugins.filter(p => p.status === queryStatus.value);
+});
 
 // ── Create plugin (name prompt) ──
 const showCreateModal = ref(false);

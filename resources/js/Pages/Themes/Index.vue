@@ -12,8 +12,8 @@
     </template>
 
     <!-- Themes grid -->
-    <div v-if="themes.length" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
-      <div v-for="theme in themes" :key="theme.uuid"
+    <div v-if="filteredThemes.length" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+      <div v-for="theme in filteredThemes" :key="theme.uuid"
         class="group bg-card border border-border hover:border-primary/50 rounded-2xl p-5 flex flex-col justify-between shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 gap-4">
 
         <!-- Preview -->
@@ -251,7 +251,18 @@ import axios from 'axios';
 
 const { t } = useI18n();
 
-defineProps({ themes: { type: Array, default: () => [] } });
+const props = defineProps({ themes: { type: Array, default: () => [] } });
+
+// Filtro baseado na Query URL (?status=...)
+const queryStatus = computed(() => {
+  if (typeof window === 'undefined') return null;
+  return new URLSearchParams(window.location.search).get('status');
+});
+
+const filteredThemes = computed(() => {
+  if (!queryStatus.value) return props.themes;
+  return props.themes.filter(t => t.status === queryStatus.value);
+});
 
 // ── Create theme (name prompt) ──
 const showCreateModal = ref(false);

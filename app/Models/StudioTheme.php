@@ -51,6 +51,9 @@ class StudioTheme extends Model
     {
         parent::boot();
         static::creating(fn ($m) => $m->uuid ??= (string) Str::uuid());
+        static::saving(function ($m) {
+            $m->is_published = ($m->status === 'published');
+        });
     }
 
     public function versions(): HasMany
