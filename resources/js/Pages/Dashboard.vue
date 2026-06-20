@@ -63,15 +63,15 @@
           <h2 class="font-semibold text-foreground">{{ t('dashboard.recent_themes') }}</h2>
         </div>
         <div v-if="recentThemes.length" class="space-y-2">
-          <div v-for="th in recentThemes" :key="th.uuid"
-            class="flex items-center justify-between p-3 hover:bg-muted rounded-xl transition-colors">
+          <Link v-for="th in recentThemes" :key="th.uuid" :href="`/themes/${th.uuid}/edit`"
+            class="flex items-center justify-between p-3 hover:bg-muted rounded-xl transition-colors group cursor-pointer">
             <div>
-              <p class="text-sm font-medium text-foreground">{{ th.label }}</p>
+              <p class="text-sm font-medium text-foreground group-hover:text-primary transition-colors">{{ th.label }}</p>
               <p class="text-xs text-muted-foreground">{{ th.name }}</p>
             </div>
-            <span class="px-2 py-0.5 rounded-full text-[11px] font-semibold"
+            <span class="px-2 py-0.5 rounded-full text-[11px] font-semibold transition-colors"
               :class="statusClass(th.status)">{{ t('themes.status.' + th.status) }}</span>
-          </div>
+          </Link>
         </div>
         <p v-else class="text-sm text-muted-foreground py-4 text-center">{{ t('dashboard.no_themes') }}</p>
       </div>
@@ -82,15 +82,15 @@
           <h2 class="font-semibold text-foreground">{{ t('dashboard.recent_plugins') }}</h2>
         </div>
         <div v-if="recentPlugins.length" class="space-y-2">
-          <div v-for="pl in recentPlugins" :key="pl.uuid"
-            class="flex items-center justify-between p-3 hover:bg-muted rounded-xl transition-colors">
+          <Link v-for="pl in recentPlugins" :key="pl.uuid" :href="`/plugins/${pl.uuid}/edit`"
+            class="flex items-center justify-between p-3 hover:bg-muted rounded-xl transition-colors group cursor-pointer">
             <div>
-              <p class="text-sm font-medium text-foreground">{{ pl.label }}</p>
+              <p class="text-sm font-medium text-foreground group-hover:text-indigo-500 transition-colors">{{ pl.label }}</p>
               <p class="text-xs text-muted-foreground">{{ pl.name }}</p>
             </div>
-            <span class="px-2 py-0.5 rounded-full text-[11px] font-semibold"
+            <span class="px-2 py-0.5 rounded-full text-[11px] font-semibold transition-colors"
               :class="statusClass(pl.status)">{{ t('plugins.status.' + pl.status) }}</span>
-          </div>
+          </Link>
         </div>
         <p v-else class="text-sm text-muted-foreground py-4 text-center">{{ t('dashboard.no_plugins') }}</p>
       </div>
