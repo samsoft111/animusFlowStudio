@@ -7,7 +7,7 @@
         <h2 class="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-4">
           {{ t('about.developer') }}
         </h2>
-        <div class="flex items-center gap-4">
+        <div class="flex flex-col sm:flex-row items-start sm:items-center gap-4">
           <div class="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center shrink-0">
             <UserIcon class="w-7 h-7 text-primary" />
           </div>

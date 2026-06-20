@@ -3,10 +3,10 @@
     <div class="max-w-3xl space-y-5">
 
       <!-- Tab bar -->
-      <div class="flex flex-wrap gap-1 bg-muted p-1 rounded-xl w-fit">
+      <div class="flex flex-wrap gap-1 bg-muted p-1 rounded-xl w-full sm:w-fit overflow-x-auto">
         <button v-for="tab in tabs" :key="tab.id"
           @click="activeTab = tab.id"
-          class="px-4 py-1.5 rounded-lg text-sm font-semibold transition-colors"
+          class="px-3 sm:px-4 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition-colors whitespace-nowrap"
           :class="activeTab === tab.id
             ? 'bg-card text-foreground shadow-sm'
             : 'text-muted-foreground hover:text-foreground'">
@@ -30,7 +30,7 @@
               <label class="field-label">{{ t('settings.studio_name') }}</label>
               <input v-model="form.studio_name" placeholder="AnimusFlowStudio" class="field-input" />
             </div>
-            <div class="grid grid-cols-2 gap-4">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label class="field-label">{{ t('settings.studio_author') }}</label>
                 <input v-model="form.studio_author" placeholder="Your name" class="field-input" />
@@ -64,7 +64,7 @@
               </span>
             </div>
 
-            <div class="grid grid-cols-2 gap-4">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label class="field-label">{{ t('settings.provider') }}</label>
                 <select v-model="form.ai_provider" class="field-input" @change="onProviderChange">
@@ -151,7 +151,7 @@
           <div class="bg-card border border-border rounded-2xl p-6 space-y-4">
             <h2 class="font-semibold text-foreground">{{ t('settings.ai_behaviour') }}</h2>
 
-            <div class="grid grid-cols-2 gap-4">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label class="field-label">
                   {{ t('settings.ai_temperature') }}
@@ -195,7 +195,7 @@
             <h2 class="font-semibold text-foreground flex items-center gap-2">🎨 {{ t('settings.theme_defaults') }}</h2>
             <p class="text-xs text-muted-foreground -mt-2">{{ t('settings.theme_defaults_hint') }}</p>
 
-            <div class="grid grid-cols-3 gap-4">
+            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
               <div>
                 <label class="field-label">{{ t('settings.theme_default_primary') }}</label>
                 <div class="flex gap-2 items-center">
@@ -221,7 +221,7 @@
               </div>
             </div>
 
-            <div class="grid grid-cols-3 gap-4">
+            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
               <div>
                 <label class="field-label">{{ t('settings.theme_default_version') }}</label>
                 <input v-model="form.theme_default_version" placeholder="1.0.0" class="field-input" />
@@ -278,7 +278,7 @@
             <h2 class="font-semibold text-foreground flex items-center gap-2">🔌 {{ t('settings.plugin_defaults') }}</h2>
             <p class="text-xs text-muted-foreground -mt-2">{{ t('settings.plugin_defaults_hint') }}</p>
 
-            <div class="grid grid-cols-2 gap-4">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label class="field-label">{{ t('settings.plugin_default_version') }}</label>
                 <input v-model="form.plugin_default_version" placeholder="1.0.0" class="field-input" />
@@ -339,7 +339,7 @@
               <p class="field-hint">{{ t('settings.animusflow_api_key_hint') }}</p>
             </div>
 
-            <div class="grid grid-cols-2 gap-4">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label class="field-label">{{ t('settings.marketplace_publisher_name') }}</label>
                 <input v-model="form.marketplace_publisher_name" placeholder="Your Studio Name" class="field-input" />
@@ -438,7 +438,7 @@
             </div>
 
             <div v-show="form.media_storage_disk === 's3'" class="space-y-4 pt-2 border-t border-dashed">
-              <div class="grid grid-cols-2 gap-4">
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label class="field-label">AWS Access Key ID</label>
                   <input v-model="form.aws_access_key_id" placeholder="AKIA..." class="field-input" />
@@ -449,7 +449,7 @@
                 </div>
               </div>
 
-              <div class="grid grid-cols-2 gap-4">
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label class="field-label">AWS Default Region</label>
                   <input v-model="form.aws_default_region" placeholder="us-east-1" class="field-input" />
@@ -460,7 +460,7 @@
                 </div>
               </div>
 
-              <div class="grid grid-cols-2 gap-4">
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label class="field-label">Custom Endpoint (R2 / MinIO / etc.)</label>
                   <input v-model="form.aws_endpoint" placeholder="https://<accountid>.r2.cloudflarestorage.com" class="field-input" />

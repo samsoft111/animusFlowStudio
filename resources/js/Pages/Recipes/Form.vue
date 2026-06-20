@@ -14,7 +14,7 @@
         <div class="bg-card border border-border rounded-2xl p-6 space-y-4">
           <h2 class="font-semibold text-foreground flex items-center gap-2">⚡ Identidade da Receita</h2>
           
-          <div class="grid grid-cols-2 gap-4">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label class="field-label">Tipo de Receita</label>
               <select v-model="form.recipe_type" class="field-input">
@@ -124,12 +124,12 @@
         </div>
 
         <!-- Controls card -->
-        <div class="bg-card border border-border rounded-2xl p-6 flex items-center justify-between">
+        <div class="bg-card border border-border rounded-2xl p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <h3 class="font-semibold text-foreground">Estado Ativo</h3>
             <p class="text-xs text-muted-foreground">Desative esta receita para impedir que ela seja selecionada nos matches da IA.</p>
           </div>
-          <label class="relative inline-flex items-center cursor-pointer">
+          <label class="relative inline-flex items-center cursor-pointer shrink-0">
             <input type="checkbox" v-model="form.is_enabled" class="sr-only peer" />
             <div class="w-11 h-6 bg-border peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
           </label>

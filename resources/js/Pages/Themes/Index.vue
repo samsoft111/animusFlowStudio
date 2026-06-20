@@ -1,15 +1,16 @@
 <template>
   <AppLayout :title="t('themes.title')">
     <template #actions>
-      <div class="flex gap-2">
+      <div class="flex gap-1 sm:gap-2 flex-wrap justify-end items-center">
         <button @click="showInspireModal = true"
-          class="px-4 py-2 bg-gradient-to-r from-violet-500 to-indigo-500 text-white rounded-lg text-sm font-semibold hover:opacity-90 transition-opacity flex items-center gap-1.5">
-          <SparklesIcon class="w-4 h-4" />
-          Inspiração por Categoria
+          class="px-2 sm:px-4 py-2 bg-gradient-to-r from-violet-500 to-indigo-500 text-white rounded-lg text-xs sm:text-sm font-semibold hover:opacity-90 transition-opacity flex items-center gap-1 sm:gap-1.5">
+          <SparklesIcon class="w-4 h-4 shrink-0" />
+          <span class="hidden sm:inline">Inspiração por Categoria</span>
+          <span class="sm:hidden">Inspirar</span>
         </button>
         <button @click="openCreate"
-          class="px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-semibold hover:opacity-90 transition-opacity">
-          + {{ t('themes.new') }}
+          class="px-2 sm:px-4 py-2 bg-primary text-primary-foreground rounded-lg text-xs sm:text-sm font-semibold hover:opacity-90 transition-opacity">
+          + <span class="hidden sm:inline">{{ t('themes.new') }}</span><span class="sm:hidden">Novo</span>
         </button>
       </div>
     </template>

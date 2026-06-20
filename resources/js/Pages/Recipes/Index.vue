@@ -1,25 +1,25 @@
 <template>
   <AppLayout :title="'⚡ Receitas IA'">
     <template #actions>
-      <div class="flex items-center gap-2">
+      <div class="flex items-center gap-1 sm:gap-2 flex-wrap justify-end">
         <Link :href="'/recipes/analytics'"
-          class="flex items-center gap-1.5 px-3 py-2 bg-card border border-border text-foreground rounded-lg text-sm font-semibold hover:bg-muted transition-colors">
-          <BarChart3Icon class="w-4 h-4 text-primary" />
-          Analytics
+          class="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-2 bg-card border border-border text-foreground rounded-lg text-xs sm:text-sm font-semibold hover:bg-muted transition-colors">
+          <BarChart3Icon class="w-4 h-4 text-primary shrink-0" />
+          <span class="hidden sm:inline">Analytics</span>
         </Link>
         <button @click="triggerImport"
-          class="flex items-center gap-1.5 px-3 py-2 bg-card border border-border text-foreground rounded-lg text-sm font-semibold hover:bg-muted transition-colors">
-          <UploadIcon class="w-4 h-4" />
-          Importar (.afrecipes)
+          class="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-2 bg-card border border-border text-foreground rounded-lg text-xs sm:text-sm font-semibold hover:bg-muted transition-colors">
+          <UploadIcon class="w-4 h-4 shrink-0" />
+          <span class="hidden sm:inline">Importar</span>
         </button>
         <button @click="exportSelected"
-          class="flex items-center gap-1.5 px-3 py-2 bg-card border border-border text-foreground rounded-lg text-sm font-semibold hover:bg-muted transition-colors">
-          <DownloadIcon class="w-4 h-4" />
-          Exportar
+          class="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-2 bg-card border border-border text-foreground rounded-lg text-xs sm:text-sm font-semibold hover:bg-muted transition-colors">
+          <DownloadIcon class="w-4 h-4 shrink-0" />
+          <span class="hidden sm:inline">Exportar</span>
         </button>
         <Link :href="'/recipes/create'"
-          class="flex items-center gap-1.5 px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-semibold hover:opacity-90 transition-opacity">
-          + Nova Receita
+          class="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-4 py-2 bg-primary text-primary-foreground rounded-lg text-xs sm:text-sm font-semibold hover:opacity-90 transition-opacity">
+          + <span class="hidden sm:inline">Nova Receita</span><span class="sm:hidden">Nova</span>
         </Link>
       </div>
     </template>
@@ -90,29 +90,37 @@
           <table class="w-full border-collapse text-left">
             <thead>
               <tr class="border-b border-border bg-muted/30 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                <th class="p-4 w-10">
+                <th class="p-3 sm:p-4 w-10">
                   <input type="checkbox" :checked="isAllSelected" @change="toggleSelectAll" class="rounded border-border text-primary focus:ring-primary cursor-pointer" />
                 </th>
-                <th class="p-4">Receita</th>
-                <th class="p-4">Padrão / Tipo</th>
-                <th class="p-4 text-center">Confiança</th>
-                <th class="p-4 text-center">Fuzzy Match</th>
-                <th class="p-4 text-center">Hits / Tokens</th>
-                <th class="p-4">Último Uso</th>
-                <th class="p-4 text-right">Ações</th>
+                <th class="p-3 sm:p-4">Receita</th>
+                <th class="p-3 sm:p-4 hidden sm:table-cell">Padrão / Tipo</th>
+                <th class="p-3 sm:p-4 text-center hidden md:table-cell">Confiança</th>
+                <th class="p-3 sm:p-4 text-center hidden lg:table-cell">Fuzzy Match</th>
+                <th class="p-3 sm:p-4 text-center hidden md:table-cell">Hits / Tokens</th>
+                <th class="p-3 sm:p-4 hidden lg:table-cell">Último Uso</th>
+                <th class="p-3 sm:p-4 text-right">Ações</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-border text-sm text-foreground">
               <tr v-for="recipe in recipes" :key="recipe.id" class="hover:bg-muted/10 transition-colors">
-                <td class="p-4">
+                <td class="p-3 sm:p-4">
                   <input type="checkbox" :checked="selectedIds.includes(recipe.id)" @change="toggleSelect(recipe.id)" class="rounded border-border text-primary focus:ring-primary cursor-pointer" />
                 </td>
-                <td class="p-4 max-w-[200px]">
+                <td class="p-3 sm:p-4 max-w-[140px] sm:max-w-[200px]">
                   <div class="font-bold truncate text-foreground" :title="recipe.name">{{ recipe.name }}</div>
                   <div class="text-xs text-muted-foreground truncate" :title="recipe.description">{{ recipe.description || 'Sem descrição' }}</div>
+                  <!-- show type badge inline on mobile -->
+                  <div class="flex items-center gap-1 mt-1 sm:hidden">
+                    <span class="px-1.5 py-0.5 rounded-full text-[10px] font-semibold"
+                      :class="recipe.recipe_type === 'theme' ? 'bg-indigo-500/10 text-indigo-400' : 'bg-emerald-500/10 text-emerald-400'">
+                      {{ recipe.recipe_type }}
+                    </span>
+                    <span class="px-2 py-0.5 rounded-full text-[10px] font-bold" :class="confidenceClass(recipe.confidence_score)">{{ recipe.confidence_score }}%</span>
+                  </div>
                 </td>
-                <td class="p-4">
-                  <div class="font-mono text-xs max-w-[300px] truncate bg-muted px-2 py-1 rounded border border-border" :title="recipe.prompt_pattern">
+                <td class="p-3 sm:p-4 hidden sm:table-cell">
+                  <div class="font-mono text-xs max-w-[200px] lg:max-w-[300px] truncate bg-muted px-2 py-1 rounded border border-border" :title="recipe.prompt_pattern">
                     {{ recipe.prompt_pattern }}
                   </div>
                   <div class="flex items-center gap-1.5 mt-1.5">
@@ -121,30 +129,27 @@
                       {{ recipe.recipe_type }}
                     </span>
                     <span v-if="Object.keys(recipe.placeholder_types || {}).length" class="px-1.5 py-0.5 bg-muted text-muted-foreground border border-border rounded text-[9px] font-mono">
-                      {{ Object.keys(recipe.placeholder_types).length }} placeholders validados
+                      {{ Object.keys(recipe.placeholder_types).length }} placeholders
                     </span>
                   </div>
                 </td>
-                <td class="p-4 text-center">
-                  <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold"
-                    :class="confidenceClass(recipe.confidence_score)">
+                <td class="p-3 sm:p-4 text-center hidden md:table-cell">
+                  <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold" :class="confidenceClass(recipe.confidence_score)">
                     {{ recipe.confidence_score }}%
                   </span>
                 </td>
-                <td class="p-4 text-center">
-                  <span class="text-xs font-semibold text-muted-foreground font-mono">
-                    {{ recipe.fuzzy_threshold || 80 }}%
-                  </span>
+                <td class="p-3 sm:p-4 text-center hidden lg:table-cell">
+                  <span class="text-xs font-semibold text-muted-foreground font-mono">{{ recipe.fuzzy_threshold || 80 }}%</span>
                 </td>
-                <td class="p-4 text-center">
+                <td class="p-3 sm:p-4 text-center hidden md:table-cell">
                   <div class="font-bold">{{ recipe.hits }}</div>
                   <div class="text-[10px] text-muted-foreground font-semibold uppercase">{{ formatTokens(recipe.tokens_saved) }}</div>
                 </td>
-                <td class="p-4 text-xs text-muted-foreground">
+                <td class="p-3 sm:p-4 text-xs text-muted-foreground hidden lg:table-cell">
                   {{ recipe.last_used_at ? formatDate(recipe.last_used_at) : 'Nunca usado' }}
                 </td>
-                <td class="p-4 text-right">
-                  <div class="flex justify-end items-center gap-1.5">
+                <td class="p-3 sm:p-4 text-right">
+                  <div class="flex justify-end items-center gap-1">
                     <!-- Enable/Disable Toggle -->
                     <button @click="toggleEnabled(recipe.id)"
                       :title="recipe.is_enabled ? 'Desativar' : 'Ativar'"
