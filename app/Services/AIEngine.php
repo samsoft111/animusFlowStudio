@@ -881,9 +881,9 @@ SYSTEM;
      * Each agent produces a focused json_updates block (its field only),
      * which keeps each call well within the output-token limit.
      */
-    public static function runThemeAgent(string $agentId, string $brief, string $direction, string $currentThemeJson, array $attachments = [], string $note = ''): array
+    public static function runThemeAgent(string $agentId, string $brief, string $direction, string $currentThemeJson, array $attachments = [], string $note = '', string $skill = ''): array
     {
-        $system = self::themeAgentSystem($agentId, $brief, $direction, $currentThemeJson);
+        $system = self::themeAgentSystem($agentId, $brief, $direction, $currentThemeJson, $skill);
 
         // Grouped macro-agents emit larger blocks of HTML/CSS — allocate full headroom (16000 tokens)
         $maxTok = 16000;
@@ -913,10 +913,13 @@ SYSTEM;
      * which agents should be re-run to fix weak/missing parts.
      * Returns ['summary' => string, 'issues' => [['agent','reason'], ...]].
      */
-    public static function verifyTheme(string $brief, string $direction, string $themeJson): array
+    public static function verifyTheme(string $brief, string $direction, string $themeJson, string $skill = ''): array
     {
         $ids  = array_column(self::themeAgents(), 'id');
         $list = implode(', ', $ids);
+        $skillBlock = trim($skill) !== ''
+            ? "INSTRUÇÕES/SKILL DO UTILIZADOR (o tema TEM de cumprir isto):\n{$skill}\n\n"
+            : '';
 
         $system = <<<SYSTEM
 Você é o agente VERIFICADOR de qualidade de temas do AnimusFlow CMS.
@@ -924,7 +927,7 @@ Analisa o estado actual do tema face ao brief e identifica partes em falta, frac
 
 AGENTES QUE PODEM CORRIGIR (ids válidos): {$list}
 
-BRIEF: {$brief}
+{$skillBlock}BRIEF: {$brief}
 DIRECÇÃO DE DESIGN: {$direction}
 ESTADO ACTUAL DO TEMA: {$themeJson}
 
@@ -961,14 +964,18 @@ SYSTEM;
     }
 
     /** Build the focused system prompt for one agent. */
-    private static function themeAgentSystem(string $agentId, string $brief, string $direction, string $themeJson): string
+    private static function themeAgentSystem(string $agentId, string $brief, string $direction, string $themeJson, string $skill = ''): string
     {
+        $skillBlock = trim($skill) !== ''
+            ? "INSTRUÇÕES/SKILL DO UTILIZADOR (segue à risca, têm prioridade sobre o brief):\n{$skill}\n\n"
+            : '';
+
         $base = <<<BASE
 Você é um agente especializado de construção de temas para o AnimusFlow CMS.
 Responde em português (PT-PT). Produzes UMA frase curta de resumo seguida de um bloco json_updates APENAS com os campos da tua responsabilidade — nada mais.
 Regras de HTML/CSS: HTML semântico; usa SEMPRE variáveis CSS do tema (var(--color-primary), var(--color-bg), var(--color-text), var(--font-heading), var(--font-body), etc.); nada de frameworks externos; conteúdo de demonstração realista para o contexto do brief.
 
-BRIEF: {$brief}
+{$skillBlock}BRIEF: {$brief}
 DIREÇÃO DE DESIGN: {$direction}
 TEMA ACTUAL (resumo): {$themeJson}
 

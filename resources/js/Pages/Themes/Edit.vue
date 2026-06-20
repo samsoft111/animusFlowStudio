@@ -1596,18 +1596,38 @@
           📎 Solta os ficheiros aqui
         </div>
 
+        <!-- Skill carregado + Input row (quando não se está a arrastar) -->
+        <template v-else>
+        <div v-if="buildSkillName" class="flex items-center gap-2 px-3 py-1.5 mb-2 bg-primary/8 border border-primary/20 rounded-xl text-xs">
+          <span class="text-sm">✦</span>
+          <span class="text-foreground font-medium">Skill: {{ buildSkillName }}</span>
+          <span class="text-muted-foreground">— vai guiar a construção</span>
+          <button @click="clearSkill" class="ml-auto text-muted-foreground hover:text-destructive" title="Remover skill">✕</button>
+        </div>
+
         <!-- Input row -->
-        <div v-else class="flex gap-2 items-end"
+        <div class="flex gap-2 items-end"
           @dragover.prevent="chatDragging = true">
           <!-- Attach button -->
           <button @click="$refs.chatFileInput.click()"
             class="w-9 h-9 rounded-xl bg-muted border border-border flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-border transition-colors shrink-0 mb-0.5"
-            title="Anexar ficheiro">
+            title="Anexar ficheiro (imagem, PDF…)">
             📎
           </button>
           <input ref="chatFileInput" type="file" class="hidden" multiple
             accept="image/*,video/*,audio/*,.pdf,.txt,.md,.csv,.docx"
             @change="onChatFileSelect($event)" />
+
+          <!-- Skill upload button -->
+          <button @click="$refs.skillFileInput.click()"
+            class="w-9 h-9 rounded-xl bg-muted border border-border flex items-center justify-center shrink-0 mb-0.5 transition-colors"
+            :class="buildSkillName ? 'text-primary border-primary/40' : 'text-muted-foreground hover:text-foreground hover:bg-border'"
+            title="Carregar skill / instruções (.md, .txt) para guiar a construção">
+            ✦
+          </button>
+          <input ref="skillFileInput" type="file" class="hidden"
+            accept=".md,.markdown,.txt,.json,.text"
+            @change="loadSkillFile($event)" />
 
           <!-- Text area -->
           <div class="flex-1 relative">
@@ -1632,6 +1652,7 @@
             </svg>
           </button>
         </div>
+        </template>
 
         <!-- Hints -->
         <p class="text-[10px] text-muted-foreground text-center">
@@ -3798,6 +3819,24 @@ const chatScrollEl       = ref(null);
 const chatTextarea       = ref(null);
 const chatFileInput      = ref(null);
 
+// Skill (instruções detalhadas) — carregado de ficheiro, guia a construção do tema
+const buildSkill     = ref('');
+const buildSkillName = ref('');
+const skillFileInput = ref(null);
+function loadSkillFile(event) {
+  const file = event.target.files?.[0];
+  event.target.value = '';
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    buildSkill.value = String(e.target?.result ?? '').slice(0, 60000);
+    buildSkillName.value = file.name;
+    feedback.success = `Skill "${file.name}" carregado — vai guiar a próxima construção.`;
+  };
+  reader.readAsText(file);
+}
+function clearSkill() { buildSkill.value = ''; buildSkillName.value = ''; }
+
 const chatQuickPrompts = [
   'Cria um tema para um restaurante italiano',
   'Constrói um site moderno para uma clínica',
@@ -3862,6 +3901,7 @@ async function runBuildAgent(phase, ctx) {
     if (ctx.brief)     fd.append('brief', ctx.brief);
     if (ctx.direction) fd.append('direction', ctx.direction);
     if (ctx.note)      fd.append('note', ctx.note);
+    if (ctx.skill)     fd.append('skill', ctx.skill);
     fd.append('_token', csrf());
     const res = await fetch(`/themes/${props.theme.uuid}/build/step`, { method: 'POST', body: fd });
     if (!(res.headers.get('content-type') ?? '').includes('application/json')) {
@@ -3896,6 +3936,7 @@ async function runBuildFlow(brief, msgIdx) {
   try {
     const fd = new FormData();
     fd.append('brief', brief);
+    if (buildSkill.value) fd.append('skill', buildSkill.value);
     fd.append('_token', csrf());
     const res = await fetch(`/themes/${props.theme.uuid}/build/plan`, { method: 'POST', body: fd });
     if (!(res.headers.get('content-type') ?? '').includes('application/json')) {
@@ -3923,7 +3964,7 @@ async function runBuildFlow(brief, msgIdx) {
   }
 
   // 2. Executar agentes em sequência
-  const ctx = { brief, direction };
+  const ctx = { brief, direction, skill: buildSkill.value };
   for (const phase of msg.phases) {
     if (phase.agent === '__plan__' || phase.status === 'done') continue;
 
@@ -3965,6 +4006,7 @@ async function runBuildFlow(brief, msgIdx) {
     const fd = new FormData();
     fd.append('brief', brief);
     if (direction) fd.append('direction', direction);
+    if (buildSkill.value) fd.append('skill', buildSkill.value);
     fd.append('_token', csrf());
     const res = await fetch(`/themes/${props.theme.uuid}/build/verify`, { method: 'POST', body: fd });
     if (msg.aborted) {
@@ -3983,7 +4025,7 @@ async function runBuildFlow(brief, msgIdx) {
         const fixPhase = { agent: iss.agent, label: 'A melhorar: ' + phaseLabel(iss.agent), status: 'running', reply: '' };
         msg.phases.push(fixPhase);
         chatScrollToBottom();
-        const r = await runBuildAgent(fixPhase, { brief, direction, note: iss.reason });
+        const r = await runBuildAgent(fixPhase, { brief, direction, note: iss.reason, skill: buildSkill.value });
         if (msg.aborted) {
           fixPhase.status = 'cancelled';
           break;

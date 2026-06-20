@@ -569,7 +569,7 @@ class ThemeController extends Controller
 
         $data = $request->validate([
             'brief' => 'required|string|min:1|max:4000',
-            'skill' => 'nullable|string|max:8000',
+            'skill' => 'nullable|string|max:60000',
         ]);
 
         $snapshot = null;
@@ -608,6 +608,7 @@ class ThemeController extends Controller
             'brief'     => 'nullable|string|max:4000',
             'direction' => 'nullable|string|max:2000',
             'note'      => 'nullable|string|max:1000',
+            'skill'     => 'nullable|string|max:60000',
         ]);
 
         // Compact context — omit heavy sections/components
@@ -623,6 +624,7 @@ class ThemeController extends Controller
                 $themeJson,
                 [],
                 $data['note'] ?? '',
+                $data['skill'] ?? '',
             );
         } catch (\Throwable $e) {
             return response()->json(['error' => $e->getMessage(), 'is_fatal' => self::isFatalAiError($e)], 422);
@@ -647,6 +649,7 @@ class ThemeController extends Controller
         $data = $request->validate([
             'brief'     => 'nullable|string|max:4000',
             'direction' => 'nullable|string|max:2000',
+            'skill'     => 'nullable|string|max:60000',
         ]);
 
         // Context: keep section keys (presence) but drop their heavy HTML bodies
@@ -657,7 +660,7 @@ class ThemeController extends Controller
         $themeJson = json_encode($arr, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
 
         try {
-            $result = AIEngine::verifyTheme($data['brief'] ?? '', $data['direction'] ?? '', $themeJson);
+            $result = AIEngine::verifyTheme($data['brief'] ?? '', $data['direction'] ?? '', $themeJson, $data['skill'] ?? '');
         } catch (\Throwable $e) {
             return response()->json(['error' => $e->getMessage(), 'is_fatal' => self::isFatalAiError($e)], 422);
         }

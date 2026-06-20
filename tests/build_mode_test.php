@@ -492,6 +492,36 @@ assert_true(!str_contains($vueFile, 'Modo Construção — agentes especializado
 assert_true(!str_contains($vueFile, 'Continuar apesar de erros'), 'Checkbox técnico removido');
 
 // ────────────────────────────────────────────────────────────────
+//  12b. Skill — carregado por ficheiro e propagado ao pipeline
+// ────────────────────────────────────────────────────────────────
+section('12b. Skill — upload + propagação ao planeador e agentes');
+
+// UI: upload de skill no chat
+assert_contains($vueFile, 'loadSkillFile',  'Função loadSkillFile (lê ficheiro como texto)');
+assert_contains($vueFile, 'buildSkill',     'Estado buildSkill');
+assert_contains($vueFile, 'skillFileInput', 'Input de ficheiro do skill');
+assert_contains($vueFile, "fd.append('skill'", 'Envia skill ao pipeline');
+
+// Backend: assinaturas aceitam skill
+assert_contains($aiFile, 'string $skill = \'\'): string', 'themeAgentSystem aceita skill');
+assert_contains($controllerFile, "\$data['skill'] ?? ''", 'buildStep passa skill ao agente');
+
+// Runtime: o skill chega ao system prompt do agente (via Http::recorded)
+set_test_ai_key();
+fake_ai("ok\n```json_updates\n{}\n```");
+$skillText = 'REGRA-SKILL-UNICA-9X7: cantos sempre arredondados';
+try {
+    AIEngine::runThemeAgent('design', 'brief', 'dir', '{}', [], '', $skillText);
+    $rec  = \Illuminate\Support\Facades\Http::recorded();
+    $last = $rec[count($rec) - 1] ?? null;
+    $body = $last ? json_decode($last[0]->body(), true) : [];
+    $sys  = $body['system'] ?? '';
+    assert_true(str_contains($sys, $skillText), 'Skill aparece no system prompt do agente');
+} catch (\Throwable $e) {
+    fail('runThemeAgent com skill lançou excepção', $e->getMessage());
+}
+
+// ────────────────────────────────────────────────────────────────
 //  13. Build Vite
 // ────────────────────────────────────────────────────────────────
 section('13. Build Vite');
