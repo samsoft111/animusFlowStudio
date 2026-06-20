@@ -31,9 +31,14 @@ description: >
 |----------|-----------|
 | `app/Http/Controllers/ThemeController.php` | CRUD + AI + export + publish + LAYOUT_MAP |
 | `app/Http/Controllers/PluginController.php` | Plugin CRUD + AI + versioning |
-| `app/Services/AIEngine.php` | Toda a lógica de IA (chat, geração, categorias) |
-| `resources/js/Pages/Themes/Edit.vue` | Editor visual 12 abas (4085+ linhas) |
-| `resources/js/Pages/Plugins/Edit.vue` | Editor plugin 11 abas |
+| `app/Http/Controllers/RecipeController.php` | AI Recipe CRUD + export/import + analytics |
+| `app/Services/AIEngine.php` | Toda a lógica de IA (chat, geração, categorias, recipe engine) |
+| `app/Models/StudioAiRecipe.php` | Modelo de receitas (matchAndResolve + testResolve) |
+| `resources/js/Pages/Themes/Edit.vue` | Editor visual 12 abas (incluindo ⚡ Macros) |
+| `resources/js/Pages/Plugins/Edit.vue` | Editor plugin 11 abas (incluindo ⚡ Macros) |
+| `resources/js/Pages/Recipes/Index.vue` | Lista de receitas com stats e toggle |
+| `resources/js/Pages/Recipes/Form.vue` | Formulário de criação/edição de receitas |
+| `resources/js/Pages/Recipes/Analytics.vue` | Dashboard de analytics de receitas |
 | `resources/views/preview/theme.blade.php` | Iframe de preview + Modo Edição overlay |
 | `routes/web.php` | Todas as rotas do Studio |
 | `tests/` | Scripts de teste manuais (php tests/xxx.php) |
@@ -60,6 +65,26 @@ private const LAYOUT_MAP = [
 - `menu_layout: 'normal'` → barra horizontal clássica
 - Em Blade CMS usar **sempre** `$layout['menu_layout']` — **nunca** `$theme->layout_config['menu_layout']`
 - Ver documentação completa em `references/theme-development.md` Secção 10
+
+---
+
+## Receitas IA — Rotas do Studio
+
+| Método | Rota | Nome | Controller |
+|--------|------|------|------------|
+| GET | /recipes | recipes.index | RecipeController@index |
+| GET | /recipes/create | recipes.create | RecipeController@create |
+| POST | /recipes | recipes.store | RecipeController@store |
+| GET | /recipes/analytics | recipes.analytics | RecipeController@analytics |
+| GET | /recipes/{id}/edit | recipes.edit | RecipeController@edit |
+| PUT | /recipes/{id} | recipes.update | RecipeController@update |
+| DELETE | /recipes/{id} | recipes.destroy | RecipeController@destroy |
+| POST | /recipes/{id}/toggle | recipes.toggle | RecipeController@toggle |
+| POST | /recipes/{id}/test | recipes.test | RecipeController@test |
+| POST | /recipes/import | recipes.import | RecipeController@import |
+| GET | /recipes/export | recipes.export | RecipeController@export |
+| GET | /themes/{uuid}/recipes | themes.recipes | ThemeController@recipes |
+| GET | /plugins/{uuid}/recipes | plugins.recipes | PluginController@recipes |
 
 ---
 
