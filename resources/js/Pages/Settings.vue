@@ -1,6 +1,6 @@
 <template>
   <AppLayout :title="t('settings.title')">
-    <div class="max-w-3xl space-y-5">
+    <div class="space-y-5">
 
       <!-- Tab bar -->
       <div class="flex flex-wrap gap-1 bg-muted p-1 rounded-xl w-full sm:w-fit overflow-x-auto">

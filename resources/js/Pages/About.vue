@@ -1,6 +1,6 @@
 <template>
   <AppLayout :title="t('about.title')">
-    <div class="max-w-2xl space-y-5">
+    <div class="space-y-5">
 
       <!-- Developer card -->
       <div class="bg-card border border-border rounded-2xl p-6">
