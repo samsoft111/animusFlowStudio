@@ -16,40 +16,43 @@
     </template>
 
     <!-- Themes grid -->
-    <div v-if="themes.length" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+    <div v-if="themes.length" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
       <div v-for="theme in themes" :key="theme.uuid"
-        class="bg-card border border-border rounded-2xl p-5 flex flex-col gap-4 hover:border-primary/40 transition-colors">
+        class="group bg-card border border-border hover:border-primary/50 rounded-2xl p-5 flex flex-col justify-between shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 gap-4">
 
         <!-- Preview -->
-        <div class="w-full h-28 rounded-xl bg-muted overflow-hidden">
+        <div class="w-full h-32 rounded-xl bg-muted overflow-hidden relative border border-border/40 shrink-0">
           <img v-if="theme.preview_url" :src="theme.preview_url" :alt="theme.label"
-            class="w-full h-full object-cover" />
+            class="w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-500" />
           <div v-else class="w-full h-full flex items-center justify-center text-muted-foreground">
-            <PaletteIcon class="w-8 h-8 opacity-30" />
+            <PaletteIcon class="w-8 h-8 opacity-30 text-primary group-hover:scale-110 transition-transform duration-500" />
           </div>
         </div>
 
         <div class="flex-1">
-          <div class="flex items-center gap-2 mb-1">
-            <h3 class="font-semibold text-foreground text-sm">{{ theme.label }}</h3>
-            <span class="px-2 py-0.5 rounded-full text-[10px] font-semibold" :class="statusClass(theme.status)">
+          <div class="flex items-center justify-between gap-2 flex-wrap mb-1">
+            <h3 class="font-bold text-foreground text-sm truncate" :title="theme.label">{{ theme.label }}</h3>
+            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-bold shrink-0 capitalize shadow-sm" :class="statusClass(theme.status)">
+              <span v-if="theme.status === 'published'" class="w-1 h-1 rounded-full bg-emerald-500 animate-pulse" />
+              <span v-else-if="theme.status === 'ready'" class="w-1 h-1 rounded-full bg-amber-500" />
+              <span v-else class="w-1 h-1 rounded-full bg-muted-foreground" />
               {{ t('themes.status.' + theme.status) }}
             </span>
           </div>
-          <p class="text-xs text-muted-foreground">{{ theme.name }} — v{{ theme.version }}</p>
+          <p class="text-xs text-muted-foreground truncate">{{ theme.name }} — v{{ theme.version }}</p>
         </div>
 
-        <div class="flex gap-2">
+        <div class="flex gap-2 border-t border-border/50 pt-3 mt-auto">
           <Link :href="`/themes/${theme.uuid}/edit`"
-            class="flex-1 px-3 py-2 bg-muted text-foreground rounded-lg text-xs font-semibold text-center hover:bg-border transition-colors">
+            class="flex-1 px-3 py-2 bg-muted hover:bg-border text-foreground rounded-lg text-xs font-semibold text-center transition-colors cursor-pointer">
             {{ t('common.edit') }}
           </Link>
           <a :href="`/themes/${theme.uuid}/export`"
-            class="px-3 py-2 bg-primary/10 text-primary rounded-lg text-xs font-semibold hover:bg-primary/20 transition-colors">
+            class="px-3 py-2 bg-primary/10 text-primary hover:bg-primary hover:text-white rounded-lg text-xs font-semibold transition-all duration-300 cursor-pointer">
             {{ t('common.export') }}
           </a>
           <button @click="deleteTheme(theme)"
-            class="px-3 py-2 bg-destructive/10 text-destructive rounded-lg text-xs font-semibold hover:bg-destructive/20 transition-colors">
+            class="px-3 py-2 bg-destructive/10 text-destructive hover:bg-destructive hover:text-white rounded-lg text-xs font-semibold transition-all duration-300 cursor-pointer">
             {{ t('common.delete') }}
           </button>
         </div>
@@ -62,10 +65,10 @@
       <p class="text-sm text-muted-foreground mb-6">{{ t('themes.no_themes_desc') }}</p>
       <div class="flex gap-3">
         <button @click="showInspireModal = true"
-          class="px-5 py-2.5 bg-gradient-to-r from-violet-500 to-indigo-500 text-white rounded-xl text-sm font-semibold flex items-center gap-2">
+          class="px-5 py-2.5 bg-gradient-to-r from-violet-500 to-indigo-500 text-white rounded-xl text-sm font-semibold flex items-center gap-2 cursor-pointer">
           <SparklesIcon class="w-4 h-4" /> Gerar por Categoria
         </button>
-        <button @click="openCreate" class="px-5 py-2.5 bg-primary text-primary-foreground rounded-xl text-sm font-semibold">
+        <button @click="openCreate" class="px-5 py-2.5 bg-primary text-primary-foreground rounded-xl text-sm font-semibold cursor-pointer">
           {{ t('themes.new') }}
         </button>
       </div>
@@ -85,9 +88,9 @@
               class="w-full px-3 py-2 bg-muted border border-border rounded-lg text-sm focus:outline-none focus:border-primary" />
             <p v-if="createForm.errors.label" class="text-xs text-destructive mt-1">{{ createForm.errors.label }}</p>
             <div class="flex justify-end gap-2 mt-5">
-              <button @click="showCreateModal = false" class="px-4 py-2 bg-muted rounded-lg text-sm font-semibold">Cancelar</button>
+              <button @click="showCreateModal = false" class="px-4 py-2 bg-muted rounded-lg text-sm font-semibold cursor-pointer">Cancelar</button>
               <button @click="submitCreate" :disabled="createForm.processing || !createForm.label.trim()"
-                class="px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-semibold disabled:opacity-50">
+                class="px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-semibold disabled:opacity-50 cursor-pointer">
                 {{ createForm.processing ? 'A criar…' : 'Criar tema' }}
               </button>
             </div>
