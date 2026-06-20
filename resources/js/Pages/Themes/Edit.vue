@@ -243,8 +243,17 @@
                 <option value="mega">Mega Menu</option>
                 <option value="fullscreen">Full-screen overlay</option>
                 <option value="sidebar">Sidebar vertical</option>
+                <option value="circular">Circular (In9vador)</option>
               </select>
               <p class="field-hint">Estrutura do menu. Se escolheres <em>Mega Menu</em>, activa também a capacidade <strong>Mega Menu</strong> em ⚙️ Capacidades para gerar o JS/CSS correspondente.</p>
+            </div>
+            <div>
+              <label class="field-label">Estilo do Menu (In9vador)</label>
+              <select v-model="form.layout_config.menu_layout" class="field-input">
+                <option value="circular">Circular Orbital (padrão)</option>
+                <option value="normal">Barra Horizontal Clássica</option>
+              </select>
+              <p class="field-hint">Escolhe <em>Circular Orbital</em> para o menu interativo do tema In9vador, ou <em>Barra Horizontal</em> para navegação clássica.</p>
             </div>
           </div>
           <div class="grid grid-cols-2 gap-4">
@@ -2053,6 +2062,7 @@ const form = reactive({
     spacing:          defaultLayout.spacing          ?? 'normal',
     show_dark_toggle: defaultLayout.show_dark_toggle ?? true,
     back_to_top:      defaultLayout.back_to_top      ?? true,
+    menu_layout:      defaultLayout.menu_layout      ?? 'circular',
   },
   capabilities: {
     video_bg:        defaultCaps.video_bg        ?? false,

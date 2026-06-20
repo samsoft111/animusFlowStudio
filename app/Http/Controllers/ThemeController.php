@@ -1055,6 +1055,7 @@ PROMPT;
         'header_cta_text'  => 'layout_header_cta_text',
         'header_cta_url'   => 'layout_header_cta_url',
         'footer_copyright' => 'layout_footer_copyright',
+        'menu_layout'      => 'layout_menu_layout',
         'back_to_top'      => null,   // handled separately via capabilities
     ];
 

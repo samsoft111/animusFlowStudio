@@ -568,20 +568,10 @@ SYSTEM;
     public static function themeAgents(): array
     {
         return [
-            ['id' => 'colors',       'icon' => '🎨', 'label' => 'Cores & Marca',         'hint' => 'Paleta light + dark'],
-            ['id' => 'fonts',        'icon' => '🔤', 'label' => 'Tipografia',            'hint' => 'Fontes de título e corpo'],
-            ['id' => 'settings',     'icon' => '⚙️', 'label' => 'Configurações',         'hint' => 'Layout + capacidades'],
-            ['id' => 'menu',         'icon' => '🍔', 'label' => 'Menu / Navegação',      'hint' => 'Header, navegação, CTAs'],
-            ['id' => 'hero',         'icon' => '🦸', 'label' => 'Secção Hero',           'hint' => 'Banner principal'],
-            ['id' => 'features',     'icon' => '✨', 'label' => 'Funcionalidades',       'hint' => 'Grelha de features'],
-            ['id' => 'pricing',      'icon' => '💳', 'label' => 'Preços',                'hint' => 'Planos / tabela'],
-            ['id' => 'testimonials', 'icon' => '💬', 'label' => 'Testemunhos',           'hint' => 'Reviews de clientes'],
-            ['id' => 'gallery',      'icon' => '🖼️', 'label' => 'Galeria',               'hint' => 'Grelha de imagens'],
-            ['id' => 'cta',          'icon' => '📣', 'label' => 'Chamada à Ação',        'hint' => 'Bloco de conversão'],
-            ['id' => 'faq',          'icon' => '❓', 'label' => 'FAQ',                   'hint' => 'Perguntas frequentes'],
-            ['id' => 'contact',      'icon' => '📧', 'label' => 'Contacto',              'hint' => 'Formulário / dados'],
-            ['id' => 'footer',       'icon' => '🦶', 'label' => 'Rodapé',                'hint' => 'Footer com links'],
-            ['id' => 'code',         'icon' => '💻', 'label' => 'CSS/JS Personalizado',  'hint' => 'Animações e ajustes'],
+            ['id' => 'design',     'icon' => '🎨', 'label' => 'Design & Branding',     'hint' => 'Cores, Fontes, Layout, Menu e Rodapé'],
+            ['id' => 'intro',      'icon' => '✨', 'label' => 'Apresentação & Features', 'hint' => 'Hero, Funcionalidades, Testemunhos e Galeria'],
+            ['id' => 'conversion', 'icon' => '📣', 'label' => 'Negócio & Conversão',     'hint' => 'Preços, CTA, FAQ e Contacto'],
+            ['id' => 'code',       'icon' => '💻', 'label' => 'Código Customizado',    'hint' => 'Ajustes finos de CSS e JS'],
         ];
     }
 
@@ -614,7 +604,7 @@ Responde APENAS com um bloco json_updates, sem texto fora dele:
   "agents": ["lista ordenada de ids de agentes a executar"]
 }
 ```
-Regras: usa só ids válidos da lista; ordena de forma lógica (cores → tipografia → configurações → menu → secções → rodapé → código); inclui apenas o que o brief justifica.
+Regras: usa só ids válidos da lista; ordena de forma lógica (design → intro → conversion → code); inclui apenas o que o brief justifica.
 SYSTEM;
 
         $history = [['role' => 'user', 'content' => "BRIEF: {$brief}\n\nPlaneia os agentes."]];
@@ -629,7 +619,7 @@ SYSTEM;
             }
         }
         if (empty($plan['agents'])) {
-            $plan['agents'] = ['colors', 'fonts', 'settings', 'menu', 'hero', 'features', 'cta', 'footer', 'code'];
+            $plan['agents'] = ['design', 'intro', 'conversion', 'code'];
         }
 
         return $plan;
@@ -644,10 +634,8 @@ SYSTEM;
     {
         $system = self::themeAgentSystem($agentId, $brief, $direction, $currentThemeJson);
 
-        // Section/footer/code agents emit larger HTML — give them more headroom.
-        $base  = max((int) StudioSetting::get('ai_max_tokens', '4096'), 4096);
-        $heavy = in_array($agentId, [...self::sectionAgents(), 'code'], true);
-        $maxTok = min($heavy ? max($base, 8000) : $base, 16000);
+        // Grouped macro-agents emit larger blocks of HTML/CSS — allocate full headroom (16000 tokens)
+        $maxTok = 16000;
 
         $userMsg = 'Gera agora a tua parte do tema.';
         if (trim($note) !== '') {
@@ -736,41 +724,106 @@ TEMA ACTUAL (resumo): {$themeJson}
 TAREFA:
 BASE;
 
-        $task = match (true) {
-            $agentId === 'colors' => <<<T
-Gera a paleta de cores (light e dark) coerente com a direção.
+        $task = match ($agentId) {
+            'design' => <<<T
+Gera o design global e branding do tema (cores light e dark, fontes de títulos/corpo, layout, capacidades e a secção do rodapé).
+Responsável por atualizar os campos: colors, fonts, layout_config, capabilities, e a secção "footer" (em sections.footer).
+Exemplo de retorno em json_updates:
 ```json_updates
-{"colors":{"light":{"--color-primary":"#..","--color-secondary":"#..","--color-accent":"#..","--color-bg":"#..","--color-surface":"#..","--color-text":"#..","--color-muted":"#..","--color-border":"#.."},"dark":{"--color-primary":"#..","--color-bg":"#..","--color-surface":"#..","--color-text":"#..","--color-muted":"#..","--color-border":"#.."}}}
+{
+  "colors": {
+    "light": {
+      "--color-primary": "#..",
+      "--color-secondary": "#..",
+      "--color-accent": "#..",
+      "--color-bg": "#..",
+      "--color-surface": "#..",
+      "--color-text": "#..",
+      "--color-muted": "#..",
+      "--color-border": "#..",
+      "--color-success": "#22c55e",
+      "--color-warning": "#f59e0b",
+      "--color-destructive": "#ef4444"
+    },
+    "dark": {
+      "--color-primary": "#..",
+      "--color-bg": "#..",
+      "--color-surface": "#..",
+      "--color-text": "#..",
+      "--color-muted": "#..",
+      "--color-border": "#.."
+    }
+  },
+  "fonts": {
+    "heading": "Outfit",
+    "body": "Inter"
+  },
+  "layout_config": {
+    "header_type": "glass|solid|transparent",
+    "nav_type": "horizontal|hamburger",
+    "nav_position": "right|center",
+    "footer_type": "simple|columns",
+    "layout_type": "full-width|boxed",
+    "max_width": "1120",
+    "spacing": "normal",
+    "show_dark_toggle": true,
+    "back_to_top": true,
+    "header_cta_text": "Texto",
+    "header_cta_url": "#"
+  },
+  "capabilities": {
+    "animations": true,
+    "parallax": false,
+    "scroll_progress": false,
+    "cookie_banner": false
+  },
+  "sections": {
+    "footer": "<footer class=\"af-footer\">...HTML do rodapé...</footer>"
+  }
+}
 ```
 T,
-            $agentId === 'fonts' => <<<T
-Escolhe um par tipográfico (Google Fonts) adequado.
+            'intro' => <<<T
+Gera as secções de introdução e apresentação do tema: Hero, Funcionalidades (Features), Testemunhos e Galeria.
+Responsável por atualizar: sections.hero, sections.features, sections.testimonials, sections.gallery.
+Usa as variáveis CSS globais do tema.
+Exemplo de retorno em json_updates:
 ```json_updates
-{"fonts":{"heading":"Nome da Fonte","body":"Nome da Fonte"}}
+{
+  "sections": {
+    "hero": "<section class=\"af-hero\">...HTML...</section>",
+    "features": "<section class=\"af-features\">...HTML...</section>",
+    "testimonials": "<section class=\"af-testimonials\">...HTML...</section>",
+    "gallery": "<section class=\"af-gallery\">...HTML...</section>"
+  }
+}
 ```
 T,
-            $agentId === 'settings' => <<<T
-Configura o layout e activa as capacidades adequadas ao tema.
+            'conversion' => <<<T
+Gera as secções de negócio e conversão do tema: Tabela de Preços (pricing), Chamada à Ação (cta), Perguntas Frequentes (faq) e Contacto (contact).
+Responsável por atualizar: sections.pricing, sections.cta, sections.faq, sections.contact.
+Usa as variáveis CSS globais do tema.
+Exemplo de retorno em json_updates:
 ```json_updates
-{"layout_config":{"header_type":"glass|solid|transparent","nav_type":"horizontal","footer_type":"simple|columns","layout_type":"full-width|boxed","max_width":"1120","spacing":"normal","show_dark_toggle":true,"back_to_top":true},"capabilities":{"animations":true,"parallax":false,"scroll_progress":false,"search":false,"cookie_banner":false}}
+{
+  "sections": {
+    "pricing": "<section class=\"af-pricing\">...HTML...</section>",
+    "cta": "<section class=\"af-cta\">...HTML...</section>",
+    "faq": "<section class=\"af-faq\">...HTML...</section>",
+    "contact": "<section class=\"af-contact\">...HTML...</section>"
+  }
+}
 ```
 T,
-            $agentId === 'menu' => <<<T
-Define o menu/navegação no header (tipo, posição e CTAs).
+            'code' => <<<T
+Gera o CSS personalizado e (opcional) JS complementar para micro-interações, transições e ajustes responsivos das secções do tema.
+Responsável por atualizar: custom_css, custom_js.
+Exemplo de retorno em json_updates:
 ```json_updates
-{"layout_config":{"header_type":"glass|solid|transparent","nav_type":"horizontal","nav_position":"right|center","header_cta_text":"Texto do botão","header_cta_url":"#"}}
-```
-T,
-            $agentId === 'code' => <<<T
-Gera CSS e (opcional) JS que complementam as secções: animações de entrada, micro-interações, ajustes responsivos. Usa as variáveis CSS do tema.
-```json_updates
-{"custom_css":"/* css aqui */","custom_js":"// js opcional aqui"}
-```
-T,
-            in_array($agentId, self::sectionAgents(), true) => <<<T
-Gera o HTML COMPLETO da secção "{$agentId}" (uma secção <section>…</section> bem estruturada, responsiva, com variáveis CSS do tema). Substitui apenas esta secção.
-```json_updates
-{"sections":{"{$agentId}":"<section class=\"af-{$agentId}\">...HTML...</section>"}}
+{
+  "custom_css": "/* CSS aqui */",
+  "custom_js": "/* JS opcional aqui */"
+}
 ```
 T,
             default => "Gera a tua parte e devolve o json_updates apropriado.",
@@ -843,7 +896,7 @@ T,
             'anthropic-version' => '2023-06-01',
             'content-type'      => 'application/json',
             'anthropic-beta'    => 'pdfs-2024-09-25',
-        ])->timeout(120)->post('https://api.anthropic.com/v1/messages', [
+        ])->timeout(240)->post('https://api.anthropic.com/v1/messages', [
             'model'      => $model,
             'max_tokens' => $maxTokens,
             'system'     => $system,
@@ -885,7 +938,7 @@ T,
         }
 
         $response = Http::withToken($key)
-            ->timeout(120)
+            ->timeout(240)
             ->post('https://api.openai.com/v1/chat/completions', [
                 'model'      => $model,
                 'max_tokens' => $maxTokens,
@@ -938,7 +991,7 @@ T,
 
         $url = "https://generativelanguage.googleapis.com/v1beta/models/{$model}:generateContent?key={$key}";
 
-        $response = Http::timeout(120)->post($url, [
+        $response = Http::timeout(240)->post($url, [
             'contents'          => $contents,
             'systemInstruction' => [
                 'parts' => [['text' => $system]],
