@@ -1214,6 +1214,12 @@
                   </template>
                 </div>
                 <div class="bg-primary text-primary-foreground rounded-2xl rounded-br-sm px-4 py-2.5 text-sm leading-relaxed whitespace-pre-wrap">{{ msg.content }}</div>
+                <div class="mt-1 flex justify-end">
+                  <button type="button" @click="copyToClipboard(msg.content)" 
+                    class="text-[10px] text-muted-foreground hover:text-foreground flex items-center gap-1 transition-colors py-0.5 px-1.5 rounded bg-muted/30 hover:bg-muted/80">
+                    <CopyIcon class="w-3 h-3" /> Copiar
+                  </button>
+                </div>
               </div>
               <div class="w-7 h-7 rounded-full bg-primary/20 flex items-center justify-center text-xs shrink-0 mb-0.5">👤</div>
             </div>
@@ -1278,6 +1284,12 @@
               <div class="w-7 h-7 rounded-full bg-violet-500/15 flex items-center justify-center text-xs shrink-0 mb-0.5">✦</div>
               <div class="max-w-[82%]">
                 <div class="bg-card border border-border rounded-2xl rounded-bl-sm px-4 py-2.5 text-sm leading-relaxed whitespace-pre-wrap text-foreground">{{ msg.content }}</div>
+                <div class="mt-1 flex gap-2">
+                  <button type="button" @click="copyToClipboard(msg.content)" 
+                    class="text-[10px] text-muted-foreground hover:text-foreground flex items-center gap-1 transition-colors py-0.5 px-1.5 rounded bg-muted/30 hover:bg-muted/80">
+                    <CopyIcon class="w-3 h-3" /> Copiar
+                  </button>
+                </div>
                 
                 <div v-if="msg.cached" class="mt-1.5 flex items-center gap-1 text-[10px] text-indigo-500 font-semibold bg-indigo-500/5 px-2 py-0.5 rounded-full w-max border border-indigo-500/10">
                   ⚡ Resolvido via memória local (Sem custo de tokens)
@@ -1511,7 +1523,7 @@ import AppLayout from '@/Layouts/AppLayout.vue';
 import {
   DownloadIcon, UploadIcon, SparklesIcon,
   CheckCircleIcon, XCircleIcon, PlusIcon, SlidersIcon, RotateCcwIcon,
-  HistoryIcon, PlusCircleIcon, TagIcon, Trash2Icon,
+  HistoryIcon, PlusCircleIcon, TagIcon, Trash2Icon, CopyIcon,
 } from 'lucide-vue-next';
 
 const { t } = useI18n();
@@ -2269,6 +2281,50 @@ const lastMsgBuilding = computed(() => {
   const m = chatMessages.value[chatMessages.value.length - 1];
   return !!(m && m.type === 'build' && m.building);
 });
+
+function copyToClipboard(text) {
+  if (!text) return;
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(() => {
+      feedback.success = 'Mensagem copiada para a área de transferência!';
+      setTimeout(() => { feedback.success = ''; }, 2500);
+    }).catch(() => {
+      fallbackCopyTextToClipboard(text);
+    });
+  } else {
+    fallbackCopyTextToClipboard(text);
+  }
+}
+
+function fallbackCopyTextToClipboard(text) {
+  const textArea = document.createElement("textarea");
+  textArea.value = text;
+  textArea.style.position = "fixed";
+  textArea.style.top = "0";
+  textArea.style.left = "0";
+  textArea.style.width = "2em";
+  textArea.style.height = "2em";
+  textArea.style.padding = "0";
+  textArea.style.border = "none";
+  textArea.style.outline = "none";
+  textArea.style.boxShadow = "none";
+  textArea.style.background = "transparent";
+  document.body.appendChild(textArea);
+  textArea.focus();
+  textArea.select();
+  try {
+    const successful = document.execCommand('copy');
+    if (successful) {
+      feedback.success = 'Mensagem copiada para a área de transferência!';
+      setTimeout(() => { feedback.success = ''; }, 2500);
+    } else {
+      feedback.error = 'Não foi possível copiar o texto.';
+    }
+  } catch (err) {
+    feedback.error = 'Não foi possível copiar o texto.';
+  }
+  document.body.removeChild(textArea);
+}
 
 function chatCsrf() { return document.querySelector('meta[name="csrf-token"]')?.content ?? ''; }
 
