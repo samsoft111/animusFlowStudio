@@ -87,9 +87,14 @@ class ThemeController extends Controller
     {
         $theme = StudioTheme::where('uuid', $uuid)->firstOrFail();
 
+        // O espelho leve (sem snapshots pesados) vai num prop separado; o
+        // 'before' completo nunca é enviado ao browser.
+        $journal = ThemeStepEngine::publicJournal($theme->step_journal);
+
         return Inertia::render('Themes/Edit', [
-            'theme'       => $theme,
+            'theme'       => $theme->makeHidden('step_journal'),
             'themeAgents' => AIEngine::themeAgents(),
+            'stepJournal' => $journal,
         ]);
     }
 
@@ -491,13 +496,13 @@ class ThemeController extends Controller
                     'reply'   => $recipeResult['reply'],
                     'updates' => $recipeResult['updates'],
                     'applied' => $applied,
-                    'theme'   => $applied ? $theme->fresh() : null,
+                    'theme'   => $applied ? $theme->fresh()->makeHidden('step_journal') : null,
                     'build'   => null,
                     'cached'  => true,
                     'step'        => $cls['step'],
                     'step_label'  => $cls['step'] ? ThemeStepEngine::label($cls['step']) : null,
                     'step_method' => $cls['method'],
-                    'step_journal' => $theme->fresh()->step_journal,
+                    'step_journal' => ThemeStepEngine::publicJournal($theme->fresh()->step_journal),
                 ]);
             }
         }
@@ -515,13 +520,13 @@ class ThemeController extends Controller
                 'reply'   => $cached->reply,
                 'updates' => $cached->updates,
                 'applied' => $applied,
-                'theme'   => $applied ? $theme->fresh() : null,
+                'theme'   => $applied ? $theme->fresh()->makeHidden('step_journal') : null,
                 'build'   => $cached->build,
                 'cached'  => true,
                 'step'        => $cls['step'],
                 'step_label'  => $cls['step'] ? ThemeStepEngine::label($cls['step']) : null,
                 'step_method' => $cls['method'],
-                'step_journal' => $theme->fresh()->step_journal,
+                'step_journal' => ThemeStepEngine::publicJournal($theme->fresh()->step_journal),
             ]);
         }
 
@@ -553,12 +558,12 @@ class ThemeController extends Controller
             'reply'   => $result['reply'],
             'updates' => $result['updates'] ?? null,
             'applied' => $applied,
-            'theme'   => $applied ? $theme->fresh() : null,
+            'theme'   => $applied ? $theme->fresh()->makeHidden('step_journal') : null,
             'build'   => $result['build'] ?? null,
             'step'        => $cls['step'],
             'step_label'  => $cls['step'] ? ThemeStepEngine::label($cls['step']) : null,
             'step_method' => $cls['method'],
-            'step_journal' => $theme->fresh()->step_journal,
+            'step_journal' => ThemeStepEngine::publicJournal($theme->fresh()->step_journal),
         ]);
     }
 
@@ -721,7 +726,8 @@ class ThemeController extends Controller
             'reply'   => $result['reply'],
             'updates' => $result['updates'] ?? null,
             'applied' => $applied,
-            'theme'   => $applied ? $theme->fresh() : null,
+            'theme'   => $applied ? $theme->fresh()->makeHidden('step_journal') : null,
+            'step_journal' => ThemeStepEngine::publicJournal($theme->fresh()->step_journal),
         ]);
     }
 
@@ -762,7 +768,7 @@ class ThemeController extends Controller
         $theme = StudioTheme::where('uuid', $uuid)->firstOrFail();
 
         return response()->json([
-            'journal' => $theme->step_journal ?? [],
+            'journal' => ThemeStepEngine::publicJournal($theme->step_journal),
             'labels'  => ThemeStepEngine::STEP_LABELS,
         ]);
     }
@@ -793,8 +799,8 @@ class ThemeController extends Controller
 
         return response()->json([
             'reverted' => $reverted,
-            'theme'    => $reverted ? $theme->fresh() : null,
-            'journal'  => $theme->fresh()->step_journal ?? [],
+            'theme'    => $reverted ? $theme->fresh()->makeHidden('step_journal') : null,
+            'journal'  => ThemeStepEngine::publicJournal($theme->fresh()->step_journal),
         ]);
     }
 

@@ -149,7 +149,7 @@
                     <span v-if="stepJournalFor(step.tabId).history?.length" class="text-[9px] text-muted-foreground">
                       · {{ stepJournalFor(step.tabId).history.length }} alteraç{{ stepJournalFor(step.tabId).history.length === 1 ? 'ão' : 'ões' }}
                     </span>
-                    <span v-if="stepJournalFor(step.tabId).history?.length"
+                    <span v-if="stepJournalFor(step.tabId).revertible"
                       role="button" tabindex="0"
                       @click.stop="revertStep(step.tabId)" @keydown.enter.stop="revertStep(step.tabId)"
                       class="text-[9px] font-semibold text-amber-600 dark:text-amber-400 hover:underline cursor-pointer">
@@ -1694,9 +1694,9 @@
           <div class="flex items-center justify-between mb-4">
             <div class="flex items-center gap-2">
               <HistoryIcon class="w-4 h-4 text-muted-foreground" />
-              <h2 class="font-semibold text-foreground text-sm">Histórico de Versões</h2>
+              <h2 class="font-semibold text-foreground text-sm">Histórico do tema</h2>
               <span class="px-2 py-0.5 rounded-full bg-muted text-muted-foreground text-[10px] font-semibold">
-                {{ themeVersions.length }} {{ themeVersions.length === 1 ? 'versão' : 'versões' }}
+                {{ historyTimeline.length }} {{ historyTimeline.length === 1 ? 'entrada' : 'entradas' }}
               </span>
             </div>
             <button @click="showCreateVersionModal = true"
@@ -1722,57 +1722,62 @@
             <div class="w-5 h-5 border-2 border-primary/30 border-t-primary rounded-full animate-spin"></div>
           </div>
 
-          <div v-else-if="themeVersions.length === 0" class="flex flex-col items-center justify-center py-10 text-center">
+          <div v-else-if="historyTimeline.length === 0" class="flex flex-col items-center justify-center py-10 text-center">
             <HistoryIcon class="w-8 h-8 text-muted-foreground opacity-30 mb-2" />
-            <p class="text-sm text-muted-foreground">Ainda não há versões guardadas.</p>
-            <p class="text-xs text-muted-foreground mt-1">Clica em "Guardar versão" para criar um snapshot do estado actual.</p>
+            <p class="text-sm text-muted-foreground">Ainda não há histórico.</p>
+            <p class="text-xs text-muted-foreground mt-1">Cada alteração (via Chat IA ou manual) e cada versão guardada aparecem aqui.</p>
           </div>
 
+          <!-- Timeline unificado: versões (restauro completo) + alterações por passo (granular) -->
           <div v-else class="space-y-2">
-            <div v-for="ver in themeVersions" :key="ver.uuid"
-              class="flex items-start gap-3 p-3 bg-muted/40 border border-border rounded-xl hover:border-border/80 transition-colors group">
+            <div v-for="item in historyTimeline" :key="item.key"
+              class="flex items-start gap-3 p-3 border rounded-xl transition-colors group"
+              :class="item.kind === 'version' ? 'bg-primary/[0.03] border-primary/15' : 'bg-muted/40 border-border hover:border-border/80'">
 
-              <!-- Badge tipo -->
-              <div class="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 mt-0.5"
-                :class="ver.snapshot_type === 'publish' ? 'bg-success/10' : ver.snapshot_type === 'auto' ? 'bg-warning/10' : 'bg-muted'">
-                <span class="text-sm">
-                  {{ ver.snapshot_type === 'publish' ? '🚀' : ver.snapshot_type === 'auto' ? '⚡' : '📌' }}
-                </span>
+              <div class="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 mt-0.5 bg-muted">
+                <span class="text-sm">{{ item.icon }}</span>
               </div>
 
               <div class="flex-1 min-w-0">
                 <div class="flex items-center gap-2 flex-wrap">
-                  <span class="text-xs font-bold text-foreground">v{{ ver.version }}</span>
+                  <span class="text-xs font-bold text-foreground">{{ item.title }}</span>
                   <span class="text-[10px] px-1.5 py-0.5 rounded-full font-semibold"
-                    :class="ver.snapshot_type === 'publish' ? 'bg-success/15 text-success' : ver.snapshot_type === 'auto' ? 'bg-warning/15 text-warning' : 'bg-muted text-muted-foreground'">
-                    {{ ver.snapshot_type === 'publish' ? 'Publicação' : ver.snapshot_type === 'auto' ? 'Automático' : 'Manual' }}
+                    :class="item.kind === 'version' ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground'">
+                    {{ item.kind === 'version' ? '🏷️ Versão · ' + item.tag : '🔹 Passo · ' + item.tag }}
                   </span>
                 </div>
-                <p v-if="ver.changelog" class="text-[11px] text-muted-foreground mt-0.5 line-clamp-2">{{ ver.changelog }}</p>
-                <p class="text-[10px] text-muted-foreground/60 mt-1">{{ formatVersionDate(ver.created_at) }}</p>
+                <p v-if="item.subtitle" class="text-[11px] text-muted-foreground mt-0.5 line-clamp-2">{{ item.subtitle }}</p>
+                <p class="text-[10px] text-muted-foreground/60 mt-1">{{ formatVersionDate(item.at) }}</p>
               </div>
 
               <!-- Acções -->
               <div class="flex gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
-                <button @click="restoreVersion(ver)"
-                  :disabled="restoringVersion === ver.uuid"
-                  class="px-2 py-1.5 bg-primary/10 text-primary rounded-lg text-[10px] font-semibold hover:bg-primary/20 transition-colors flex items-center gap-1 disabled:opacity-50">
-                  <RotateCcwIcon class="w-3 h-3" />
-                  {{ restoringVersion === ver.uuid ? '…' : 'Restaurar' }}
+                <template v-if="item.kind === 'version'">
+                  <button @click="restoreVersion(item.ver)"
+                    :disabled="restoringVersion === item.ver.uuid"
+                    class="px-2 py-1.5 bg-primary/10 text-primary rounded-lg text-[10px] font-semibold hover:bg-primary/20 transition-colors flex items-center gap-1 disabled:opacity-50">
+                    <RotateCcwIcon class="w-3 h-3" />
+                    {{ restoringVersion === item.ver.uuid ? '…' : 'Restaurar' }}
+                  </button>
+                  <button @click="deleteVersion(item.ver)"
+                    class="px-2 py-1.5 bg-destructive/10 text-destructive rounded-lg text-[10px] font-semibold hover:bg-destructive/20 transition-colors">
+                    <Trash2Icon class="w-3 h-3" />
+                  </button>
+                </template>
+                <button v-else-if="item.revertible" @click="revertStep(item.step)"
+                  class="px-2 py-1.5 bg-amber-500/10 text-amber-600 dark:text-amber-400 rounded-lg text-[10px] font-semibold hover:bg-amber-500/20 transition-colors flex items-center gap-1">
+                  <RotateCcwIcon class="w-3 h-3" /> Reverter
                 </button>
-                <button @click="deleteVersion(ver)"
-                  class="px-2 py-1.5 bg-destructive/10 text-destructive rounded-lg text-[10px] font-semibold hover:bg-destructive/20 transition-colors">
-                  <Trash2Icon class="w-3 h-3" />
-                </button>
+                <span v-else-if="item.kind === 'step'" class="text-[9px] text-muted-foreground/50 self-center px-1">arquivado</span>
               </div>
             </div>
           </div>
         </div>
 
-        <!-- Info auto-snapshot -->
+        <!-- Info: uma narrativa, duas granularidades -->
         <div class="flex items-start gap-2 px-4 py-3 bg-muted/50 border border-border rounded-xl text-xs text-muted-foreground">
           <span class="mt-0.5">ℹ️</span>
-          <p>As versões são snapshots completos do tema. Um snapshot <strong>automático ⚡</strong> é criado antes de cada restauro. Um snapshot de <strong>Publicação 🚀</strong> é criado automaticamente ao publicar no Marketplace. Os snapshots <strong>Manuais 📌</strong> são criados por ti.</p>
+          <p>Um só histórico, duas granularidades: <strong>🏷️ Versões</strong> são snapshots completos do tema (restauro grande — guardadas por ti 📌, automáticas ⚡ antes de cada restauro, ou de publicação 🚀). <strong>🔹 Passos</strong> são alterações pontuais (Chat IA 💬, manual ✏️ ou construção ✦) que podes <strong>reverter</strong> uma a uma — as mais recentes; as antigas ficam arquivadas (usa uma Versão para recuar mais).</p>
         </div>
 
       </div>
@@ -2052,6 +2057,7 @@ const { t } = useI18n();
 const props = defineProps({
   theme:       { type: Object, default: null },
   themeAgents: { type: Array,  default: () => [] },
+  stepJournal: { type: Object, default: () => ({}) },
 });
 
 // ── Tabs ──────────────────────────────────────────────────────────
@@ -2156,7 +2162,8 @@ const progressPct    = computed(() => Math.round((completedCore.value / coreStep
 const completedSteps = computed(() => workflowSteps.value.filter(s => s.done).length);
 
 // ── Schema espelho (step_journal) — estado/origem/histórico por passo ─────
-const stepJournal = ref(props.theme?.step_journal ?? {});
+// Vem num prop separado e LEVE (sem snapshots pesados — só metadados).
+const stepJournal = ref(props.stepJournal ?? {});
 const SOURCE_META = {
   chat:   { icon: '💬', label: 'Chat IA' },
   manual: { icon: '✏️', label: 'Manual' },
@@ -2168,7 +2175,7 @@ function sourceMeta(src) { return SOURCE_META[src] ?? { icon: '•', label: src 
 
 async function revertStep(tabId) {
   const node = stepJournalFor(tabId);
-  if (!node || !(node.history?.length)) return;
+  if (!node || !node.revertible) return;
   const stepName = workflowSteps.value.find(s => s.tabId === tabId)?.label ?? tabId;
   if (!confirm(`Reverter a última alteração do passo "${stepName}"? O valor anterior será restaurado.`)) return;
   try {
@@ -2181,6 +2188,8 @@ async function revertStep(tabId) {
       if (data.theme) applyServerTheme(data.theme);
       stepJournal.value = data.journal ?? {};
       feedback.success = 'Passo revertido — valor anterior restaurado.';
+    } else {
+      feedback.error = 'Esta alteração já não é revertível (o snapshot foi arquivado). Usa o Histórico de versões para recuar mais.';
     }
   } catch (e) { feedback.error = e.message; }
 }
@@ -3624,6 +3633,42 @@ async function copyIcon(name, type) {
 // ── Versionamento ────────────────────────────────────────────────
 const themeVersions         = ref([]);
 const loadingVersions       = ref(false);
+
+// Histórico UNIFICADO — uma só narrativa que funde duas granularidades:
+//  • versões (snapshots completos, pontos de restauro grandes)
+//  • alterações por passo (granular: cada edição de chat/manual/build)
+// Ordenado do mais recente para o mais antigo.
+const historyTimeline = computed(() => {
+  const items = [];
+
+  for (const v of themeVersions.value) {
+    const t = v.snapshot_type;
+    items.push({
+      key: 'v-' + v.uuid, kind: 'version', at: v.created_at,
+      icon: t === 'publish' ? '🚀' : t === 'auto' ? '⚡' : t === 'system' ? '🛡️' : '📌',
+      title: 'v' + v.version,
+      tag: t === 'publish' ? 'Publicação' : t === 'auto' ? 'Automático' : t === 'system' ? 'Sistema' : 'Manual',
+      subtitle: v.changelog || '', ver: v,
+    });
+  }
+
+  for (const [step, node] of Object.entries(stepJournal.value || {})) {
+    const hist = node?.history || [];
+    hist.forEach((e, idx) => {
+      const stepName = workflowSteps.value.find(s => s.tabId === step)?.label ?? step;
+      items.push({
+        key: 'j-' + step + '-' + idx + '-' + (e.at || ''), kind: 'step', at: e.at,
+        icon: sourceMeta(e.source).icon, title: stepName, tag: sourceMeta(e.source).label,
+        subtitle: e.summary || '', step,
+        revertible: idx === hist.length - 1 && !!node.revertible,
+        pruned: !!e.pruned,
+      });
+    });
+  }
+
+  return items.sort((a, b) => new Date(b.at || 0) - new Date(a.at || 0));
+});
+
 const showCreateVersionModal = ref(false);
 const newVersionChangelog   = ref('');
 const savingVersion         = ref(false);
@@ -4014,6 +4059,7 @@ async function runBuildAgent(phase, ctx) {
       return { ok: false, isFatal: !!data.is_fatal };
     }
     if (data.applied && data.theme) applyServerTheme(data.theme);
+    if (data.step_journal) stepJournal.value = data.step_journal;
     phase.reply = data.reply ?? '';
     phase.status = 'done';
     return { ok: true, isFatal: false };

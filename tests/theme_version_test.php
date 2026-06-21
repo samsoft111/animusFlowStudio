@@ -184,7 +184,7 @@ check('loadVersions() definida',                str_contains($vue, 'async functi
 check('saveVersion() definida',                 str_contains($vue, 'async function saveVersion'));
 check('restoreVersion() definida',              str_contains($vue, 'async function restoreVersion'));
 check('deleteVersion() definida',               str_contains($vue, 'async function deleteVersion'));
-check('Timeline com tipos de snapshot',         str_contains($vue, "snapshot_type === 'publish'") && str_contains($vue, "snapshot_type === 'auto'"));
+check('Timeline com tipos de snapshot',         str_contains($vue, "v.snapshot_type") && str_contains($vue, "t === 'publish'") && str_contains($vue, "t === 'auto'"));
 check('Botão ↩️ Restaurar no timeline',         str_contains($vue, '↩️') || str_contains($vue, 'restoreVersion(ver)'));
 check('Info sobre auto-snapshot presente',      str_contains($vue, 'automático'));
 

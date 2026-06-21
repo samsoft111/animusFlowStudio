@@ -14,9 +14,22 @@ use App\Models\StudioTheme;
  *     vindo do Chat IA ou de edição manual (híbrido: campos → palavras-chave → IA).
  *  2. Registar no schema espelho (step_journal) cada alteração com estado, origem,
  *     data e snapshot do valor anterior — permitindo reverter um passo específico.
+ *
+ * ÂMBITO (decisão deliberada): este motor é EXCLUSIVO de temas. Os plugins têm
+ * um fluxo chat/build/manual semelhante mas NÃO têm o stepper de progresso por
+ * passos (Detalhes/Design/…), pelo que o conceito de "espelho por passo" não
+ * mapeia para eles. Replicar isto para plugins seria duplicar o motor para um
+ * conjunto de campos diferente sem uma UI de progresso a espelhar. Fica como
+ * possível trabalho futuro, não como dívida — é uma escolha de âmbito.
  */
 class ThemeStepEngine
 {
+    /** Máximo de entradas de histórico por passo (metadados). */
+    private const HISTORY_LIMIT = 20;
+
+    /** Nº de entradas recentes que retêm o snapshot completo (revertível). */
+    private const SNAPSHOT_WINDOW = 3;
+
     /** Mapa campo → passo (a "lógica do processo"). */
     public const FIELD_STEP = [
         'label'         => 'details',
@@ -154,19 +167,25 @@ class ThemeStepEngine
         }
 
         foreach ($byStep as $step => $fields) {
+            $beforeVals = array_intersect_key($before, array_flip($fields));
+
             $entry = [
                 'at'      => $now,
                 'source'  => $source, // chat | manual | build
                 'summary' => mb_substr($summary, 0, 240),
                 'fields'  => $fields,
-                'before'  => array_intersect_key($before, array_flip($fields)),
+                'before'  => $beforeVals,                 // valor completo (podado fora da janela)
+                'meta'    => self::fieldsMeta($beforeVals), // hash+tamanho — sempre leve
             ];
 
             $node = $journal[$step] ?? ['status' => 'pending', 'source' => $source, 'updated_at' => $now, 'history' => []];
             $history   = $node['history'] ?? [];
             $history[] = $entry;
-            // Limite defensivo de tamanho — guarda as últimas 20 entradas por passo
-            $node['history']    = array_slice($history, -20);
+
+            // Limite de entradas + poda dos snapshots pesados (mantém o valor
+            // completo só nas últimas SNAPSHOT_WINDOW entradas; as restantes
+            // ficam só com metadados, evitando inchar a linha com HTML repetido).
+            $node['history']    = self::pruneHistory($history);
             $node['status']     = 'done';
             $node['source']     = $source;
             $node['updated_at'] = $now;
@@ -181,7 +200,8 @@ class ThemeStepEngine
 
     /**
      * Reverte um passo: restaura o snapshot anterior da última entrada do passo
-     * e remove essa entrada do histórico (undo passo-a-passo). Devolve true se reverteu.
+     * e remove essa entrada do histórico (undo passo-a-passo). Devolve true se
+     * reverteu; false se a última entrada já não tem snapshot (foi podada).
      */
     public static function revertStep(StudioTheme $theme, string $step): bool
     {
@@ -192,8 +212,15 @@ class ThemeStepEngine
         }
 
         $history = $node['history'];
-        $last    = array_pop($history);
-        $before  = $last['before'] ?? [];
+        $lastIdx = array_key_last($history);
+        $before  = $history[$lastIdx]['before'] ?? null;
+
+        // Snapshot podado (fora da janela) → não há valor para restaurar.
+        if (!is_array($before) || empty($before)) {
+            return false;
+        }
+
+        array_pop($history);
 
         // Restaura os campos do snapshot (apenas campos válidos do passo)
         $restore = [];
@@ -217,5 +244,69 @@ class ThemeStepEngine
         $theme->update(['step_journal' => $journal]);
 
         return true;
+    }
+
+    /**
+     * Versão "pública" do espelho para enviar ao frontend: remove os snapshots
+     * completos ('before') — que podem ser HTML pesado — e mantém apenas os
+     * metadados leves, marcando em cada passo se a última entrada é revertível.
+     */
+    public static function publicJournal(?array $journal): array
+    {
+        if (!is_array($journal)) {
+            return [];
+        }
+        $out = [];
+        foreach ($journal as $step => $node) {
+            $node['revertible'] = self::canRevert($node);
+            if (!empty($node['history']) && is_array($node['history'])) {
+                $node['history'] = array_map(function ($e) {
+                    unset($e['before']);            // não enviar o valor completo ao browser
+                    return $e;
+                }, $node['history']);
+            }
+            $out[$step] = $node;
+        }
+        return $out;
+    }
+
+    /** Indica se a última entrada de um passo ainda é revertível (tem snapshot). */
+    public static function canRevert(?array $node): bool
+    {
+        if (!is_array($node) || empty($node['history'])) {
+            return false;
+        }
+        $last = $node['history'][array_key_last($node['history'])];
+        return is_array($last['before'] ?? null) && !empty($last['before']);
+    }
+
+    /** Metadados leves (hash + tamanho em bytes) por campo — para exibir e comparar. */
+    private static function fieldsMeta(array $values): array
+    {
+        $meta = [];
+        foreach ($values as $field => $value) {
+            $json = json_encode($value, JSON_UNESCAPED_UNICODE) ?: '';
+            $meta[$field] = ['size' => strlen($json), 'hash' => substr(sha1($json), 0, 12)];
+        }
+        return $meta;
+    }
+
+    /**
+     * Mantém no máximo HISTORY_LIMIT entradas e retém o snapshot completo
+     * ('before') apenas nas últimas SNAPSHOT_WINDOW; as restantes ficam só com
+     * metadados ('meta'), evitando guardar HTML pesado repetido.
+     */
+    private static function pruneHistory(array $history): array
+    {
+        $history = array_slice($history, -self::HISTORY_LIMIT);
+        $n = count($history);
+        foreach ($history as $i => &$entry) {
+            if ($i < $n - self::SNAPSHOT_WINDOW) {
+                unset($entry['before']);
+                $entry['pruned'] = true;
+            }
+        }
+        unset($entry);
+        return array_values($history);
     }
 }
