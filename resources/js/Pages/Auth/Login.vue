@@ -110,7 +110,11 @@ const form = useForm({
 });
 
 function submit() {
-  form.post('/login');
+  form.post('/login', {
+    onSuccess: () => {
+      window.location.href = '/dashboard';
+    }
+  });
 }
 
 function handleVisibilityChange() {

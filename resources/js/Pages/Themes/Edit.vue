@@ -3959,15 +3959,17 @@ function persistChatHistory() {
   if (!props.theme?.uuid) return;
   clearTimeout(chatPersistTimer);
   chatPersistTimer = setTimeout(() => {
-    const messages = chatMessages.value.map((m) => {
-      const out = { ...m };
-      if (out.type === 'build') out.building = false;
-      if (Array.isArray(out.attachmentPreviews)) {
-        // object URLs deixam de ser válidos após reload — guarda só o essencial
-        out.attachmentPreviews = out.attachmentPreviews.map(({ url, ...rest }) => rest);
-      }
-      return out;
-    });
+    const messages = chatMessages.value
+      .filter((m) => !m.content || !m.content.startsWith('⚠️'))
+      .map((m) => {
+        const out = { ...m };
+        if (out.type === 'build') out.building = false;
+        if (Array.isArray(out.attachmentPreviews)) {
+          // object URLs deixam de ser válidos após reload — guarda só o essencial
+          out.attachmentPreviews = out.attachmentPreviews.map(({ url, ...rest }) => rest);
+        }
+        return out;
+      });
     axios.post(`/themes/${props.theme.uuid}/chat-history`, { messages }).catch(() => {});
   }, 1500);
 }
