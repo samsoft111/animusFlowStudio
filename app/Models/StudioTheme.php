@@ -31,6 +31,8 @@ class StudioTheme extends Model
         'custom_css', 'custom_js',
         // Variants (colour skins)
         'variants',
+        // Chat IA history (editor conversation + build cards)
+        'chat_history',
         // Meta
         'status', 'is_published', 'animus_package_uuid',
     ];
@@ -44,6 +46,7 @@ class StudioTheme extends Model
         'assets'        => 'array',
         'components'    => 'array',
         'variants'      => 'array',
+        'chat_history'  => 'array',
         'is_published'  => 'boolean',
     ];
 

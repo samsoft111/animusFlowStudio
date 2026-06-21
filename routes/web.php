@@ -41,6 +41,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/themes/{uuid}/export-prompt', [ThemeController::class, 'exportPrompt'])->name('themes.export-prompt');
 
     Route::post('/themes/{uuid}/chat',           [ThemeController::class, 'chat'])->name('themes.chat');
+    Route::post('/themes/{uuid}/chat-history',   [ThemeController::class, 'saveChatHistory'])->name('themes.chat.history');
     Route::post('/themes/{uuid}/build/plan',     [ThemeController::class, 'buildPlan'])->name('themes.build.plan');
     Route::post('/themes/{uuid}/build/step',     [ThemeController::class, 'buildStep'])->name('themes.build.step');
     Route::post('/themes/{uuid}/build/verify',   [ThemeController::class, 'buildVerify'])->name('themes.build.verify');

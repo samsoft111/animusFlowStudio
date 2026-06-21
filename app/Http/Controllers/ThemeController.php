@@ -528,6 +528,28 @@ class ThemeController extends Controller
         ]);
     }
 
+    /**
+     * Persiste o histórico do Chat IA (mensagens + cartões de build) do editor.
+     * Chamado pelo frontend (debounced) sempre que a conversa muda, para que ao
+     * reentrar no tema a conversa e as tarefas feitas não se percam.
+     */
+    public function saveChatHistory(Request $request, string $uuid): JsonResponse
+    {
+        $theme = StudioTheme::where('uuid', $uuid)->firstOrFail();
+
+        $data = $request->validate([
+            'messages'   => 'present|array|max:200',
+            'messages.*' => 'array',
+        ]);
+
+        // Guarda apenas as últimas 200 mensagens (limite defensivo de tamanho).
+        $messages = array_slice($data['messages'], -200);
+
+        $theme->update(['chat_history' => $messages]);
+
+        return response()->json(['saved' => true, 'count' => count($messages)]);
+    }
+
     /** Apply AI updates to a theme with deep-merge for nested array fields. */
     private function applyThemeUpdates(StudioTheme $theme, ?array $updates): bool
     {

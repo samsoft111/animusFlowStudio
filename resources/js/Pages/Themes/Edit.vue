@@ -51,10 +51,10 @@
         <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between px-4 sm:px-5 py-3 border-b border-border gap-2">
           <div class="flex items-center gap-2">
             <div class="w-6 h-6 rounded-full bg-primary flex items-center justify-center shrink-0">
-              <span class="text-[10px] font-bold text-primary-foreground">{{ completedSteps }}/{{ workflowSteps.length }}</span>
+              <span class="text-[10px] font-bold text-primary-foreground">{{ completedCore }}/{{ coreSteps.length }}</span>
             </div>
             <span class="text-sm font-semibold text-foreground">Progresso do tema</span>
-            <span class="text-xs text-muted-foreground">— {{ Math.round((completedSteps / workflowSteps.length) * 100) }}% concluído</span>
+            <span class="text-xs text-muted-foreground">— {{ progressPct }}% concluído</span>
           </div>
           <div class="flex items-center gap-2">
             <button @click="guideOpen = !guideOpen"
@@ -67,7 +67,7 @@
         <!-- Barra de progresso total -->
         <div class="h-0.5 bg-muted">
           <div class="h-full bg-primary transition-all duration-500"
-            :style="{ width: (completedSteps / workflowSteps.length * 100) + '%' }"></div>
+            :style="{ width: progressPct + '%' }"></div>
         </div>
 
         <!-- Passos horizontais -->
@@ -136,7 +136,10 @@
                   {{ step.done ? '✓' : idx + 1 }}
                 </div>
                 <div class="min-w-0">
-                  <p class="text-xs font-semibold text-foreground">{{ step.icon }} {{ step.label }}</p>
+                  <p class="text-xs font-semibold text-foreground flex items-center gap-1.5">
+                    {{ step.icon }} {{ step.label }}
+                    <span v-if="step.optional" class="text-[8px] font-medium uppercase tracking-wide text-muted-foreground bg-muted px-1 py-0.5 rounded">opcional</span>
+                  </p>
                   <p class="text-[10px] text-muted-foreground mt-0.5 leading-relaxed">{{ step.hint }}</p>
                 </div>
               </button>
@@ -2078,7 +2081,7 @@ const workflowSteps = computed(() => {
     {
       tabId: 'variants', icon: '🌈', label: 'Variantes',
       hint: 'Adiciona paletas de cores alternativas (dark mode, skins).',
-      done: hasVariants,
+      done: hasVariants, optional: true,
     },
     {
       tabId: 'layout', icon: '📐', label: 'Layout',
@@ -2093,7 +2096,7 @@ const workflowSteps = computed(() => {
     {
       tabId: 'assets', icon: '🖼️', label: 'Assets',
       hint: 'Faz upload do logo, favicon, imagens de fundo e OG image.',
-      done: hasAssets,
+      done: hasAssets, optional: true,
     },
     {
       tabId: 'sections', icon: '🧩', label: 'Secções',
@@ -2103,7 +2106,7 @@ const workflowSteps = computed(() => {
     {
       tabId: 'components', icon: '🔧', label: 'Componentes',
       hint: 'Adiciona e ordena componentes: navbar, footer, modais…',
-      done: hasComponents,
+      done: hasComponents, optional: true,
     },
     {
       tabId: 'code', icon: '💻', label: 'Código',
@@ -2113,16 +2116,23 @@ const workflowSteps = computed(() => {
     {
       tabId: 'demo', icon: '🎭', label: 'Demo Data',
       hint: 'Preenche o tema com imagens, cores e conteúdo de demonstração por tipo de site.',
-      done: !!f._demoApplied,
+      done: !!f._demoApplied, optional: true,
     },
     {
       tabId: 'preview', icon: '👁️', label: 'Preview',
       hint: 'Visualiza o tema no browser antes de exportar.',
-      done: false,
+      done: hasColors && hasSections,
     },
   ];
 });
 
+// A percentagem conta apenas os passos ESSENCIAIS (não-opcionais). Os passos
+// opcionais (variantes, assets, componentes, demo data) são melhorias manuais
+// e não devem fazer um tema completo via IA parecer "incompleto".
+const coreSteps      = computed(() => workflowSteps.value.filter(s => !s.optional));
+const completedCore  = computed(() => coreSteps.value.filter(s => s.done).length);
+const progressPct    = computed(() => Math.round((completedCore.value / coreSteps.value.length) * 100));
+// Total concluído (inclui opcionais) — usado apenas em listagens auxiliares.
 const completedSteps = computed(() => workflowSteps.value.filter(s => s.done).length);
 
 // ── Edit form ─────────────────────────────────────────────────────
@@ -3809,7 +3819,26 @@ async function publishTheme() {
 
 // ── Chat IA ──────────────────────────────────────────────────────────────
 
-const chatMessages       = ref([]);   // [{role, content, attachmentPreviews?, updates?, applied?}]
+// Restaura mensagens guardadas na BD, garantindo que nenhum cartão de build
+// fica preso em estado "a construir" e que fases inacabadas não giram para sempre.
+function sanitizeStoredMessages(list) {
+  if (!Array.isArray(list)) return [];
+  return list.map((m) => {
+    const msg = { ...m };
+    if (msg.type === 'build') {
+      msg.building = false;
+      if (Array.isArray(msg.phases)) {
+        msg.phases = msg.phases.map((p) => ({
+          ...p,
+          status: (p.status === 'running' || p.status === 'pending') ? 'done' : p.status,
+        }));
+      }
+    }
+    return msg;
+  });
+}
+
+const chatMessages       = ref(sanitizeStoredMessages(props.theme?.chat_history));   // [{role, content, attachmentPreviews?, updates?, applied?}]
 const chatInput          = ref('');
 const chatLoading        = ref(false);
 const chatAttachments    = ref([]);   // [{file, type, name, icon, url, sizeLabel}]
@@ -3818,6 +3847,28 @@ const chatPendingUpdates = ref(null);
 const chatScrollEl       = ref(null);
 const chatTextarea       = ref(null);
 const chatFileInput      = ref(null);
+
+// Persiste o histórico do chat na BD (debounced) sempre que muda, para que ao
+// reentrar no tema a conversa e as tarefas feitas não se percam. Remove dados
+// pesados/transitórios (object URLs de anexos, flag de "a construir").
+let chatPersistTimer = null;
+function persistChatHistory() {
+  if (!props.theme?.uuid) return;
+  clearTimeout(chatPersistTimer);
+  chatPersistTimer = setTimeout(() => {
+    const messages = chatMessages.value.map((m) => {
+      const out = { ...m };
+      if (out.type === 'build') out.building = false;
+      if (Array.isArray(out.attachmentPreviews)) {
+        // object URLs deixam de ser válidos após reload — guarda só o essencial
+        out.attachmentPreviews = out.attachmentPreviews.map(({ url, ...rest }) => rest);
+      }
+      return out;
+    });
+    axios.post(`/themes/${props.theme.uuid}/chat-history`, { messages }).catch(() => {});
+  }, 1500);
+}
+watch(chatMessages, persistChatHistory, { deep: true });
 
 // Skill (instruções detalhadas) — carregado de ficheiro, guia a construção do tema
 const buildSkill     = ref('');
