@@ -141,6 +141,21 @@
                     <span v-if="step.optional" class="text-[8px] font-medium uppercase tracking-wide text-muted-foreground bg-muted px-1 py-0.5 rounded">opcional</span>
                   </p>
                   <p class="text-[10px] text-muted-foreground mt-0.5 leading-relaxed">{{ step.hint }}</p>
+                  <!-- Diário do passo (schema espelho): última origem + reverter -->
+                  <div v-if="stepJournalFor(step.tabId)" class="mt-1.5 flex items-center gap-2 flex-wrap">
+                    <span class="text-[9px] font-medium text-muted-foreground inline-flex items-center gap-1 bg-muted/60 px-1.5 py-0.5 rounded">
+                      {{ sourceMeta(stepJournalFor(step.tabId).source).icon }} {{ sourceMeta(stepJournalFor(step.tabId).source).label }}
+                    </span>
+                    <span v-if="stepJournalFor(step.tabId).history?.length" class="text-[9px] text-muted-foreground">
+                      · {{ stepJournalFor(step.tabId).history.length }} alteraç{{ stepJournalFor(step.tabId).history.length === 1 ? 'ão' : 'ões' }}
+                    </span>
+                    <span v-if="stepJournalFor(step.tabId).history?.length"
+                      role="button" tabindex="0"
+                      @click.stop="revertStep(step.tabId)" @keydown.enter.stop="revertStep(step.tabId)"
+                      class="text-[9px] font-semibold text-amber-600 dark:text-amber-400 hover:underline cursor-pointer">
+                      ↩ reverter
+                    </span>
+                  </div>
                 </div>
               </button>
             </div>
@@ -1549,8 +1564,13 @@
                 </div>
 
                 <!-- Applied updates badge — chat auto-guarda no servidor -->
-                <div v-if="msg.applied" class="mt-1.5 flex items-center gap-1.5">
+                <div v-if="msg.applied" class="mt-1.5 flex items-center gap-1.5 flex-wrap">
                   <span class="text-[10px] text-success font-semibold flex items-center gap-1">✓ Aplicadas e guardadas automaticamente</span>
+                  <button v-if="msg.stepLabel" @click="activeTab = msg.step"
+                    class="text-[10px] font-semibold text-primary bg-primary/10 border border-primary/20 px-2 py-0.5 rounded-full hover:bg-primary/20 transition-colors"
+                    :title="'Ir para o passo ' + msg.stepLabel">
+                    🎯 Passo: {{ msg.stepLabel }}
+                  </button>
                 </div>
                 <div v-else-if="msg.updates && !msg.applied" class="mt-1.5 flex items-center gap-2">
                   <button @click="applyChatUpdates(msg.updates, i)"
@@ -2134,6 +2154,36 @@ const completedCore  = computed(() => coreSteps.value.filter(s => s.done).length
 const progressPct    = computed(() => Math.round((completedCore.value / coreSteps.value.length) * 100));
 // Total concluído (inclui opcionais) — usado apenas em listagens auxiliares.
 const completedSteps = computed(() => workflowSteps.value.filter(s => s.done).length);
+
+// ── Schema espelho (step_journal) — estado/origem/histórico por passo ─────
+const stepJournal = ref(props.theme?.step_journal ?? {});
+const SOURCE_META = {
+  chat:   { icon: '💬', label: 'Chat IA' },
+  manual: { icon: '✏️', label: 'Manual' },
+  build:  { icon: '✦',  label: 'Construção IA' },
+  revert: { icon: '↩',  label: 'Revertido' },
+};
+function stepJournalFor(tabId) { return stepJournal.value?.[tabId] ?? null; }
+function sourceMeta(src) { return SOURCE_META[src] ?? { icon: '•', label: src || '—' }; }
+
+async function revertStep(tabId) {
+  const node = stepJournalFor(tabId);
+  if (!node || !(node.history?.length)) return;
+  const stepName = workflowSteps.value.find(s => s.tabId === tabId)?.label ?? tabId;
+  if (!confirm(`Reverter a última alteração do passo "${stepName}"? O valor anterior será restaurado.`)) return;
+  try {
+    const fd = new FormData();
+    fd.append('step', tabId);
+    fd.append('_token', csrf());
+    const res = await fetch(`/themes/${props.theme.uuid}/revert-step`, { method: 'POST', body: fd });
+    const data = await res.json();
+    if (data.reverted) {
+      if (data.theme) applyServerTheme(data.theme);
+      stepJournal.value = data.journal ?? {};
+      feedback.success = 'Passo revertido — valor anterior restaurado.';
+    }
+  } catch (e) { feedback.error = e.message; }
+}
 
 // ── Edit form ─────────────────────────────────────────────────────
 const defaultLayout = props.theme?.layout_config ?? {};
@@ -4201,9 +4251,12 @@ async function sendChatMessage() {
           updates: data.updates ?? null,
           applied: data.applied ?? false,
           cached:  data.cached ?? false,
+          step:    data.step ?? null,
+          stepLabel: data.step_label ?? null,
         });
       }
       if (data.applied && data.theme) applyServerTheme(data.theme);
+      if (data.step_journal) stepJournal.value = data.step_journal;
 
       // A IA decidiu que isto justifica uma construção completa → pipeline inline
       if (data.build && data.build.brief) {

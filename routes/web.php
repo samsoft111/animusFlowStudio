@@ -42,6 +42,9 @@ Route::middleware('auth')->group(function () {
 
     Route::post('/themes/{uuid}/chat',           [ThemeController::class, 'chat'])->name('themes.chat');
     Route::post('/themes/{uuid}/chat-history',   [ThemeController::class, 'saveChatHistory'])->name('themes.chat.history');
+    Route::get('/themes/{uuid}/journal',         [ThemeController::class, 'journal'])->name('themes.journal');
+    Route::post('/themes/{uuid}/classify',       [ThemeController::class, 'classifyRequest'])->name('themes.classify');
+    Route::post('/themes/{uuid}/revert-step',    [ThemeController::class, 'revertStep'])->name('themes.revert-step');
     Route::post('/themes/{uuid}/build/plan',     [ThemeController::class, 'buildPlan'])->name('themes.build.plan');
     Route::post('/themes/{uuid}/build/step',     [ThemeController::class, 'buildStep'])->name('themes.build.step');
     Route::post('/themes/{uuid}/build/verify',   [ThemeController::class, 'buildVerify'])->name('themes.build.verify');

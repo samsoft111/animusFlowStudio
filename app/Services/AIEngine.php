@@ -818,6 +818,30 @@ SYSTEM;
         return ['reply' => $reply, 'updates' => $updates, 'build' => $build];
     }
 
+    /**
+     * Classificador IA (usado só quando determinístico/palavras-chave falham):
+     * dado um pedido livre, devolve o id do passo mais provável ou null.
+     */
+    public static function classifyThemeStep(string $message, array $stepIds): ?string
+    {
+        $provider = StudioSetting::get('ai_provider', 'claude');
+        $apiKey   = self::resolveApiKey($provider);
+        if (empty($apiKey)) {
+            return null; // sem IA → o chamador fica com o resultado determinístico
+        }
+
+        $list   = implode(', ', $stepIds);
+        $system = "És um classificador. Dado um pedido de edição de um tema, responde APENAS com o id de UM passo desta lista: {$list}. "
+                . "Sem explicações, sem pontuação, só o id exacto.";
+        try {
+            $raw = self::chatDispatch($system, [['role' => 'user', 'content' => $message]], [], 20);
+        } catch (\Throwable) {
+            return null;
+        }
+        $ans = strtolower(trim(preg_replace('/[^a-zA-Z_]/', '', $raw)));
+        return in_array($ans, $stepIds, true) ? $ans : null;
+    }
+
     // ──────────────────────────────────────────────
     //  Multi-agent theme builder (Modo Construção)
     // ──────────────────────────────────────────────

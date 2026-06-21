@@ -8,6 +8,7 @@ use App\Models\StudioSetting;
 use App\Models\StudioTheme;
 use App\Models\StudioThemeVersion;
 use App\Services\AIEngine;
+use App\Services\ThemeStepEngine;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -121,7 +122,25 @@ class ThemeController extends Controller
             'variants' => 'nullable|array',
         ]);
 
+        // Snapshot dos campos do espelho ANTES de gravar (para detectar mudanças reais)
+        $journalFields = array_keys(array_intersect_key($data, ThemeStepEngine::FIELD_STEP));
+        $before = [];
+        foreach ($journalFields as $f) {
+            $before[$f] = $theme->$f;
+        }
+
         $theme->update($data);
+
+        // Regista no espelho apenas os campos que mudaram de facto (origem: manual)
+        $changed = [];
+        foreach ($before as $f => $prev) {
+            if (json_encode($prev) !== json_encode($theme->$f)) {
+                $changed[] = $f;
+            }
+        }
+        if (!empty($changed)) {
+            ThemeStepEngine::record($theme, $changed, 'manual', 'Edição manual nos campos: ' . implode(', ', $changed), $before);
+        }
 
         return back()->with('success', 'Theme saved.');
     }
@@ -466,7 +485,8 @@ class ThemeController extends Controller
         if (empty($attachments)) {
             $recipeResult = \App\Models\StudioAiRecipe::matchAndResolve('theme', $message);
             if ($recipeResult) {
-                $applied = $this->applyThemeUpdates($theme, $recipeResult['updates']);
+                $applied = $this->applyThemeUpdates($theme, $recipeResult['updates'], 'chat', $message);
+                $cls = $this->classifyStep($message, $recipeResult['updates']);
                 return response()->json([
                     'reply'   => $recipeResult['reply'],
                     'updates' => $recipeResult['updates'],
@@ -474,6 +494,10 @@ class ThemeController extends Controller
                     'theme'   => $applied ? $theme->fresh() : null,
                     'build'   => null,
                     'cached'  => true,
+                    'step'        => $cls['step'],
+                    'step_label'  => $cls['step'] ? ThemeStepEngine::label($cls['step']) : null,
+                    'step_method' => $cls['method'],
+                    'step_journal' => $theme->fresh()->step_journal,
                 ]);
             }
         }
@@ -485,7 +509,8 @@ class ThemeController extends Controller
 
         if ($cached) {
             $cached->increment('hits');
-            $applied = $this->applyThemeUpdates($theme, $cached->updates);
+            $applied = $this->applyThemeUpdates($theme, $cached->updates, 'chat', $message);
+            $cls = $this->classifyStep($message, $cached->updates);
             return response()->json([
                 'reply'   => $cached->reply,
                 'updates' => $cached->updates,
@@ -493,6 +518,10 @@ class ThemeController extends Controller
                 'theme'   => $applied ? $theme->fresh() : null,
                 'build'   => $cached->build,
                 'cached'  => true,
+                'step'        => $cls['step'],
+                'step_label'  => $cls['step'] ? ThemeStepEngine::label($cls['step']) : null,
+                'step_method' => $cls['method'],
+                'step_journal' => $theme->fresh()->step_journal,
             ]);
         }
 
@@ -506,7 +535,8 @@ class ThemeController extends Controller
         }
 
         // If AI returned theme updates, apply them with deep-merge for nested fields
-        $applied = $this->applyThemeUpdates($theme, $result['updates'] ?? null);
+        $applied = $this->applyThemeUpdates($theme, $result['updates'] ?? null, 'chat', $message);
+        $cls = $this->classifyStep($message, $result['updates'] ?? []);
 
         // Cache resolution for future reuse
         if (empty($attachments)) {
@@ -525,6 +555,10 @@ class ThemeController extends Controller
             'applied' => $applied,
             'theme'   => $applied ? $theme->fresh() : null,
             'build'   => $result['build'] ?? null,
+            'step'        => $cls['step'],
+            'step_label'  => $cls['step'] ? ThemeStepEngine::label($cls['step']) : null,
+            'step_method' => $cls['method'],
+            'step_journal' => $theme->fresh()->step_journal,
         ]);
     }
 
@@ -550,8 +584,12 @@ class ThemeController extends Controller
         return response()->json(['saved' => true, 'count' => count($messages)]);
     }
 
-    /** Apply AI updates to a theme with deep-merge for nested array fields. */
-    private function applyThemeUpdates(StudioTheme $theme, ?array $updates): bool
+    /**
+     * Apply AI updates to a theme with deep-merge for nested array fields.
+     * Regista cada alteração no schema espelho (step_journal) com a origem
+     * indicada (chat | build | manual) e snapshot do valor anterior.
+     */
+    private function applyThemeUpdates(StudioTheme $theme, ?array $updates, string $source = 'chat', string $summary = ''): bool
     {
         if (empty($updates)) {
             return false;
@@ -565,6 +603,13 @@ class ThemeController extends Controller
         ];
         $updates = array_intersect_key($updates, array_flip($allowed));
 
+        // Campos relevantes para o espelho + snapshot do valor anterior (para revert)
+        $journalFields = array_keys(array_intersect_key($updates, ThemeStepEngine::FIELD_STEP));
+        $before = [];
+        foreach ($journalFields as $f) {
+            $before[$f] = $theme->$f;
+        }
+
         foreach (['colors', 'layout_config', 'capabilities', 'fonts', 'assets', 'sections', 'components'] as $field) {
             if (isset($updates[$field]) && is_array($updates[$field])) {
                 $existing = is_array($theme->$field) ? $theme->$field : [];
@@ -577,7 +622,24 @@ class ThemeController extends Controller
         }
 
         $theme->update($updates);
+
+        if (!empty($journalFields)) {
+            ThemeStepEngine::record($theme, $journalFields, $source, $summary, $before);
+        }
+
         return true;
+    }
+
+    /**
+     * Classifica a que passo pertence um pedido (híbrido: campos → palavras-chave
+     * → IA quando ambíguo). A IA só é consultada se não houver campos alterados.
+     */
+    private function classifyStep(string $message, ?array $updates): array
+    {
+        $fields = is_array($updates)
+            ? array_keys(array_intersect_key($updates, ThemeStepEngine::FIELD_STEP))
+            : [];
+        return ThemeStepEngine::classify($message, $fields, allowAi: empty($fields));
     }
 
     // ──────────────────────────────────────────────
@@ -652,7 +714,7 @@ class ThemeController extends Controller
             return response()->json(['error' => $e->getMessage(), 'is_fatal' => self::isFatalAiError($e)], 422);
         }
 
-        $applied = $this->applyThemeUpdates($theme, $result['updates'] ?? null);
+        $applied = $this->applyThemeUpdates($theme, $result['updates'] ?? null, 'build', $result['reply'] ?? ('Agente ' . $data['agent']));
 
         return response()->json([
             'agent'   => $result['agent'],
@@ -688,6 +750,52 @@ class ThemeController extends Controller
         }
 
         return response()->json($result);
+    }
+
+    // ──────────────────────────────────────────────
+    //  Schema espelho — diário de passos
+    // ──────────────────────────────────────────────
+
+    /** Devolve o espelho do processo (estado + histórico por passo). */
+    public function journal(string $uuid): JsonResponse
+    {
+        $theme = StudioTheme::where('uuid', $uuid)->firstOrFail();
+
+        return response()->json([
+            'journal' => $theme->step_journal ?? [],
+            'labels'  => ThemeStepEngine::STEP_LABELS,
+        ]);
+    }
+
+    /** Classifica um pedido (sem aplicar) → a que passo pertence. */
+    public function classifyRequest(Request $request, string $uuid): JsonResponse
+    {
+        StudioTheme::where('uuid', $uuid)->firstOrFail();
+        $data = $request->validate(['message' => 'required|string|max:4000']);
+
+        $cls = ThemeStepEngine::classify($data['message'], [], allowAi: true);
+        return response()->json([
+            'step'        => $cls['step'],
+            'step_label'  => $cls['step'] ? ThemeStepEngine::label($cls['step']) : null,
+            'step_method' => $cls['method'],
+        ]);
+    }
+
+    /** Reverte a última alteração registada de um passo (restaura o snapshot). */
+    public function revertStep(Request $request, string $uuid): JsonResponse
+    {
+        $theme = StudioTheme::where('uuid', $uuid)->firstOrFail();
+        $data  = $request->validate([
+            'step' => ['required', 'string', Rule::in(ThemeStepEngine::steps())],
+        ]);
+
+        $reverted = ThemeStepEngine::revertStep($theme, $data['step']);
+
+        return response()->json([
+            'reverted' => $reverted,
+            'theme'    => $reverted ? $theme->fresh() : null,
+            'journal'  => $theme->fresh()->step_journal ?? [],
+        ]);
     }
 
     // ──────────────────────────────────────────────

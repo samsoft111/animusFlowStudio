@@ -33,6 +33,8 @@ class StudioTheme extends Model
         'variants',
         // Chat IA history (editor conversation + build cards)
         'chat_history',
+        // Step journal (schema espelho — estado + histórico + snapshots por passo)
+        'step_journal',
         // Meta
         'status', 'is_published', 'animus_package_uuid',
     ];
@@ -47,6 +49,7 @@ class StudioTheme extends Model
         'components'    => 'array',
         'variants'      => 'array',
         'chat_history'  => 'array',
+        'step_journal'  => 'array',
         'is_published'  => 'boolean',
     ];
 
