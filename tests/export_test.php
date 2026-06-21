@@ -6,6 +6,7 @@ define('LARAVEL_START', microtime(true));
 require __DIR__ . '/../vendor/autoload.php';
 $app = require __DIR__ . '/../bootstrap/app.php';
 $app->make('Illuminate\Contracts\Console\Kernel')->bootstrap();
+require __DIR__ . '/ai_settings_guard.php'; // preserva/restaura as chaves reais (cms_api_key, animusflow_api_key)
 
 use App\Models\StudioSetting;
 use App\Models\StudioTheme;
@@ -20,15 +21,17 @@ function check(string $label, bool $ok, string $debug = ''): void {
     $ok ? $pass++ : $fail++;
 }
 
-// ── Tema de teste ────────────────────────────────────────────────
-$theme = StudioTheme::first();
-if (!$theme) { echo "ERRO: Nenhum tema no DB.\n"; exit(1); }
+// ── Tema de teste (descartável — criado só para este teste) ─────────
+// Não sequestramos um tema real do utilizador: criamos um próprio e
+// garantimos a sua remoção mesmo que o script seja morto/abortado antes
+// do fim (via register_shutdown_function). Limpa também resíduos de uma
+// corrida anterior interrompida.
+StudioTheme::withTrashed()->where('name', 'luxe-store-test')->forceDelete();
+$theme = StudioTheme::create(['name' => 'luxe-store-test', 'label' => 'Luxe Store']);
 
-$origAttributes = $theme->only([
-    'name', 'label', 'description', 'version', 'status', 'is_published',
-    'colors', 'fonts', 'layout_config', 'capabilities', 'custom_css',
-    'custom_js', 'sections', 'assets', 'animus_package_uuid'
-]);
+register_shutdown_function(function () use ($theme) {
+    StudioTheme::withTrashed()->whereKey($theme->id)->forceDelete();
+});
 
 // Preparar tema rico para o teste
 $theme->update([
@@ -520,7 +523,7 @@ check('showPromptModal para exportar prompt',               str_contains($vue, '
 StudioSetting::set('cms_url', '');
 StudioSetting::set('cms_api_key', '');
 StudioSetting::set('animusflow_api_key', '');
-$theme->update($origAttributes);
+$theme->forceDelete(); // tema descartável — remove por completo (o guard restaura as settings)
 
 echo PHP_EOL . '═══════════════════════════════════════════════════' . PHP_EOL;
 echo "RESULTADO FINAL: {$pass} passou, {$fail} falhou" . PHP_EOL;

@@ -298,7 +298,14 @@ try {
 // ────────────────────────────────────────────────────────────────
 section('5. ThemeController::inspire — erro sem chave AI');
 
+// O AIEngine resolve a chave por `ai_api_key_{provider}` e só depois pela
+// legacy `ai_api_key`. Para simular "sem chave" de forma determinística
+// (independente da chave real na BD), apagamos TODAS as variantes.
+// O ai_settings_guard.php restaura-as no fim.
 \App\Models\StudioSetting::set('ai_api_key', '');
+foreach (['claude', 'openai', 'gemini'] as $__p) {
+    \App\Models\StudioSetting::set("ai_api_key_{$__p}", '');
+}
 
 $request2 = \Illuminate\Http\Request::create('/themes/inspire', 'POST', [
     'category' => 'Tecnologia',

@@ -81,7 +81,13 @@ class StudioAiRecipe extends Model
         $regex = preg_replace('/\\\\\{([a-zA-Z0-9_]+)\\\\\}/', '(?P<$1>.+?)', $regex);
         $regex = '/^' . $regex . '$/iu';
 
-        if (!preg_match($regex, $normalizedPrompt, $matches)) {
+        // Match against the whitespace-normalised ORIGINAL prompt (not the
+        // lowercased one) so captured placeholder values keep their casing —
+        // e.g. the font name "Outfit" must not become "outfit". The regex is
+        // case-insensitive (/i), so the literal pattern text still matches.
+        $wsOriginal = preg_replace('/\s+/', ' ', trim($originalPrompt));
+
+        if (!preg_match($regex, $wsOriginal, $matches)) {
             return null;
         }
 
@@ -119,8 +125,12 @@ class StudioAiRecipe extends Model
         $regex = preg_replace('/\\\\\{([a-zA-Z0-9_]+)\\\\\}/', '(?P<$1>.+?)', $regex);
         $regex = '/^' . $regex . '$/iu';
 
+        // Same as exact match: capture from the original-cased prompt so font
+        // names and other text placeholders preserve their casing.
+        $wsOriginal = preg_replace('/\s+/', ' ', trim($originalPrompt));
+
         $variables = [];
-        if (preg_match($regex, $normalizedPrompt, $matches)) {
+        if (preg_match($regex, $wsOriginal, $matches)) {
             foreach ($matches as $key => $val) {
                 if (is_string($key)) {
                     $variables[$key] = trim($val);

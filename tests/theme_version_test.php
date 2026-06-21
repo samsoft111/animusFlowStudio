@@ -13,6 +13,7 @@ define('LARAVEL_START', microtime(true));
 require __DIR__ . '/../vendor/autoload.php';
 $app = require __DIR__ . '/../bootstrap/app.php';
 $app->make('Illuminate\Contracts\Console\Kernel')->bootstrap();
+require __DIR__ . '/ai_settings_guard.php'; // preserva/restaura as chaves reais (cms_api_key, animusflow_api_key)
 
 use App\Http\Controllers\ThemeController;
 use App\Models\StudioTheme;

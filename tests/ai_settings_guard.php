@@ -15,6 +15,9 @@
 $__aiGuardKeys = [
     'ai_provider', 'ai_model',
     'ai_api_key', 'ai_api_key_claude', 'ai_api_key_openai', 'ai_api_key_gemini',
+    // Chaves de integração que os testes de export/plugin põem a '' no fim —
+    // sem isto, correr esses scripts apagava as chaves reais do utilizador.
+    'cms_url', 'cms_api_key', 'animusflow_api_key',
 ];
 
 $__aiGuardOrig = [];
