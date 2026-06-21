@@ -84,6 +84,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/plugins/{uuid}/generate-docs',   [PluginController::class, 'generateDocs'])->name('plugins.generate-docs');
     Route::post('/plugins/{uuid}/inspire',         [PluginController::class, 'inspire'])->name('plugins.inspire');
     Route::post('/plugins/{uuid}/chat',           [PluginController::class, 'chat'])->name('plugins.chat');
+    Route::post('/plugins/{uuid}/chat-history',   [PluginController::class, 'saveChatHistory'])->name('plugins.chat.history');
     Route::get('/plugins/{uuid}/journal',         [PluginController::class, 'journal'])->name('plugins.journal');
     Route::post('/plugins/{uuid}/classify',       [PluginController::class, 'classifyRequest'])->name('plugins.classify');
     Route::post('/plugins/{uuid}/revert-step',    [PluginController::class, 'revertStep'])->name('plugins.revert-step');

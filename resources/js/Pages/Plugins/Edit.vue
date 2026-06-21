@@ -2102,7 +2102,24 @@ function parseSelectOptions(text) {
 }
 
 // ── Chat IA ──
-const chatMessages       = ref([]);
+function sanitizeStoredMessages(list) {
+  if (!Array.isArray(list)) return [];
+  return list.map((m) => {
+    const msg = { ...m };
+    if (msg.type === 'build') {
+      msg.building = false;
+      if (Array.isArray(msg.phases)) {
+        msg.phases = msg.phases.map((p) => ({
+          ...p,
+          status: (p.status === 'running' || p.status === 'pending') ? 'done' : p.status,
+        }));
+      }
+    }
+    return msg;
+  });
+}
+
+const chatMessages       = ref(sanitizeStoredMessages(props.plugin?.chat_history));
 const chatInput          = ref('');
 const chatLoading        = ref(false);
 const chatAttachments    = ref([]);
@@ -2111,6 +2128,32 @@ const chatPendingUpdates = ref(null);
 const chatScrollEl       = ref(null);
 const chatTextarea       = ref(null);
 const chatFileInput      = ref(null);
+
+let chatPersistTimer = null;
+function persistChatHistory() {
+  if (!props.plugin?.uuid) return;
+  clearTimeout(chatPersistTimer);
+  chatPersistTimer = setTimeout(() => {
+    const messages = chatMessages.value
+      .filter((m) => !m.content || !m.content.startsWith('⚠️'))
+      .map((m) => {
+        const out = { ...m };
+        if (out.type === 'build') out.building = false;
+        if (Array.isArray(out.attachmentPreviews)) {
+          out.attachmentPreviews = out.attachmentPreviews.map((att) => {
+            const cleanAtt = { ...att };
+            if (cleanAtt.url && cleanAtt.url.startsWith('blob:')) {
+              delete cleanAtt.url;
+            }
+            return cleanAtt;
+          });
+        }
+        return out;
+      });
+    axios.post(`/plugins/${props.plugin.uuid}/chat-history`, { messages }).catch(() => {});
+  }, 1500);
+}
+watch(chatMessages, persistChatHistory, { deep: true });
 
 // Skill (instruções detalhadas) — carregado de ficheiro, guia a construção do plugin
 const buildSkill     = ref('');
@@ -2157,27 +2200,78 @@ function chatScrollToBottom() {
   });
 }
 
-function fileToAttachment(file) {
+function createThumbnail(file) {
+  return new Promise((resolve) => {
+    if (!file.type.startsWith('image/')) {
+      resolve(null);
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const maxDim = 120;
+        let w = img.width;
+        let h = img.height;
+        if (w > h) {
+          if (w > maxDim) { h = Math.round((h * maxDim) / w); w = maxDim; }
+        } else {
+          if (h > maxDim) { w = Math.round((w * maxDim) / h); h = maxDim; }
+        }
+        canvas.width = w;
+        canvas.height = h;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, w, h);
+        resolve(canvas.toDataURL('image/jpeg', 0.7));
+      };
+      img.onerror = () => resolve(null);
+      img.src = e.target.result;
+    };
+    reader.onerror = () => resolve(null);
+    reader.readAsDataURL(file);
+  });
+}
+
+async function fileToAttachment(file) {
   const mime = file.type;
+  const name = file.name;
   const sizeLabel = file.size > 1024 * 1024
     ? (file.size / 1024 / 1024).toFixed(1) + ' MB'
     : Math.round(file.size / 1024) + ' KB';
 
-  if (mime.startsWith('image/'))      return { file, type: 'image',    name: file.name, icon: '🖼️', url: URL.createObjectURL(file), sizeLabel };
-  if (mime === 'application/pdf')     return { file, type: 'document', name: file.name, icon: '📄', url: null, sizeLabel };
-  if (mime.startsWith('audio/'))      return { file, type: 'audio',    name: file.name, icon: '🎵', url: null, sizeLabel };
-  if (mime.startsWith('video/'))      return { file, type: 'video',    name: file.name, icon: '🎬', url: null, sizeLabel };
-  return { file, type: 'document', name: file.name, icon: '📎', url: null, sizeLabel };
+  const att = {
+    file,
+    type: mime.startsWith('image/') ? 'image' : (mime === 'application/pdf' ? 'document' : (mime.startsWith('audio/') ? 'audio' : (mime.startsWith('video/') ? 'video' : 'document'))),
+    name,
+    icon: mime.startsWith('image/') ? '🖼️' : (mime === 'application/pdf' ? '📄' : (mime.startsWith('audio/') ? '🎵' : (mime.startsWith('video/') ? '🎬' : '📎'))),
+    url: mime.startsWith('image/') ? URL.createObjectURL(file) : null,
+    sizeLabel,
+    thumbnailUrl: null
+  };
+
+  if (mime.startsWith('image/')) {
+    att.thumbnailUrl = await createThumbnail(file);
+  }
+  return att;
 }
 
 function onChatFileSelect(event) {
-  Array.from(event.target.files ?? []).forEach(f => chatAttachments.value.push(fileToAttachment(f)));
+  const files = Array.from(event.target.files ?? []);
+  files.forEach(async (f) => {
+    const att = await fileToAttachment(f);
+    chatAttachments.value.push(att);
+  });
   event.target.value = '';
 }
 
 function onChatDrop(event) {
   chatDragging.value = false;
-  Array.from(event.dataTransfer.files ?? []).forEach(f => chatAttachments.value.push(fileToAttachment(f)));
+  const files = Array.from(event.dataTransfer.files ?? []);
+  files.forEach(async (f) => {
+    const att = await fileToAttachment(f);
+    chatAttachments.value.push(att);
+  });
 }
 
 async function sendChatMessage() {
@@ -2185,8 +2279,11 @@ async function sendChatMessage() {
   if (!text || chatLoading.value) return;
 
   const attachPreviews = chatAttachments.value.map(a => ({
-    type: a.type === 'image' ? 'image' : 'other',
-    url: a.url, icon: a.icon, name: a.name,
+    type: a.type,
+    url:  a.type === 'image' ? (a.thumbnailUrl || a.url) : null,
+    icon: a.icon,
+    name: a.name,
+    sizeLabel: a.sizeLabel,
   }));
 
   chatMessages.value.push({ role: 'user', content: text, attachmentPreviews: attachPreviews });

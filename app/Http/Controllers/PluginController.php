@@ -1591,4 +1591,24 @@ HTML;
             'journal'  => PluginStepEngine::publicJournal($plugin->fresh()->step_journal),
         ]);
     }
+
+    /**
+     * Persiste o histórico do Chat IA (mensagens + cartões de build) do editor de plugins.
+     */
+    public function saveChatHistory(Request $request, string $uuid): JsonResponse
+    {
+        $plugin = StudioPlugin::where('uuid', $uuid)->firstOrFail();
+
+        $data = $request->validate([
+            'messages'   => 'present|array|max:200',
+            'messages.*' => 'array',
+        ]);
+
+        // Guarda apenas as últimas 200 mensagens
+        $messages = array_slice($data['messages'], -200);
+
+        $plugin->update(['chat_history' => $messages]);
+
+        return response()->json(['saved' => true, 'count' => count($messages)]);
+    }
 }
