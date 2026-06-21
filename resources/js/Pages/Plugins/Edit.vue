@@ -38,6 +38,120 @@
         <button @click="feedback.success=''" class="ml-auto">✕</button>
       </div>
 
+      <!-- Stepper de Progresso -->
+      <div class="bg-card border border-border rounded-2xl overflow-hidden">
+        <!-- Cabeçalho do stepper -->
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between px-4 sm:px-5 py-3 border-b border-border gap-2">
+          <div class="flex items-center gap-2">
+            <div class="w-6 h-6 rounded-full bg-primary flex items-center justify-center shrink-0">
+              <span class="text-[10px] font-bold text-primary-foreground">{{ completedCore }}/{{ coreSteps.length }}</span>
+            </div>
+            <span class="text-sm font-semibold text-foreground">Progresso do plugin</span>
+            <span class="text-xs text-muted-foreground">— {{ progressPct }}% concluído</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <button @click="guideOpen = !guideOpen"
+              class="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1 transition-colors">
+              {{ guideOpen ? '▲ Fechar guia' : '▼ Ver guia' }}
+            </button>
+          </div>
+        </div>
+
+        <!-- Barra de progresso total -->
+        <div class="h-0.5 bg-muted">
+          <div class="h-full bg-primary transition-all duration-500"
+            :style="{ width: progressPct + '%' }"></div>
+        </div>
+
+        <!-- Passos horizontais -->
+        <div class="relative">
+          <div class="pointer-events-none absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-card to-transparent z-10"></div>
+          <div class="flex overflow-x-auto px-4 py-3 gap-0"
+               style="-webkit-overflow-scrolling: touch; scrollbar-width: none; -ms-overflow-style: none;">
+            <div v-for="(step, idx) in workflowSteps" :key="step.tabId" class="flex items-center shrink-0">
+              <!-- Passo -->
+              <button @click="activeTab = step.tabId"
+                class="flex flex-col items-center gap-1 px-2 sm:px-3 py-1 rounded-xl transition-all group relative"
+                :class="activeTab === step.tabId ? 'bg-primary/10' : 'hover:bg-muted'">
+                <div class="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold transition-all border-2"
+                  :class="step.done
+                    ? 'bg-primary border-primary text-primary-foreground'
+                    : activeTab === step.tabId
+                      ? 'bg-card border-primary text-primary'
+                      : 'bg-muted border-border text-muted-foreground group-hover:border-primary/50'">
+                  <span v-if="step.done">✓</span>
+                  <span v-else>{{ idx + 1 }}</span>
+                </div>
+                <span class="text-[9px] font-semibold whitespace-nowrap transition-colors"
+                  :class="activeTab === step.tabId ? 'text-primary' : (step.done ? 'text-foreground' : 'text-muted-foreground group-hover:text-foreground')">
+                  {{ step.icon }} {{ step.label }}
+                </span>
+              </button>
+              <!-- Linha conectora -->
+              <div v-if="idx < workflowSteps.length - 1" class="w-4 sm:w-6 h-0.5 shrink-0 transition-colors"
+                :class="step.done ? 'bg-primary' : 'bg-border'">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Painel de guia colapsável -->
+        <transition name="guide-slide">
+          <div v-if="guideOpen" class="border-t border-border px-5 py-4 bg-muted/40">
+            <p class="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">📋 Guia passo a passo</p>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2">
+              <button v-for="(step, idx) in workflowSteps" :key="step.tabId"
+                @click="activeTab = step.tabId; guideOpen = false"
+                class="flex items-start gap-3 p-3 rounded-xl border text-left transition-all"
+                :class="step.done
+                  ? 'bg-primary/5 border-primary/20 hover:bg-primary/10'
+                  : activeTab === step.tabId
+                    ? 'bg-card border-primary shadow-sm'
+                    : 'bg-card border-border hover:border-primary/30 hover:bg-muted'">
+                <div class="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0 mt-0.5"
+                  :class="step.done ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground border border-border'">
+                  {{ step.done ? '✓' : idx + 1 }}
+                </div>
+                <div class="min-w-0">
+                  <p class="text-xs font-semibold text-foreground flex items-center gap-1.5">
+                    {{ step.icon }} {{ step.label }}
+                    <span v-if="step.optional" class="text-[8px] font-medium uppercase tracking-wide text-muted-foreground bg-muted px-1 py-0.5 rounded">opcional</span>
+                  </p>
+                  <p class="text-[10px] text-muted-foreground mt-0.5 leading-relaxed">{{ step.hint }}</p>
+                  <!-- Diário do passo (schema espelho): última origem + reverter -->
+                  <div v-if="stepJournalFor(step.tabId)" class="mt-1.5 flex items-center gap-2 flex-wrap">
+                    <span class="text-[9px] font-medium text-muted-foreground inline-flex items-center gap-1 bg-muted/60 px-1.5 py-0.5 rounded">
+                      {{ sourceMeta(stepJournalFor(step.tabId).source).icon }} {{ sourceMeta(stepJournalFor(step.tabId).source).label }}
+                    </span>
+                    <span v-if="stepJournalFor(step.tabId).history?.length" class="text-[9px] text-muted-foreground">
+                      · {{ stepJournalFor(step.tabId).history.length }} alteraç{{ stepJournalFor(step.tabId).history.length === 1 ? 'ão' : 'ões' }}
+                    </span>
+                    <span v-if="stepJournalFor(step.tabId).revertible"
+                      role="button" tabindex="0"
+                      @click.stop="revertStep(step.tabId)" @keydown.enter.stop="revertStep(step.tabId)"
+                      class="text-[9px] font-semibold text-amber-600 dark:text-amber-400 hover:underline cursor-pointer">
+                      ↩ reverter
+                    </span>
+                  </div>
+                </div>
+              </button>
+            </div>
+            <!-- Passo de exportação -->
+            <div class="mt-3 flex items-center gap-3 p-3 rounded-xl border border-dashed border-border bg-card">
+              <div class="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0 bg-muted text-muted-foreground border border-border">🚀</div>
+              <div>
+                <p class="text-xs font-semibold text-foreground">Exportar / Publicar</p>
+                <p class="text-[10px] text-muted-foreground">Quando o plugin estiver pronto, usa os botões no topo da página — <strong>Exportar</strong> para descarregar o ZIP ou <strong>Publicar</strong> para enviar ao AnimusFlow.</p>
+              </div>
+              <a :href="`/plugins/${plugin.uuid}/export`"
+                class="ml-auto px-3 py-1.5 bg-primary text-primary-foreground rounded-lg text-xs font-semibold hover:opacity-90 transition-opacity shrink-0">
+                ↓ Exportar
+              </a>
+            </div>
+          </div>
+        </transition>
+      </div>
+
       <!-- Tab bar -->
       <div class="flex flex-wrap gap-1 bg-muted p-1 rounded-xl w-fit">
         <button v-for="tab in tabs" :key="tab.id" @click="activeTab = tab.id"
@@ -729,18 +843,18 @@
         </div>
 
         <!-- Empty state -->
-        <div v-if="!versionsLoading && !versions.length"
+        <div v-if="!versionsLoading && historyTimeline.length === 0"
           class="bg-card border border-dashed border-border rounded-2xl p-10 text-center">
           <div class="text-3xl mb-3">📦</div>
-          <p class="text-sm font-semibold text-foreground mb-1">Nenhuma versão guardada ainda</p>
-          <p class="text-xs text-muted-foreground">Cria a tua primeira versão acima. Ao publicares no marketplace é criado um snapshot automático.</p>
+          <p class="text-sm font-semibold text-foreground mb-1">Nenhuma entrada no histórico ainda</p>
+          <p class="text-xs text-muted-foreground">Cada alteração (via Chat IA ou manual) e cada versão guardada aparecerão aqui.</p>
         </div>
 
-        <!-- Version timeline -->
-        <div v-if="versions.length" class="space-y-3">
+        <!-- Version timeline (unified) -->
+        <div v-if="historyTimeline.length" class="space-y-3">
           <p class="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
-            <span>📋 Histórico de versões</span>
-            <span class="bg-muted px-2 py-0.5 rounded-full">{{ versions.length }}</span>
+            <span>📋 Histórico do plugin</span>
+            <span class="bg-muted px-2 py-0.5 rounded-full">{{ historyTimeline.length }}</span>
           </p>
 
           <div class="relative">
@@ -748,7 +862,7 @@
             <div class="absolute left-[1.4rem] top-4 bottom-4 w-px bg-border"></div>
 
             <div class="space-y-3">
-              <div v-for="(ver, idx) in versions" :key="ver.id"
+              <div v-for="(item, idx) in historyTimeline" :key="item.key"
                 class="relative flex gap-4 items-start">
 
                 <!-- Timeline dot -->
@@ -756,65 +870,84 @@
                   <div class="w-7 h-7 rounded-full border-2 flex items-center justify-center text-[10px] font-bold"
                     :class="idx === 0
                       ? 'bg-primary border-primary text-primary-foreground'
-                      : ver.is_published
-                        ? 'bg-green-500 border-green-500 text-white'
-                        : 'bg-card border-border text-muted-foreground'">
-                    {{ idx === 0 ? '●' : ver.is_published ? '✓' : '○' }}
+                      : (item.kind === 'version'
+                        ? (item.ver.is_published ? 'bg-green-500 border-green-500 text-white' : 'bg-primary/20 border-primary/30 text-primary')
+                        : 'bg-card border-border text-muted-foreground')">
+                    <span v-if="idx === 0">●</span>
+                    <span v-else-if="item.kind === 'version'">○</span>
+                    <span v-else>{{ item.icon }}</span>
                   </div>
                 </div>
 
-                <!-- Version card -->
+                <!-- Card -->
                 <div class="flex-1 bg-card border border-border rounded-xl overflow-hidden hover:border-primary/30 transition-colors"
-                  :class="(compareA === ver.id || compareB === ver.id) ? 'border-amber-400 ring-1 ring-amber-400/30' : ''">
+                  :class="item.kind === 'version' && (compareA === item.ver.id || compareB === item.ver.id) ? 'border-amber-400 ring-1 ring-amber-400/30' : ''">
 
                   <!-- Card header -->
                   <div class="flex items-start justify-between gap-3 px-4 py-3">
                     <div class="flex-1 min-w-0">
                       <div class="flex items-center gap-2 flex-wrap">
-                        <code class="text-sm font-bold text-foreground font-mono">v{{ ver.version }}</code>
-                        <span v-if="idx === 0" class="text-[10px] px-2 py-0.5 bg-primary/10 text-primary rounded-full font-semibold">actual</span>
-                        <span v-if="ver.is_published" class="text-[10px] px-2 py-0.5 bg-green-500/10 text-green-600 rounded-full font-semibold">publicada</span>
-                        <span class="text-xs text-muted-foreground">{{ ver.created_at_human }}</span>
+                        <span class="text-sm font-bold text-foreground">{{ item.title }}</span>
+                        <span class="text-[10px] px-1.5 py-0.5 rounded-full font-semibold"
+                          :class="item.kind === 'version' ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground'">
+                          {{ item.kind === 'version' ? '🏷️ Versão · ' + item.tag : '🔹 Passo · ' + item.tag }}
+                        </span>
+                        <span class="text-xs text-muted-foreground">{{ formatVersionDate(item.at) }}</span>
                       </div>
-                      <p v-if="ver.changelog" class="text-xs text-muted-foreground mt-1 line-clamp-2">{{ ver.changelog }}</p>
+                      <p v-if="item.subtitle" class="text-xs text-muted-foreground mt-1 line-clamp-2">{{ item.subtitle }}</p>
                     </div>
+
                     <!-- Actions -->
                     <div class="flex items-center gap-1.5 shrink-0">
-                      <!-- Compare selector -->
-                      <button @click="selectForCompare(ver.id)" title="Seleccionar para comparar"
-                        class="w-7 h-7 rounded-lg flex items-center justify-center text-xs transition-colors"
-                        :class="(compareA === ver.id || compareB === ver.id)
-                          ? 'bg-amber-500/20 text-amber-600'
-                          : 'bg-muted hover:bg-border text-muted-foreground'">
-                        ⚖️
+                      <template v-if="item.kind === 'version'">
+                        <!-- Compare selector -->
+                        <button @click="selectForCompare(item.ver.id)" title="Seleccionar para comparar"
+                          class="w-7 h-7 rounded-lg flex items-center justify-center text-xs transition-colors"
+                          :class="(compareA === item.ver.id || compareB === item.ver.id)
+                            ? 'bg-amber-500/20 text-amber-600'
+                            : 'bg-muted hover:bg-border text-muted-foreground'">
+                          ⚖️
+                        </button>
+                        <!-- View snapshot -->
+                        <button @click="viewSnapshot(item.ver)" title="Ver snapshot completo"
+                          class="w-7 h-7 rounded-lg bg-muted hover:bg-border flex items-center justify-center text-xs text-muted-foreground transition-colors">
+                          👁️
+                        </button>
+                        <!-- Restore -->
+                        <button @click="restoreToVersion(item.ver)"
+                          class="flex items-center gap-1 px-2.5 py-1 bg-amber-500/10 hover:bg-amber-500/20 text-amber-700 dark:text-amber-400 rounded-lg text-xs font-semibold transition-colors">
+                          ↩️ Restaurar
+                        </button>
+                      </template>
+                      <button v-else-if="item.revertible" @click="revertStep(item.step)"
+                        class="px-2.5 py-1 bg-amber-500/10 hover:bg-amber-500/20 text-amber-700 dark:text-amber-400 rounded-lg text-xs font-semibold transition-colors flex items-center gap-1">
+                        ↩️ Reverter
                       </button>
-                      <!-- View snapshot -->
-                      <button @click="viewSnapshot(ver)" title="Ver snapshot completo"
-                        class="w-7 h-7 rounded-lg bg-muted hover:bg-border flex items-center justify-center text-xs text-muted-foreground transition-colors">
-                        👁️
-                      </button>
-                      <!-- Restore -->
-                      <button v-if="idx !== 0" @click="restoreToVersion(ver)"
-                        class="flex items-center gap-1 px-2.5 py-1 bg-amber-500/10 hover:bg-amber-500/20 text-amber-700 dark:text-amber-400 rounded-lg text-xs font-semibold transition-colors">
-                        ↩️ Restaurar
-                      </button>
+                      <span v-else-if="item.kind === 'step'" class="text-[10px] text-muted-foreground/50 self-center px-2">arquivado</span>
                     </div>
                   </div>
 
-                  <!-- Summary chips -->
-                  <div class="flex flex-wrap gap-1.5 px-4 pb-3">
-                    <span v-for="h in (ver.summary?.hooks ?? [])" :key="h"
+                  <!-- Summary chips for versions -->
+                  <div v-if="item.kind === 'version'" class="flex flex-wrap gap-1.5 px-4 pb-3">
+                    <span v-for="h in (item.ver.summary?.hooks ?? [])" :key="h"
                       class="text-[10px] px-2 py-0.5 bg-muted font-mono text-muted-foreground rounded-full">{{ h }}</span>
-                    <span v-if="ver.summary?.has_php"    class="text-[10px] px-2 py-0.5 bg-blue-500/10 text-blue-600 rounded-full">PHP</span>
-                    <span v-if="ver.summary?.has_widget" class="text-[10px] px-2 py-0.5 bg-teal-500/10 text-teal-600 rounded-full">Widget</span>
-                    <span v-if="ver.summary?.has_js"     class="text-[10px] px-2 py-0.5 bg-yellow-500/10 text-yellow-600 rounded-full">JS</span>
-                    <span v-if="ver.summary?.has_css"    class="text-[10px] px-2 py-0.5 bg-pink-500/10 text-pink-600 rounded-full">CSS</span>
-                    <span v-if="ver.summary?.fields"     class="text-[10px] px-2 py-0.5 bg-purple-500/10 text-purple-600 rounded-full">{{ ver.summary.fields }} campo(s)</span>
+                    <span v-if="item.ver.summary?.has_php"    class="text-[10px] px-2 py-0.5 bg-blue-500/10 text-blue-600 rounded-full">PHP</span>
+                    <span v-if="item.ver.summary?.has_widget" class="text-[10px] px-2 py-0.5 bg-teal-500/10 text-teal-600 rounded-full">Widget</span>
+                    <span v-if="item.ver.summary?.has_js"     class="text-[10px] px-2 py-0.5 bg-yellow-500/10 text-yellow-600 rounded-full">JS</span>
+                    <span v-if="item.ver.summary?.has_css"    class="text-[10px] px-2 py-0.5 bg-pink-500/10 text-pink-600 rounded-full">CSS</span>
+                    <span v-if="item.ver.summary?.fields"     class="text-[10px] px-2 py-0.5 bg-purple-500/10 text-purple-600 rounded-full">{{ item.ver.summary.fields }} campo(s)</span>
                   </div>
+
                 </div>
               </div>
             </div>
           </div>
+        </div>
+
+        <!-- Info: uma narrativa, duas granularidades -->
+        <div class="flex items-start gap-2 px-4 py-3 bg-muted/50 border border-border rounded-xl text-xs text-muted-foreground">
+          <span class="mt-0.5">ℹ️</span>
+          <p>Um só histórico, duas granularidades: <strong>🏷️ Versões</strong> são snapshots completos do plugin (restauro grande — guardadas por ti ou automáticas na publicação). <strong>🔹 Passos</strong> são alterações pontuais (Chat IA, manual ou construção) que podes <strong>reverter</strong> uma a uma — as mais recentes; as antigas ficam arquivadas (usa uma Versão para recuar mais).</p>
         </div>
 
         <!-- Snapshot viewer modal -->
@@ -1150,8 +1283,13 @@
                   ⚡ Resolvido via memória local (Sem custo de tokens)
                 </div>
 
-                <div v-if="msg.applied" class="mt-1.5 flex items-center gap-1.5">
+                <div v-if="msg.applied" class="mt-1.5 flex items-center gap-1.5 flex-wrap">
                   <span class="text-[10px] text-success font-semibold flex items-center gap-1">✓ Aplicadas e guardadas automaticamente</span>
+                  <button v-if="msg.stepLabel" @click="activeTab = msg.step"
+                    class="text-[10px] font-semibold text-primary bg-primary/10 border border-primary/20 px-2 py-0.5 rounded-full hover:bg-primary/20 transition-colors"
+                    :title="'Ir para o passo ' + msg.stepLabel">
+                    🎯 Passo: {{ msg.stepLabel }}
+                  </button>
                 </div>
                 <div v-else-if="msg.updates && !msg.applied" class="mt-1.5 flex items-center gap-2">
                   <button @click="applyChatUpdates(msg.updates, i)"
@@ -1367,15 +1505,113 @@ import AppLayout from '@/Layouts/AppLayout.vue';
 import {
   DownloadIcon, UploadIcon, SparklesIcon,
   CheckCircleIcon, XCircleIcon, PlusIcon, SlidersIcon, RotateCcwIcon,
+  HistoryIcon, PlusCircleIcon, TagIcon, Trash2Icon,
 } from 'lucide-vue-next';
 
 const { t } = useI18n();
 const props = defineProps({
   plugin:       { type: Object, default: null },
   pluginAgents: { type: Array,  default: () => [] },
+  stepJournal:  { type: Object, default: () => ({}) },
 });
 
 const inp = 'w-full px-3 py-2 bg-muted border border-border rounded-lg text-sm focus:outline-none focus:border-primary';
+
+// ── Stepper de Progresso ──
+const guideOpen = ref(props.plugin?.status === 'draft' && !props.plugin?.description);
+
+const workflowSteps = computed(() => {
+  const f = form;
+  const isDefaultLabel = !f.label || f.label.startsWith('Novo Plugin');
+  const hasDetails = !isDefaultLabel && !!f.description && !!f.author;
+  const hasHooks = f.hooks && f.hooks.length > 0;
+  const hasPhp = f.plugin_php && f.plugin_php.trim().length > 50;
+  const hasWidget = f.widget_blade && f.widget_blade.trim().length > 0;
+  const hasCss = f.custom_css && f.custom_css.trim().length > 0;
+  const hasSchema = f.settings_schema && f.settings_schema.length > 0;
+  const hasDocs = f.readme && f.readme.trim().length > 0;
+
+  return [
+    {
+      tabId: 'details', icon: '📋', label: 'Detalhes',
+      hint: 'Define o nome, versão, descrição, autor e estado do plugin.',
+      done: hasDetails,
+    },
+    {
+      tabId: 'hooks', icon: '🪝', label: 'Hooks',
+      hint: 'Seleciona os hooks do CMS aos quais o plugin irá responder.',
+      done: hasHooks,
+    },
+    {
+      tabId: 'php', icon: '🐘', label: 'PHP',
+      hint: 'Implementa a classe principal Plugin.php e lógica do servidor.',
+      done: hasPhp,
+    },
+    {
+      tabId: 'widget', icon: '🖼️', label: 'Widget',
+      hint: 'Desenha o HTML/Blade do widget e o seu comportamento em JS.',
+      done: hasWidget, optional: true,
+    },
+    {
+      tabId: 'css', icon: '🎨', label: 'CSS',
+      hint: 'Estiliza os componentes visuais e o widget do plugin.',
+      done: hasCss, optional: true,
+    },
+    {
+      tabId: 'schema', icon: '⚙️', label: 'Configurações',
+      hint: 'Define os campos de configuração dinâmicos do plugin.',
+      done: hasSchema, optional: true,
+    },
+    {
+      tabId: 'docs', icon: '📝', label: 'Docs',
+      hint: 'Documenta o plugin no ficheiro README.md.',
+      done: hasDocs, optional: true,
+    },
+    {
+      tabId: 'preview', icon: '👁️', label: 'Preview',
+      hint: 'Visualiza o widget no mock do site e simula o seu aspecto.',
+      done: hasPhp && (!form.hooks.includes('page.render') || hasWidget),
+    },
+  ];
+});
+
+const coreSteps      = computed(() => workflowSteps.value.filter(s => !s.optional));
+const completedCore  = computed(() => coreSteps.value.filter(s => s.done).length);
+const progressPct    = computed(() => Math.round((completedCore.value / coreSteps.value.length) * 100));
+const completedSteps = computed(() => workflowSteps.value.filter(s => s.done).length);
+
+// ── Schema espelho (step_journal) ──
+const stepJournal = ref(props.stepJournal ?? {});
+const SOURCE_META = {
+  chat:   { icon: '💬', label: 'Chat IA' },
+  manual: { icon: '✏️', label: 'Manual' },
+  build:  { icon: '✦',  label: 'Construção IA' },
+  revert: { icon: '↩',  label: 'Revertido' },
+};
+function stepJournalFor(tabId) { return stepJournal.value?.[tabId] ?? null; }
+function sourceMeta(src) { return SOURCE_META[src] ?? { icon: '•', label: src || '—' }; }
+
+async function revertStep(tabId) {
+  const node = stepJournalFor(tabId);
+  if (!node || !node.revertible) return;
+  const stepName = workflowSteps.value.find(s => s.tabId === tabId)?.label ?? tabId;
+  if (!confirm(`Reverter a última alteração do passo "${stepName}"? O valor anterior será restaurado.`)) return;
+  try {
+    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content ?? '';
+    const fd = new FormData();
+    fd.append('step', tabId);
+    fd.append('_token', csrfToken);
+    const res = await fetch(`/plugins/${props.plugin.uuid}/revert-step`, { method: 'POST', body: fd });
+    const data = await res.json();
+    if (data.reverted) {
+      if (data.plugin) applyServerPlugin(data.plugin);
+      stepJournal.value = data.journal ?? {};
+      feedback.success = 'Passo revertido — valor anterior restaurado.';
+    } else {
+      feedback.error = 'Esta alteração já não é revertível (o snapshot foi arquivado). Usa o Histórico de versões para recuar mais.';
+    }
+  } catch (e) { feedback.error = e.message; }
+}
 
 // ── Tabs ──
 const activeTab = ref('details');
@@ -1580,6 +1816,43 @@ const compareLoading   = ref(false);
 const diffResult       = ref(null);
 const snapshotModal    = ref(null);      // full snapshot data for modal
 const snapshotCodeTab  = ref('php');
+
+// Histórico UNIFICADO — uma só narrativa que funde duas granularidades
+const historyTimeline = computed(() => {
+  const items = [];
+
+  for (const v of versions.value) {
+    items.push({
+      key: 'v-' + v.id, kind: 'version', at: v.created_at,
+      icon: v.is_published ? '🚀' : '📌',
+      title: 'v' + v.version,
+      tag: v.is_published ? 'Publicação' : 'Manual',
+      subtitle: v.changelog || '', ver: v,
+    });
+  }
+
+  for (const [step, node] of Object.entries(stepJournal.value || {})) {
+    const hist = node?.history || [];
+    hist.forEach((e, idx) => {
+      const stepName = workflowSteps.value.find(s => s.tabId === step)?.label ?? step;
+      items.push({
+        key: 'j-' + step + '-' + idx + '-' + (e.at || ''), kind: 'step', at: e.at,
+        icon: sourceMeta(e.source).icon, title: stepName, tag: sourceMeta(e.source).label,
+        subtitle: e.summary || '', step,
+        revertible: idx === hist.length - 1 && !!node.revertible,
+        pruned: !!e.pruned,
+      });
+    });
+  }
+
+  return items.sort((a, b) => new Date(b.at || 0) - new Date(a.at || 0));
+});
+
+function formatVersionDate(dateStr) {
+  if (!dateStr) return '';
+  const d = new Date(dateStr);
+  return d.toLocaleDateString('pt-PT', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+}
 
 // Pre-fill version number with current plugin version on tab open
 watch(() => activeTab.value, (tab) => {
@@ -1922,14 +2195,18 @@ async function sendChatMessage() {
     } else {
       if (data.reply) {
         chatMessages.value.push({
-          role:    'assistant',
-          content: data.reply,
-          updates: data.updates ?? null,
-          applied: data.applied ?? false,
-          cached:  data.cached ?? false,
+          role:       'assistant',
+          content:    data.reply,
+          updates:    data.updates ?? null,
+          applied:    data.applied ?? false,
+          cached:     data.cached ?? false,
+          step:       data.step ?? null,
+          stepLabel:  data.step_label ?? null,
+          stepMethod: data.step_method ?? null,
         });
       }
       if (data.applied && data.plugin) applyServerPlugin(data.plugin);
+      if (data.step_journal) stepJournal.value = data.step_journal;
 
       // A IA decidiu que isto justifica uma construção completa → pipeline inline
       if (data.build && data.build.brief) {
@@ -1999,6 +2276,7 @@ async function runBuildAgent(phase, ctx) {
       return { ok: false, isFatal: !!data.is_fatal };
     }
     if (data.applied && data.plugin) applyServerPlugin(data.plugin);
+    if (data.step_journal) stepJournal.value = data.step_journal;
     phase.reply = data.reply ?? '';
     phase.status = 'done';
     return { ok: true, isFatal: false };

@@ -84,6 +84,9 @@ Route::middleware('auth')->group(function () {
     Route::post('/plugins/{uuid}/generate-docs',   [PluginController::class, 'generateDocs'])->name('plugins.generate-docs');
     Route::post('/plugins/{uuid}/inspire',         [PluginController::class, 'inspire'])->name('plugins.inspire');
     Route::post('/plugins/{uuid}/chat',           [PluginController::class, 'chat'])->name('plugins.chat');
+    Route::get('/plugins/{uuid}/journal',         [PluginController::class, 'journal'])->name('plugins.journal');
+    Route::post('/plugins/{uuid}/classify',       [PluginController::class, 'classifyRequest'])->name('plugins.classify');
+    Route::post('/plugins/{uuid}/revert-step',    [PluginController::class, 'revertStep'])->name('plugins.revert-step');
     Route::post('/plugins/{uuid}/build/plan',     [PluginController::class, 'buildPlan'])->name('plugins.build.plan');
     Route::post('/plugins/{uuid}/build/step',     [PluginController::class, 'buildStep'])->name('plugins.build.step');
     Route::post('/plugins/{uuid}/build/verify',   [PluginController::class, 'buildVerify'])->name('plugins.build.verify');

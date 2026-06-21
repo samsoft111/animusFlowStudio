@@ -842,6 +842,30 @@ SYSTEM;
         return in_array($ans, $stepIds, true) ? $ans : null;
     }
 
+    /**
+     * Classificador IA para plugins (usado só quando determinístico/palavras-chave falham):
+     * dado um pedido livre, devolve o id do passo de plugin mais provável ou null.
+     */
+    public static function classifyPluginStep(string $message, array $stepIds): ?string
+    {
+        $provider = StudioSetting::get('ai_provider', 'claude');
+        $apiKey   = self::resolveApiKey($provider);
+        if (empty($apiKey)) {
+            return null;
+        }
+
+        $list   = implode(', ', $stepIds);
+        $system = "És um classificador. Dado um pedido de edição de um plugin, responde APENAS com o id de UM passo desta lista: {$list}. "
+                . "Sem explicações, sem pontuação, só o id exacto.";
+        try {
+            $raw = self::chatDispatch($system, [['role' => 'user', 'content' => $message]], [], 20);
+        } catch (\Throwable) {
+            return null;
+        }
+        $ans = strtolower(trim(preg_replace('/[^a-zA-Z_]/', '', $raw)));
+        return in_array($ans, $stepIds, true) ? $ans : null;
+    }
+
     // ──────────────────────────────────────────────
     //  Multi-agent theme builder (Modo Construção)
     // ──────────────────────────────────────────────

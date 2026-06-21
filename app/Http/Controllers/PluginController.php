@@ -8,6 +8,7 @@ use App\Models\StudioPlugin;
 use App\Models\StudioPluginVersion;
 use App\Models\StudioSetting;
 use App\Services\AIEngine;
+use App\Services\PluginStepEngine;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -86,9 +87,12 @@ class PluginController extends Controller
     {
         $plugin = StudioPlugin::where('uuid', $uuid)->firstOrFail();
 
+        $journal = PluginStepEngine::publicJournal($plugin->step_journal);
+
         return Inertia::render('Plugins/Edit', [
-            'plugin'       => $plugin,
+            'plugin'       => $plugin->makeHidden('step_journal'),
             'pluginAgents' => AIEngine::pluginAgents(),
+            'stepJournal'  => $journal,
         ]);
     }
 
@@ -117,7 +121,25 @@ class PluginController extends Controller
             'status'                 => 'nullable|in:draft,ready,published',
         ]);
 
+        // Snapshot dos campos do espelho ANTES de gravar (para detectar mudanças reais)
+        $journalFields = array_keys(array_intersect_key($data, PluginStepEngine::FIELD_STEP));
+        $before = [];
+        foreach ($journalFields as $f) {
+            $before[$f] = $plugin->$f;
+        }
+
         $plugin->update($data);
+
+        // Regista no espelho apenas os campos que mudaram de facto (origem: manual)
+        $changed = [];
+        foreach ($before as $f => $prev) {
+            if (json_encode($prev) !== json_encode($plugin->$f)) {
+                $changed[] = $f;
+            }
+        }
+        if (!empty($changed)) {
+            PluginStepEngine::record($plugin, $changed, 'manual', 'Edição manual nos campos: ' . implode(', ', $changed), $before);
+        }
 
         return back()->with('success', 'Plugin saved.');
     }
@@ -149,12 +171,14 @@ class PluginController extends Controller
             return response()->json(['error' => $e->getMessage()], 422);
         }
 
-        $plugin->update([
+        $updates = [
             'plugin_php'      => $result['plugin_php']      ?? $plugin->plugin_php,
             'widget_blade'    => $result['widget_blade']    ?? $plugin->widget_blade,
             'widget_js'       => $result['widget_js']       ?? $plugin->widget_js,
             'settings_schema' => $result['settings_schema'] ?? $plugin->settings_schema,
-        ]);
+        ];
+
+        $applied = $this->applyPluginUpdates($plugin, $updates, 'chat', $request->input('prompt'));
 
         $fresh = $plugin->fresh();
 
@@ -164,6 +188,7 @@ class PluginController extends Controller
             'widget_blade'    => $fresh->widget_blade,
             'widget_js'       => $fresh->widget_js,
             'settings_schema' => $fresh->settings_schema,
+            'step_journal'    => PluginStepEngine::publicJournal($fresh->step_journal),
         ]);
     }
 
@@ -248,14 +273,19 @@ class PluginController extends Controller
         if (empty($attachments)) {
             $recipeResult = \App\Models\StudioAiRecipe::matchAndResolve('plugin', $message);
             if ($recipeResult) {
-                $applied = $this->applyPluginUpdates($plugin, $recipeResult['updates']);
+                $applied = $this->applyPluginUpdates($plugin, $recipeResult['updates'], 'chat', $message);
+                $cls = $this->classifyStep($message, $recipeResult['updates']);
                 return response()->json([
                     'reply'   => $recipeResult['reply'],
                     'updates' => $recipeResult['updates'],
                     'applied' => $applied,
-                    'plugin'  => $applied ? $plugin->fresh() : null,
+                    'plugin'  => $applied ? $plugin->fresh()->makeHidden('step_journal') : null,
                     'build'   => null,
                     'cached'  => true,
+                    'step'        => $cls['step'],
+                    'step_label'  => $cls['step'] ? PluginStepEngine::label($cls['step']) : null,
+                    'step_method' => $cls['method'],
+                    'step_journal' => PluginStepEngine::publicJournal($plugin->fresh()->step_journal),
                 ]);
             }
         }
@@ -267,14 +297,19 @@ class PluginController extends Controller
 
         if ($cached) {
             $cached->increment('hits');
-            $applied = $this->applyPluginUpdates($plugin, $cached->updates);
+            $applied = $this->applyPluginUpdates($plugin, $cached->updates, 'chat', $message);
+            $cls = $this->classifyStep($message, $cached->updates);
             return response()->json([
                 'reply'   => $cached->reply,
                 'updates' => $cached->updates,
                 'applied' => $applied,
-                'plugin'  => $applied ? $plugin->fresh() : null,
+                'plugin'  => $applied ? $plugin->fresh()->makeHidden('step_journal') : null,
                 'build'   => $cached->build,
                 'cached'  => true,
+                'step'        => $cls['step'],
+                'step_label'  => $cls['step'] ? PluginStepEngine::label($cls['step']) : null,
+                'step_method' => $cls['method'],
+                'step_journal' => PluginStepEngine::publicJournal($plugin->fresh()->step_journal),
             ]);
         }
 
@@ -287,7 +322,8 @@ class PluginController extends Controller
             ], 422);
         }
 
-        $applied = $this->applyPluginUpdates($plugin, $result['updates'] ?? null);
+        $applied = $this->applyPluginUpdates($plugin, $result['updates'] ?? null, 'chat', $message);
+        $cls = $this->classifyStep($message, $result['updates'] ?? []);
 
         // Cache resolution for future reuse
         if (empty($attachments)) {
@@ -304,27 +340,60 @@ class PluginController extends Controller
             'reply'   => $result['reply'],
             'updates' => $result['updates'] ?? null,
             'applied' => $applied,
-            'plugin'  => $applied ? $plugin->fresh() : null,
+            'plugin'  => $applied ? $plugin->fresh()->makeHidden('step_journal') : null,
             'build'   => $result['build'] ?? null,
+            'step'        => $cls['step'],
+            'step_label'  => $cls['step'] ? PluginStepEngine::label($cls['step']) : null,
+            'step_method' => $cls['method'],
+            'step_journal' => PluginStepEngine::publicJournal($plugin->fresh()->step_journal),
         ]);
     }
 
-    /** Apply AI updates to a plugin (auto-save), filtered to the allowed fields. */
-    private function applyPluginUpdates(StudioPlugin $plugin, ?array $updates): bool
+    /**
+     * Apply AI updates to a plugin (auto-save), filtered to the allowed fields.
+     * Regista cada alteração no schema espelho (step_journal) com a origem
+     * indicada (chat | build | manual) e snapshot do valor anterior.
+     */
+    private function applyPluginUpdates(StudioPlugin $plugin, ?array $updates, string $source = 'chat', string $summary = ''): bool
     {
         if (empty($updates)) {
             return false;
         }
 
-        $allowed = ['label', 'description', 'version', 'status', 'hooks', 'plugin_php', 'widget_blade', 'widget_js', 'custom_css', 'settings_schema'];
+        $allowed = ['label', 'description', 'version', 'status', 'hooks', 'plugin_php', 'widget_blade', 'widget_js', 'custom_css', 'settings_schema', 'readme'];
         $updates = array_intersect_key($updates, array_flip($allowed));
 
         if (empty($updates)) {
             return false;
         }
 
+        // Campos relevantes para o espelho + snapshot do valor anterior (para revert)
+        $journalFields = array_keys(array_intersect_key($updates, PluginStepEngine::FIELD_STEP));
+        $before = [];
+        foreach ($journalFields as $f) {
+            $before[$f] = $plugin->$f;
+        }
+
         $plugin->update($updates);
+
+        if (!empty($journalFields)) {
+            PluginStepEngine::record($plugin, $journalFields, $source, $summary, $before);
+        }
+
         return true;
+    }
+
+    /**
+     * Classifica a que passo pertence um pedido de plugin (híbrido: campos →
+     * palavras-chave → IA quando ambíguo). A IA só é consultada se não houver
+     * campos alterados.
+     */
+    private function classifyStep(string $message, ?array $updates): array
+    {
+        $fields = is_array($updates)
+            ? array_keys(array_intersect_key($updates, PluginStepEngine::FIELD_STEP))
+            : [];
+        return PluginStepEngine::classify($message, $fields, allowAi: empty($fields));
     }
 
     // ──────────────────────────────────────────────
@@ -397,14 +466,15 @@ class PluginController extends Controller
             return response()->json(['error' => $e->getMessage(), 'is_fatal' => self::isFatalAiError($e)], 422);
         }
 
-        $applied = $this->applyPluginUpdates($plugin, $result['updates'] ?? null);
+        $applied = $this->applyPluginUpdates($plugin, $result['updates'] ?? null, 'build', $result['reply'] ?? ('Agente ' . $data['agent']));
 
         return response()->json([
             'agent'   => $result['agent'],
             'reply'   => $result['reply'],
             'updates' => $result['updates'] ?? null,
             'applied' => $applied,
-            'plugin'  => $applied ? $plugin->fresh() : null,
+            'plugin'  => $applied ? $plugin->fresh()->makeHidden('step_journal') : null,
+            'step_journal' => PluginStepEngine::publicJournal($plugin->fresh()->step_journal),
         ]);
     }
 
@@ -1271,7 +1341,8 @@ HTML;
         return response()->json([
             'success' => true,
             'message' => "Plugin restaurado para v{$version->version}.",
-            'plugin'  => $plugin,
+            'plugin'  => $plugin->makeHidden('step_journal'),
+            'step_journal' => PluginStepEngine::publicJournal($plugin->step_journal),
         ]);
     }
 
@@ -1462,5 +1533,47 @@ HTML;
         File::deleteDirectory($tmpDir);
 
         return $zipPath;
+    }
+
+    /** Devolve o espelho do processo para plugins (estado + histórico por passo). */
+    public function journal(string $uuid): JsonResponse
+    {
+        $plugin = StudioPlugin::where('uuid', $uuid)->firstOrFail();
+
+        return response()->json([
+            'journal' => PluginStepEngine::publicJournal($plugin->step_journal),
+            'labels'  => PluginStepEngine::STEP_LABELS,
+        ]);
+    }
+
+    /** Classifica um pedido (sem aplicar) → a que passo de plugin pertence. */
+    public function classifyRequest(Request $request, string $uuid): JsonResponse
+    {
+        StudioPlugin::where('uuid', $uuid)->firstOrFail();
+        $data = $request->validate(['message' => 'required|string|max:4000']);
+
+        $cls = PluginStepEngine::classify($data['message'], [], allowAi: true);
+        return response()->json([
+            'step'        => $cls['step'],
+            'step_label'  => $cls['step'] ? PluginStepEngine::label($cls['step']) : null,
+            'step_method' => $cls['method'],
+        ]);
+    }
+
+    /** Reverte a última alteração registada de um passo do plugin. */
+    public function revertStep(Request $request, string $uuid): JsonResponse
+    {
+        $plugin = StudioPlugin::where('uuid', $uuid)->firstOrFail();
+        $data  = $request->validate([
+            'step' => ['required', 'string', Rule::in(PluginStepEngine::steps())],
+        ]);
+
+        $reverted = PluginStepEngine::revertStep($plugin, $data['step']);
+
+        return response()->json([
+            'reverted' => $reverted,
+            'plugin'   => $reverted ? $plugin->fresh()->makeHidden('step_journal') : null,
+            'journal'  => PluginStepEngine::publicJournal($plugin->fresh()->step_journal),
+        ]);
     }
 }
