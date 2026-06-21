@@ -976,6 +976,14 @@ SYSTEM;
             }
         }
 
+        // Secções em blocos delimitados ([[[AF-SECTION:name]]]) — HTML fora de
+        // JSON, robusto contra aspas/newlines não escapados. Funde com sections.
+        $delimSections = self::parseDelimitedSections($raw);
+        if (!empty($delimSections)) {
+            $updates = is_array($updates) ? $updates : [];
+            $updates['sections'] = array_merge($updates['sections'] ?? [], $delimSections);
+        }
+
         // Rede de segurança: o agente "design" tem de devolver SEMPRE fonts
         // (heading + body) e os metadados (label/description) para que o passo
         // "Detalhes" do progresso fique completo. Se a IA os omitir, preenche
@@ -985,7 +993,10 @@ SYSTEM;
             $updates = self::ensureDesignMeta($updates, $currentThemeJson, $brief);
         }
 
-        $reply = trim((string) preg_replace('/```json_updates\s*[\s\S]*?```/m', '', $raw));
+        // Reply visível: remove o json_updates e os blocos de secção delimitados
+        $reply = preg_replace('/```json_updates\s*[\s\S]*?```/m', '', $raw);
+        $reply = self::stripDelimitedSections((string) $reply);
+        $reply = trim($reply);
 
         return ['agent' => $agentId, 'reply' => $reply, 'updates' => $updates];
     }
@@ -1119,7 +1130,7 @@ BASE;
         $task = match ($agentId) {
             'design' => <<<DESIGN
 Gera o design global e branding do tema (nome comercial, descrição, cores light e dark, fontes de títulos/corpo, layout, capacidades e a secção do rodapé).
-Responsável por atualizar os campos: label, description, colors, fonts, layout_config, capabilities, e a secção "footer" (em sections.footer).
+Responsável por atualizar os campos (em json_updates): label, description, colors, fonts, layout_config, capabilities. E ainda a secção do rodapé (footer) — mas essa vai num bloco delimitado separado, NÃO no JSON.
 OBRIGATÓRIO 1: o bloco json_updates TEM SEMPRE de incluir "fonts" com "heading" E "body" preenchidos (nunca vazios, nunca omitidos), escolhendo um par tipográfico que combine com o brief. Usa apenas fontes do Google Fonts; valores recomendados: Inter, Poppins, DM Sans, Outfit, Plus Jakarta Sans, Playfair Display, Fraunces, Sora. Para temas elegantes/editoriais usa uma serifa (ex.: Playfair Display ou Fraunces) no heading. "heading" e "body" podem ser iguais, mas nunca podem faltar.
 OBRIGATÓRIO 2: inclui SEMPRE "description" — uma frase curta (1 linha) a descrever o tema. Inclui também "label" (nome comercial curto e apelativo) SE o nome actual do tema for genérico (vazio ou a começar por "Novo Tema"); caso contrário mantém o label actual e não o devolvas.
 Exemplo de retorno em json_updates:
@@ -1172,44 +1183,40 @@ Exemplo de retorno em json_updates:
     "parallax": false,
     "scroll_progress": false,
     "cookie_banner": false
-  },
-  "sections": {
-    "footer": "<footer class=\"af-footer\">...HTML do rodapé...</footer>"
   }
 }
 ```
+A SEGUIR ao bloco json_updates (e NÃO dentro dele), gera a secção do rodapé num bloco delimitado — o HTML fica FORA do JSON, evitando erros de escape de aspas/newlines:
+[[[AF-SECTION:footer]]]
+<footer class="af-footer">...HTML do rodapé...</footer>
 DESIGN,
             'intro' => <<<INTRO
 Gera as secções de introdução e apresentação do tema: Hero, Funcionalidades (Features), Testemunhos e Galeria.
-Responsável por atualizar: sections.hero, sections.features, sections.testimonials, sections.gallery.
+Responsável pelas secções: hero, features, testimonials, gallery.
 Usa as variáveis CSS globais do tema.
-Exemplo de retorno em json_updates:
-```json_updates
-{
-  "sections": {
-    "hero": "<section class=\"af-hero\">...HTML...</section>",
-    "features": "<section class=\"af-features\">...HTML...</section>",
-    "testimonials": "<section class=\"af-testimonials\">...HTML...</section>",
-    "gallery": "<section class=\"af-gallery\">...HTML...</section>"
-  }
-}
-```
+NÃO uses json_updates. Devolve cada secção num BLOCO DELIMITADO (o HTML fica fora de JSON, evitando erros de escape), exatamente neste formato:
+[[[AF-SECTION:hero]]]
+<section class="af-hero">...HTML...</section>
+[[[AF-SECTION:features]]]
+<section class="af-features">...HTML...</section>
+[[[AF-SECTION:testimonials]]]
+<section class="af-testimonials">...HTML...</section>
+[[[AF-SECTION:gallery]]]
+<section class="af-gallery">...HTML...</section>
 INTRO,
             'conversion' => <<<CONVERSION
 Gera as secções de negócio e conversão do tema: Tabela de Preços (pricing), Chamada à Ação (cta), Perguntas Frequentes (faq) e Contacto (contact).
-Responsável por atualizar: sections.pricing, sections.cta, sections.faq, sections.contact.
+Responsável pelas secções: pricing, cta, faq, contact.
 Usa as variáveis CSS globais do tema.
-Exemplo de retorno em json_updates:
-```json_updates
-{
-  "sections": {
-    "pricing": "<section class=\"af-pricing\">...HTML...</section>",
-    "cta": "<section class=\"af-cta\">...HTML...</section>",
-    "faq": "<section class=\"af-faq\">...HTML...</section>",
-    "contact": "<section class=\"af-contact\">...HTML...</section>"
-  }
-}
-```
+NÃO uses json_updates. Devolve cada secção num BLOCO DELIMITADO (o HTML fica fora de JSON, evitando erros de escape), exatamente neste formato:
+[[[AF-SECTION:pricing]]]
+<section class="af-pricing">...HTML...</section>
+[[[AF-SECTION:cta]]]
+<section class="af-cta">...HTML...</section>
+[[[AF-SECTION:faq]]]
+<section class="af-faq">...HTML...</section>
+[[[AF-SECTION:contact]]]
+<section class="af-contact">...HTML...</section>
 CONVERSION,
             'code' => <<<CODE
 Gera o CSS personalizado e (opcional) JS complementar para micro-interações, transições e ajustes responsivos das secções do tema.
@@ -1275,6 +1282,33 @@ CODE,
             }
         }
         return $out;
+    }
+
+    /**
+     * Extrai secções devolvidas em blocos delimitados [[[AF-SECTION:nome]]] ...
+     * (o conteúdo vai até ao próximo marcador ou ao fim). HTML fora de JSON,
+     * imune a aspas/newlines não escapados. Devolve [nome => html].
+     */
+    private static function parseDelimitedSections(string $raw): array
+    {
+        $sections = [];
+        if (preg_match_all('/\[\[\[AF-SECTION:([a-zA-Z0-9_]+)\]\]\]([\s\S]*?)(?=\[\[\[AF-SECTION:|\z)/', $raw, $matches, PREG_SET_ORDER)) {
+            foreach ($matches as $mm) {
+                $name = strtolower(trim($mm[1]));
+                $html = trim($mm[2]);
+                $html = trim((string) preg_replace('/^```[a-z]*\s*|\s*```$/m', '', $html)); // limpa fences acidentais
+                if ($name !== '' && str_contains($html, '<')) {
+                    $sections[$name] = $html;
+                }
+            }
+        }
+        return $sections;
+    }
+
+    /** Remove os blocos de secção delimitados de um texto (para o reply visível). */
+    private static function stripDelimitedSections(string $text): string
+    {
+        return (string) preg_replace('/\[\[\[AF-SECTION:[a-zA-Z0-9_]+\]\]\][\s\S]*?(?=\[\[\[AF-SECTION:|\z)/', '', $text);
     }
 
     /**

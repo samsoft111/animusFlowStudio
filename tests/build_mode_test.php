@@ -243,6 +243,25 @@ try {
     fail('runThemeAgent (CSS multi-linha) lançou excepção', $e->getMessage());
 }
 
+// Agentes de secção (intro/conversion) devolvem HTML em BLOCOS DELIMITADOS —
+// HTML com aspas e newlines literais que partiriam o JSON, mas aqui são imunes.
+$delim = "Secções de apresentação geradas.\n\n"
+    . "[[[AF-SECTION:hero]]]\n"
+    . "<section class=\"af-hero\" data-k='v'><h1>Voar mais\nalto</h1></section>\n"
+    . "[[[AF-SECTION:features]]]\n"
+    . "<section class=\"af-features\"><div class=\"grid\">\"aspas\" e quebras</div></section>\n";
+fake_ai($delim);
+try {
+    $resSec = AIEngine::runThemeAgent('intro', 'b', 'd', '{}', [], '');
+    assert_true(is_array($resSec['updates']) && isset($resSec['updates']['sections']), 'intro: secções extraídas dos blocos delimitados');
+    assert_true(isset($resSec['updates']['sections']['hero']) && isset($resSec['updates']['sections']['features']), 'hero e features extraídas');
+    assert_true(str_contains($resSec['updates']['sections']['hero'] ?? '', 'class="af-hero"'), 'HTML preserva aspas (imune ao escape de JSON)');
+    assert_true(str_contains($resSec['updates']['sections']['hero'] ?? '', "alto"), 'HTML preserva newlines internos');
+    assert_false(str_contains($resSec['reply'], 'AF-SECTION'), 'reply visível não mostra os marcadores');
+} catch (\Throwable $e) {
+    fail('runThemeAgent (secções delimitadas) lançou excepção', $e->getMessage());
+}
+
 // ────────────────────────────────────────────────────────────────
 //  5. AIEngine::verifyTheme — mock + filtragem
 // ────────────────────────────────────────────────────────────────
