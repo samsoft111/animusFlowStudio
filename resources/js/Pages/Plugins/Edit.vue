@@ -2200,6 +2200,11 @@ async function sendChatMessage() {
     formData.append('_token', document.querySelector('meta[name="csrf-token"]')?.content ?? '');
 
     const res  = await fetch(`/plugins/${props.plugin.uuid}/chat`, { method: 'POST', body: formData });
+    const contentType = res.headers.get('content-type') ?? '';
+    if (!contentType.includes('application/json')) {
+      window.location.href = '/login';
+      return;
+    }
     const data = await res.json();
 
     if (!res.ok || data.error) {
@@ -2280,7 +2285,8 @@ async function runBuildAgent(phase, ctx) {
     fd.append('_token', chatCsrf());
     const res = await fetch(`/plugins/${props.plugin.uuid}/build/step`, { method: 'POST', body: fd });
     if (!(res.headers.get('content-type') ?? '').includes('application/json')) {
-      phase.status = 'error'; return { ok: false, isFatal: true };
+      window.location.href = '/login';
+      return { ok: false, isFatal: true };
     }
     const data = await res.json();
     if (!res.ok || data.error) {
@@ -2323,8 +2329,8 @@ async function runBuildFlow(build, msgIdx) {
     fd.append('_token', chatCsrf());
     const res = await fetch(`/plugins/${props.plugin.uuid}/build/plan`, { method: 'POST', body: fd });
     if (!(res.headers.get('content-type') ?? '').includes('application/json')) {
-      msg.phases[0].status = 'error'; msg.building = false; msg.failed = true;
-      msg.error = 'Sessão expirada — faz login novamente.'; return;
+      window.location.href = '/login';
+      return;
     }
     const data = await res.json();
     if (!res.ok || data.error) {
@@ -2408,7 +2414,11 @@ async function runBuildFlow(build, msgIdx) {
       chatScrollToBottom();
       return;
     }
-    const data = (res.headers.get('content-type') ?? '').includes('application/json') ? await res.json() : {};
+    if (!(res.headers.get('content-type') ?? '').includes('application/json')) {
+      window.location.href = '/login';
+      return;
+    }
+    const data = await res.json();
     if (res.ok && !data.error) {
       verifyPhase.reply = data.summary ?? '';
       for (const iss of (data.issues ?? [])) {
