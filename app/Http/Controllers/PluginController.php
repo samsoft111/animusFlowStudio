@@ -405,9 +405,13 @@ class PluginController extends Controller
     {
         $plugin = StudioPlugin::where('uuid', $uuid)->firstOrFail();
 
+        $validIds = array_column(AIEngine::pluginAgents(), 'id');
         $data = $request->validate([
-            'brief' => 'required|string|min:1|max:4000',
-            'skill' => 'nullable|string|max:60000',
+            'brief'     => 'required|string|min:1|max:4000',
+            'skill'     => 'nullable|string|max:60000',
+            'direction' => 'nullable|string|max:2000',
+            'agents'    => 'nullable|array',
+            'agents.*'  => ['string', Rule::in($validIds)],
         ]);
 
         $snapshot = null;
@@ -423,6 +427,17 @@ class PluginController extends Controller
             }
         } catch (\Throwable $e) {
             \Log::warning("Falha ao criar snapshot do plugin: " . $e->getMessage());
+        }
+
+        // Plano inline já fornecido (vindo da deteção de intenção) → sem chamada de IA.
+        $inlineAgents = array_values(array_intersect($data['agents'] ?? [], $validIds));
+        if (!empty($inlineAgents)) {
+            return response()->json([
+                'direction'      => $data['direction'] ?? '',
+                'agents'         => $inlineAgents,
+                'snapshot'       => $snapshot,
+                'planned_inline' => true,
+            ]);
         }
 
         try {

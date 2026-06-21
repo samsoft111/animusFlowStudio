@@ -449,11 +449,11 @@ INSTRUÇÕES:
 4. Se não há alterações, não incluis o bloco json_updates.
 5. Sê proactivo: sugere melhorias e boas práticas de desenvolvimento.
 6. Quando gerares PHP, inclui sempre a classe COMPLETA com declare(strict_types=1).
-7. Se o utilizador pedir para CRIAR UM PLUGIN COMPLETO de raiz ("cria um plugin de X", "constrói um plugin que faça Y"), NÃO tentes gerar tudo nesta resposta. Responde com UMA frase curta a confirmar e inclui um bloco:
+7. Se o utilizador pedir para CRIAR UM PLUGIN COMPLETO de raiz ("cria um plugin de X", "constrói um plugin que faça Y"), NÃO tentes gerar tudo nesta resposta. Responde com UMA frase curta a confirmar e inclui um bloco com o plano JÁ definido (poupa um passo):
    ```build
-   { "brief": "resumo claro do plugin a construir, em 1-2 frases" }
+   { "brief": "resumo claro do plugin a construir, em 1-2 frases", "direction": "1-2 frases sobre a abordagem técnica", "agents": ["logic","widget","settings"] }
    ```
-   Neste caso NÃO incluas o bloco json_updates.
+   "agents" deve conter só ids válidos desta lista: logic, widget, settings — pela ordem lógica e incluindo apenas os que o pedido justifica. Neste caso NÃO incluas o bloco json_updates.
 SYSTEM;
 
         $provider = StudioSetting::get('ai_provider', 'claude');
@@ -479,12 +479,19 @@ SYSTEM;
             }
         }
 
-        // Detect a full-build directive — the AI decides when to run the pipeline
+        // Detect a full-build directive — the AI decides when to run the pipeline.
+        // Pode trazer já o plano (direction + agents), evitando a chamada ao planeador.
         $build = null;
         if (preg_match('/```build\s*([\s\S]*?)```/m', $raw, $bm)) {
             $parsed = json_decode(trim($bm[1]), true);
             if (is_array($parsed) && !empty($parsed['brief'])) {
                 $build = ['brief' => (string) $parsed['brief']];
+                $validIds = array_column(self::pluginAgents(), 'id');
+                $agents = array_values(array_intersect($parsed['agents'] ?? [], $validIds));
+                if (!empty($agents)) {
+                    $build['agents']    = $agents;
+                    $build['direction'] = (string) ($parsed['direction'] ?? '');
+                }
             }
         }
 

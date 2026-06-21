@@ -1365,6 +1365,12 @@
             accept=".md,.markdown,.txt,.json,.text"
             @change="loadSkillFile($event)" />
 
+          <!-- Construção rápida (poupa tokens: sem plano por IA nem revisão) -->
+          <button @click="fastBuild = !fastBuild"
+            class="w-9 h-9 rounded-xl bg-muted border border-border flex items-center justify-center shrink-0 mb-0.5 transition-colors"
+            :class="fastBuild ? 'text-amber-500 border-amber-500/40' : 'text-muted-foreground hover:text-foreground hover:bg-border'"
+            :title="fastBuild ? 'Construção rápida LIGADA — sem revisão de qualidade (menos tokens)' : 'Construção rápida desligada — clica para poupar tokens'">⚡</button>
+
           <div class="flex-1 relative">
             <textarea v-model="chatInput"
               ref="chatTextarea"
@@ -2098,6 +2104,12 @@ const chatFileInput      = ref(null);
 const buildSkill     = ref('');
 const buildSkillName = ref('');
 const skillFileInput = ref(null);
+
+// Construção rápida — salta o plano por IA (usa plano inline) e a revisão de
+// qualidade, reduzindo o consumo de tokens. Persistido em localStorage.
+const fastBuild = ref(false);
+try { fastBuild.value = localStorage.getItem('af_fast_build') === '1'; } catch (e) {}
+watch(fastBuild, (v) => { try { localStorage.setItem('af_fast_build', v ? '1' : '0'); } catch (e) {} });
 function loadSkillFile(event) {
   const file = event.target.files?.[0];
   event.target.value = '';
@@ -2212,7 +2224,7 @@ async function sendChatMessage() {
       if (data.build && data.build.brief) {
         const buildIdx = chatMessages.value.length;
         chatMessages.value.push({ role: 'assistant', type: 'build', phases: [], building: true });
-        await runBuildFlow(data.build.brief, buildIdx);
+        await runBuildFlow(data.build, buildIdx);
       }
     }
   } catch (e) {
@@ -2287,7 +2299,13 @@ async function runBuildAgent(phase, ctx) {
 }
 
 // Orquestra a construção completa do plugin, mostrando fases legíveis na conversa.
-async function runBuildFlow(brief, msgIdx) {
+async function runBuildFlow(build, msgIdx) {
+  // Aceita string (brief) ou objecto {brief, direction?, agents?} — o plano
+  // inline (vindo da deteção de intenção) evita uma chamada de IA ao planeador.
+  const brief = typeof build === 'string' ? build : (build?.brief ?? '');
+  const inlineAgents = (build && typeof build === 'object' && Array.isArray(build.agents) && build.agents.length) ? build.agents : null;
+  const inlineDirection = (build && typeof build === 'object') ? (build.direction ?? '') : '';
+
   const msg = chatMessages.value[msgIdx];
   msg.building = true; msg.failed = false; msg.error = ''; msg.aborted = false;
   msg.phases = [{ agent: '__plan__', label: 'A planear a construção', status: 'running', reply: '' }];
@@ -2295,10 +2313,12 @@ async function runBuildFlow(brief, msgIdx) {
 
   let direction = '';
 
-  // 1. Planear
+  // 1. Planear (se há plano inline, o backend salta a IA do planeador)
   try {
     const fd = new FormData();
     fd.append('brief', brief);
+    if (inlineDirection) fd.append('direction', inlineDirection);
+    if (inlineAgents) inlineAgents.forEach((id, i) => fd.append(`agents[${i}]`, id));
     if (buildSkill.value) fd.append('skill', buildSkill.value);
     fd.append('_token', chatCsrf());
     const res = await fetch(`/plugins/${props.plugin.uuid}/build/plan`, { method: 'POST', body: fd });
@@ -2361,7 +2381,15 @@ async function runBuildFlow(brief, msgIdx) {
     return;
   }
 
-  // 3. Rever a qualidade + corrigir automaticamente
+  // 3a. Construção rápida → salta a revisão de qualidade (poupa tokens e latência)
+  if (fastBuild.value) {
+    msg.building = false;
+    feedback.success = 'Plugin construído (modo rápido — sem revisão).';
+    chatScrollToBottom();
+    return;
+  }
+
+  // 3b. Rever a qualidade + corrigir automaticamente
   const verifyPhase = { agent: '__verify__', label: 'A rever a qualidade', status: 'running', reply: '' };
   msg.phases.push(verifyPhase);
   chatScrollToBottom();
