@@ -619,7 +619,7 @@ Responde APENAS com um bloco json_updates, sem texto fora dele:
   "issues": [ {"agent": "id_do_agente", "reason": "o que melhorar, 1 frase accionável"} ]
 }
 ```
-Regras: usa só ids válidos; inclui no máximo 4 problemas REAIS e accionáveis; se o plugin estiver bom, devolve "issues": [].
+Regras: usa só ids válidos; lista APENAS os 3 problemas MAIS IMPORTANTES (reais e accionáveis), por ordem de prioridade; se o plugin estiver bom, devolve "issues": [].
 SYSTEM;
 
         $historyMsg = [['role' => 'user', 'content' => 'Verifica o plugin e lista o que corrigir.']];
@@ -637,6 +637,9 @@ SYSTEM;
                 }
             }
         }
+
+        // Limite rígido: no máximo 3 correções por construção (controlo de custo).
+        $out['issues'] = array_slice($out['issues'], 0, 3);
 
         return $out;
     }
@@ -751,11 +754,11 @@ INSTRUÇÕES:
 3. Se analisares imagens, vídeos ou documentos, extrai cores, estilos e layouts para sugerir mudanças concretas.
 4. Se não há alterações, não incluis o bloco json_updates.
 5. Sê proactivo: sugere melhorias mesmo quando o utilizador faz perguntas gerais.
-6. Se o utilizador pedir para CRIAR UM TEMA COMPLETO de raiz ou uma construção grande (várias secções — ex: "cria um tema para um restaurante", "constrói um site para a minha clínica"), NÃO tentes fazer tudo nesta resposta. Em vez disso responde com UMA frase curta a confirmar que vais construir o tema e inclui um bloco:
+6. Se o utilizador pedir para CRIAR UM TEMA COMPLETO de raiz ou uma construção grande (várias secções — ex: "cria um tema para um restaurante", "constrói um site para a minha clínica"), NÃO tentes fazer tudo nesta resposta. Em vez disso responde com UMA frase curta a confirmar que vais construir o tema e inclui um bloco com o plano JÁ definido (poupa um passo):
    ```build
-   { "brief": "resumo claro do que construir, em 1-2 frases" }
+   { "brief": "resumo claro do que construir, em 1-2 frases", "direction": "1-2 frases sobre estilo/tom/público", "agents": ["design","intro","conversion","code"] }
    ```
-   Neste caso NÃO incluas o bloco json_updates.
+   "agents" deve conter só ids válidos desta lista: design, intro, conversion, code — pela ordem lógica e incluindo apenas os que o pedido justifica. Neste caso NÃO incluas o bloco json_updates.
 SYSTEM;
 
         $provider = StudioSetting::get('ai_provider', 'claude');
@@ -783,12 +786,19 @@ SYSTEM;
         }
 
         // Detect a full-build directive — the AI decides when a request warrants
-        // the multi-agent pipeline instead of an inline edit.
+        // the multi-agent pipeline instead of an inline edit. Pode trazer já o
+        // plano (direction + agents), evitando uma chamada extra ao planeador.
         $build = null;
         if (preg_match('/```build\s*([\s\S]*?)```/m', $raw, $bm)) {
             $parsed = json_decode(trim($bm[1]), true);
             if (is_array($parsed) && !empty($parsed['brief'])) {
                 $build = ['brief' => (string) $parsed['brief']];
+                $validIds = array_column(self::themeAgents(), 'id');
+                $agents = array_values(array_intersect($parsed['agents'] ?? [], $validIds));
+                if (!empty($agents)) {
+                    $build['agents']    = $agents;
+                    $build['direction'] = (string) ($parsed['direction'] ?? '');
+                }
             }
         }
 
@@ -1052,7 +1062,7 @@ Responde APENAS com um bloco json_updates, sem texto fora dele:
   "issues": [ {"agent": "id_do_agente", "reason": "o que melhorar, 1 frase accionável"} ]
 }
 ```
-Regras: usa só ids válidos; inclui no máximo 6 problemas REAIS e accionáveis; se o tema estiver bom, devolve "issues": [].
+Regras: usa só ids válidos; lista APENAS os 3 problemas MAIS IMPORTANTES (reais e accionáveis), por ordem de prioridade; se o tema estiver bom, devolve "issues": [].
 SYSTEM;
 
         $history = [['role' => 'user', 'content' => 'Verifica o tema e lista o que corrigir.']];
@@ -1073,6 +1083,9 @@ SYSTEM;
                 }
             }
         }
+
+        // Limite rígido: no máximo 3 correções por construção (controlo de custo).
+        $out['issues'] = array_slice($out['issues'], 0, 3);
 
         return $out;
     }

@@ -651,14 +651,23 @@ class ThemeController extends Controller
     //  Modo Construção — multi-agent theme builder
     // ──────────────────────────────────────────────
 
-    /** Planner: turns a brief (+ optional skill) into an ordered agent plan. */
+    /**
+     * Planner: turns a brief (+ optional skill) into an ordered agent plan.
+     * Se o cliente já enviar um plano inline (agents + direction) — vindo da
+     * própria deteção de intenção do chat — saltamos a chamada de IA do
+     * planeador (poupa tokens e latência), mantendo na mesma o snapshot.
+     */
     public function buildPlan(Request $request, string $uuid): JsonResponse
     {
         $theme = StudioTheme::where('uuid', $uuid)->firstOrFail();
 
+        $validIds = array_column(AIEngine::themeAgents(), 'id');
         $data = $request->validate([
-            'brief' => 'required|string|min:1|max:4000',
-            'skill' => 'nullable|string|max:60000',
+            'brief'     => 'required|string|min:1|max:4000',
+            'skill'     => 'nullable|string|max:60000',
+            'direction' => 'nullable|string|max:2000',
+            'agents'    => 'nullable|array',
+            'agents.*'  => ['string', Rule::in($validIds)],
         ]);
 
         $snapshot = null;
@@ -674,6 +683,17 @@ class ThemeController extends Controller
             ];
         } catch (\Throwable $e) {
             \Log::warning("Falha ao criar snapshot do tema: " . $e->getMessage());
+        }
+
+        // Plano inline já fornecido → sem chamada de IA.
+        $inlineAgents = array_values(array_intersect($data['agents'] ?? [], $validIds));
+        if (!empty($inlineAgents)) {
+            return response()->json([
+                'direction' => $data['direction'] ?? '',
+                'agents'    => $inlineAgents,
+                'snapshot'  => $snapshot,
+                'planned_inline' => true,
+            ]);
         }
 
         try {
