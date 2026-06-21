@@ -67,7 +67,7 @@ SYSTEM;
 
         $userPrompt = "Design a theme for: {$prompt}";
 
-        $raw = self::call($systemPrompt, $userPrompt, 4096);
+        $raw = self::call($systemPrompt, $userPrompt, 4096, cacheSystem: true);
 
         return self::parseJson($raw, ['colors' => ['light' => [], 'dark' => []], 'fonts' => [], 'sections' => []]);
     }
@@ -98,7 +98,7 @@ AnimusFlow plugin hooks:
 
 Return exactly this structure:
 {
-  "plugin_php": "<?php\\n\\ndeclare(strict_types=1);\\n\\nclass {$className}Plugin\\n{\\n    ...\\n}\\n",
+  "plugin_php": "<?php\\n\\ndeclare(strict_types=1);\\n\\nclass ExemploPlugin\\n{\\n    ...\\n}\\n",
   "widget_blade": "<div class=\\\"af-widget\\\">...</div>",
   "widget_js": "// JS code",
   "settings_schema": [
@@ -110,12 +110,12 @@ Settings schema field types: text, textarea, color, select, toggle.
 For select type add: "options": {"value": "Label"}.
 For toggle type add: "toggle_label": "Enable feature".
 
-The plugin should implement: {$hooksStr}
+The plugin should implement the hooks indicated in the user message, and use the class name given there.
 SYSTEM;
 
-        $userPrompt = "Create a plugin that: {$prompt}";
+        $userPrompt = "Create a plugin that: {$prompt}\nClass name: {$className}Plugin\nHooks to implement: {$hooksStr}";
 
-        $raw = self::call($systemPrompt, $userPrompt, 4096);
+        $raw = self::call($systemPrompt, $userPrompt, 4096, cacheSystem: true);
 
         return self::parseJson($raw, [
             'plugin_php'      => '',
@@ -197,7 +197,7 @@ Gera documentação README.md completa para este plugin:
 ```
 PROMPT;
 
-        return self::call($systemPrompt, $userPrompt, 6144);
+        return self::call($systemPrompt, $userPrompt, 6144, cacheSystem: true);
     }
 
     // ──────────────────────────────────────────────
@@ -216,7 +216,7 @@ PROMPT;
         $systemPrompt = <<<SYSTEM
 Você é um designer de temas web especialista com profundo conhecimento de tendências de design para diferentes sectores de negócio. Você conhece os melhores sites e temas de cada categoria (restaurantes, e-commerce, agências, portfolios, etc.) e usa esse conhecimento para criar temas inspirados nas melhores práticas do sector.
 
-Quando o utilizador pede inspiração para um tema da categoria "{$category}" com estilo "{$style}", você deve:
+Quando o utilizador pede inspiração para um tema (a categoria e o estilo vêm indicados na mensagem do utilizador), você deve:
 1. Basear-se nos melhores sites reais dessa categoria (ex: para restaurante: Noma, Eleven Madison Park, etc.)
 2. Gerar um tema COMPLETO e PROFISSIONAL com identidade visual forte
 3. As cores devem ser coerentes com a psicologia da categoria (restaurante = tons quentes, clínica = azul/branco limpo, etc.)
@@ -301,7 +301,7 @@ Retorna exactamente esta estrutura:
     "features": "<section style=\\\"padding:5rem 2rem;background:var(--color-background);\\\"><div style=\\\"max-width:1200px;margin:0 auto;display:grid;grid-template-columns:repeat(3,1fr);gap:2rem;\\\"><div style=\\\"padding:2rem;background:var(--color-card);border-radius:1rem;border:1px solid var(--color-border);\\\"><h3 style=\\\"color:var(--color-foreground);font-family:var(--font-heading);\\\">Qualidade</h3><p style=\\\"color:var(--color-muted-foreground);margin-top:.5rem;\\\">Comprometidos com a excelência em cada detalhe.</p></div><div style=\\\"padding:2rem;background:var(--color-card);border-radius:1rem;border:1px solid var(--color-border);\\\"><h3 style=\\\"color:var(--color-foreground);font-family:var(--font-heading);\\\">Experiência</h3><p style=\\\"color:var(--color-muted-foreground);margin-top:.5rem;\\\">Anos de experiência ao seu serviço.</p></div><div style=\\\"padding:2rem;background:var(--color-card);border-radius:1rem;border:1px solid var(--color-border);\\\"><h3 style=\\\"color:var(--color-foreground);font-family:var(--font-heading);\\\">Confiança</h3><p style=\\\"color:var(--color-muted-foreground);margin-top:.5rem;\\\">Centenas de clientes satisfeitos.</p></div></div></section>",
     "cta": "<section style=\\\"padding:5rem 2rem;background:var(--color-primary);text-align:center;\\\"><h2 style=\\\"color:var(--color-primary-foreground);font-family:var(--font-heading);font-size:2.25rem;\\\">Pronto para começar?</h2><p style=\\\"color:var(--color-primary-foreground);opacity:.8;margin-top:1rem;\\\">Entre em contacto connosco hoje.</p><a href='#contacto' style=\\\"display:inline-block;margin-top:2rem;padding:.875rem 2.5rem;background:#fff;color:var(--color-primary);border-radius:.5rem;font-weight:700;\\\">Contactar</a></section>"
   },
-  "custom_css": "/* Tema {$category} - estilo {$style} */\\n:root { font-synthesis: none; }\\n* { box-sizing: border-box; }\\nbody { font-family: var(--font-body, Inter), sans-serif; background: var(--color-background); color: var(--color-foreground); }"
+  "custom_css": "/* Tema gerado por categoria */\\n:root { font-synthesis: none; }\\n* { box-sizing: border-box; }\\nbody { font-family: var(--font-body, Inter), sans-serif; background: var(--color-background); color: var(--color-foreground); }"
 }
 SYSTEM;
 
@@ -310,7 +310,7 @@ SYSTEM;
             . "As cores devem refletir a identidade visual típica desta categoria. "
             . "As secções HTML devem ser modernas e usar CSS custom properties.";
 
-        $raw = self::call($systemPrompt, $userPrompt, 6144);
+        $raw = self::call($systemPrompt, $userPrompt, 6144, cacheSystem: true);
 
         $parsed = self::parseJson($raw, [
             'label'         => ucfirst($category) . ' Theme',
@@ -352,7 +352,7 @@ SYSTEM;
         $systemPrompt = <<<SYSTEM
 Você é um especialista em desenvolvimento de plugins para o AnimusFlow CMS e tem profundo conhecimento de padrões de plugins em WordPress, Joomla, Drupal e outros CMS populares.
 
-Quando o utilizador pede inspiração para um plugin de categoria "{$category}", você deve:
+Quando o utilizador pede inspiração para um plugin de uma dada categoria (indicada na mensagem do utilizador), você deve:
 1. Pesquisar no seu conhecimento exemplos reais de plugins populares dessa categoria
 2. Gerar 3 exemplos COMPLETOS e FUNCIONAIS, do mais simples ao mais completo
 3. Cada exemplo deve ter um propósito ligeiramente diferente dentro da mesma categoria
@@ -381,7 +381,7 @@ Retorna exactamente esta estrutura:
       "inspiration_source": "Inspirado em: [plugin/padrão real, ex: 'Hello Bar do Sumo', 'Google Analytics snippet', etc.]",
       "complexity": "simples|médio|avançado",
       "hooks": ["page.render"],
-      "plugin_php": "<?php\\n\\ndeclare(strict_types=1);\\n\\nclass {$className}Plugin\\n{\\n    ...código completo...\\n}\\n",
+      "plugin_php": "<?php\\n\\ndeclare(strict_types=1);\\n\\nclass ExemploPlugin\\n{\\n    ...código completo...\\n}\\n",
       "widget_blade": "<div class=\\\"af-{slug}-widget\\\">...</div>",
       "widget_js": "document.addEventListener('DOMContentLoaded', () => { ... });",
       "custom_css": ".af-{slug}-* { ... }",
@@ -393,7 +393,7 @@ SYSTEM;
 
         $userPrompt = "Gera 3 exemplos de plugin para a categoria \"{$category}\" para o AnimusFlow CMS.{$descPart}\nHooks activos: {$hooksStr}\nNome do plugin: {$pluginName}";
 
-        $raw = self::call($systemPrompt, $userPrompt, 8192);
+        $raw = self::call($systemPrompt, $userPrompt, 8192, cacheSystem: true);
 
         $parsed = self::parseJson($raw, ['examples' => []]);
 
@@ -1438,7 +1438,7 @@ CODE,
 
     // ──────────────────────────────────────────────
 
-    private static function call(string $system, string $user, int $maxTokens = 2048): string
+    private static function call(string $system, string $user, int $maxTokens = 2048, bool $cacheSystem = false): string
     {
         $provider    = StudioSetting::get('ai_provider', 'claude');
         $model       = StudioSetting::get('ai_model', '');
@@ -1457,11 +1457,12 @@ CODE,
             throw new RuntimeException('No AI API key configured. Go to Settings → AI Provider.');
         }
 
+        // $cacheSystem só se aplica ao Claude (prompt caching); os outros ignoram.
         return match ($provider) {
             'openai'  => self::callOpenAI($apiKey, $model ?: 'gpt-4o', $system, $user, $maxTok, $temperature),
             'gemini'  => self::callGemini($apiKey, $model ?: 'gemini-2.0-flash', $system, $user, $maxTok),
-            'claude'  => self::callClaude($apiKey, $model ?: 'claude-sonnet-4-6', $system, $user, $maxTok),
-            default   => self::callClaude($apiKey, $model ?: 'claude-sonnet-4-6', $system, $user, $maxTok),
+            'claude'  => self::callClaude($apiKey, $model ?: 'claude-sonnet-4-6', $system, $user, $maxTok, $cacheSystem),
+            default   => self::callClaude($apiKey, $model ?: 'claude-sonnet-4-6', $system, $user, $maxTok, $cacheSystem),
         };
     }
 
@@ -1488,8 +1489,15 @@ CODE,
         return '';
     }
 
-    private static function callClaude(string $key, string $model, string $system, string $user, int $maxTokens): string
+    private static function callClaude(string $key, string $model, string $system, string $user, int $maxTokens, bool $cacheSystem = false): string
     {
+        // Quando o system é estável (constante) marca-o com cache_control para
+        // o prompt caching da Anthropic. NÃO usar quando o system varia por
+        // chamada (seria cache-miss + custo de escrita inútil).
+        $systemPayload = $cacheSystem
+            ? [['type' => 'text', 'text' => $system, 'cache_control' => ['type' => 'ephemeral']]]
+            : $system;
+
         $response = Http::withHeaders([
             'x-api-key'         => $key,
             'anthropic-version' => '2023-06-01',
@@ -1497,7 +1505,7 @@ CODE,
         ])->post('https://api.anthropic.com/v1/messages', [
             'model'      => $model,
             'max_tokens' => $maxTokens,
-            'system'     => $system,
+            'system'     => $systemPayload,
             'messages'   => [['role' => 'user', 'content' => $user]],
         ]);
 

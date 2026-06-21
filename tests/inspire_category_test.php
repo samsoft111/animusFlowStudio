@@ -89,7 +89,7 @@ assert_contains($aiFile, '"sections"', 'System prompt define sections');
 assert_contains($aiFile, 'inspiration', 'System prompt inclui campo inspiration');
 assert_contains($aiFile, 'parseJson', 'Usa parseJson para fallback seguro');
 assert_contains($aiFile, "'label'         => ucfirst(\$category)", 'Tem fallback para label');
-assert_contains($aiFile, "call(\$systemPrompt, \$userPrompt, 6144)", 'Chama com max_tokens=6144');
+assert_contains($aiFile, "call(\$systemPrompt, \$userPrompt, 6144, cacheSystem: true)", 'Chama com max_tokens=6144 e prompt caching');
 
 // ── Verificar user prompt ──
 assert_contains($aiFile, 'psicologia da categoria', 'System prompt menciona psicologia da categoria');
@@ -186,6 +186,12 @@ Http::fake([
 
 try {
     $result = AIEngine::generateThemeFromCategory('Restaurante', 'moderno');
+
+    // Prompt caching: o system (constante) vai como bloco com cache_control ephemeral
+    $rec  = \Illuminate\Support\Facades\Http::recorded();
+    $body = json_decode($rec[count($rec) - 1][0]->body(), true);
+    $sys  = $body['system'] ?? null;
+    assert_true(is_array($sys) && ($sys[0]['cache_control']['type'] ?? '') === 'ephemeral', 'Prompt caching: system constante enviado com cache_control ephemeral');
 
     assert_true(isset($result['label']),        'Resultado tem label');
     assert_true(isset($result['description']),  'Resultado tem description');
