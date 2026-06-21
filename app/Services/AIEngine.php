@@ -910,9 +910,35 @@ SYSTEM;
             }
         }
 
+        // Rede de segurança: o agente "design" tem de devolver SEMPRE fonts
+        // (heading + body). Se a IA as omitir, preenche a partir das fontes
+        // actuais do tema ou de defaults sensatos — garante que nunca faltam.
+        if ($agentId === 'design') {
+            $updates = self::ensureDesignFonts(is_array($updates) ? $updates : [], $currentThemeJson);
+        }
+
         $reply = trim((string) preg_replace('/```json_updates\s*[\s\S]*?```/m', '', $raw));
 
         return ['agent' => $agentId, 'reply' => $reply, 'updates' => $updates];
+    }
+
+    /**
+     * Garante que os updates do agente "design" trazem sempre fonts.heading e
+     * fonts.body preenchidos. Se a IA os omitir, reaproveita as fontes actuais
+     * do tema (do JSON de contexto) e, em último caso, usa defaults sensatos.
+     */
+    private static function ensureDesignFonts(array $updates, string $currentThemeJson): array
+    {
+        $current = json_decode($currentThemeJson, true);
+        $currentFonts = is_array($current['fonts'] ?? null) ? $current['fonts'] : [];
+
+        $fonts   = is_array($updates['fonts'] ?? null) ? $updates['fonts'] : [];
+        $heading = trim((string) ($fonts['heading'] ?? '')) ?: trim((string) ($currentFonts['heading'] ?? '')) ?: 'Outfit';
+        $body    = trim((string) ($fonts['body'] ?? ''))    ?: trim((string) ($currentFonts['body'] ?? ''))    ?: 'Inter';
+
+        $updates['fonts'] = array_merge($fonts, ['heading' => $heading, 'body' => $body]);
+
+        return $updates;
     }
 
     /**
@@ -993,6 +1019,7 @@ BASE;
             'design' => <<<DESIGN
 Gera o design global e branding do tema (cores light e dark, fontes de títulos/corpo, layout, capacidades e a secção do rodapé).
 Responsável por atualizar os campos: colors, fonts, layout_config, capabilities, e a secção "footer" (em sections.footer).
+OBRIGATÓRIO: o bloco json_updates TEM SEMPRE de incluir "fonts" com "heading" E "body" preenchidos (nunca vazios, nunca omitidos), escolhendo um par tipográfico que combine com o brief. Usa apenas fontes do Google Fonts; valores recomendados: Inter, Poppins, DM Sans, Outfit, Plus Jakarta Sans, Playfair Display, Fraunces, Sora. Para temas elegantes/editoriais usa uma serifa (ex.: Playfair Display ou Fraunces) no heading. "heading" e "body" podem ser iguais, mas nunca podem faltar.
 Exemplo de retorno em json_updates:
 ```json_updates
 {
