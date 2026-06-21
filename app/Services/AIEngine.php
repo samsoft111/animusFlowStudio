@@ -911,10 +911,12 @@ SYSTEM;
         }
 
         // Rede de segurança: o agente "design" tem de devolver SEMPRE fonts
-        // (heading + body). Se a IA as omitir, preenche a partir das fontes
-        // actuais do tema ou de defaults sensatos — garante que nunca faltam.
+        // (heading + body) e os metadados (label/description) para que o passo
+        // "Detalhes" do progresso fique completo. Se a IA os omitir, preenche
+        // a partir do tema actual ou de defaults sensatos.
         if ($agentId === 'design') {
             $updates = self::ensureDesignFonts(is_array($updates) ? $updates : [], $currentThemeJson);
+            $updates = self::ensureDesignMeta($updates, $currentThemeJson, $brief);
         }
 
         $reply = trim((string) preg_replace('/```json_updates\s*[\s\S]*?```/m', '', $raw));
@@ -937,6 +939,37 @@ SYSTEM;
         $body    = trim((string) ($fonts['body'] ?? ''))    ?: trim((string) ($currentFonts['body'] ?? ''))    ?: 'Inter';
 
         $updates['fonts'] = array_merge($fonts, ['heading' => $heading, 'body' => $body]);
+
+        return $updates;
+    }
+
+    /**
+     * Garante que os updates do agente "design" trazem metadados que completam
+     * o passo "Detalhes" do progresso: uma "description" não-vazia e um "label"
+     * comercial quando o nome actual ainda é genérico ("Novo Tema..."). Nunca
+     * substitui um label real já escolhido pelo utilizador.
+     */
+    private static function ensureDesignMeta(array $updates, string $currentThemeJson, string $brief): array
+    {
+        $current      = json_decode($currentThemeJson, true) ?: [];
+        $currentLabel = trim((string) ($current['label'] ?? ''));
+        $currentDesc  = trim((string) ($current['description'] ?? ''));
+        $isPlaceholder = $currentLabel === '' || str_starts_with($currentLabel, 'Novo Tema');
+
+        // Descrição — obrigatória para completar "Detalhes".
+        $desc = trim((string) ($updates['description'] ?? ''));
+        if ($desc === '') {
+            $desc = $currentDesc !== '' ? $currentDesc : mb_substr(ucfirst(trim($brief)), 0, 180);
+        }
+        $updates['description'] = $desc;
+
+        // Label — só toca no nome quando o actual é genérico ("Novo Tema...").
+        $newLabel = trim((string) ($updates['label'] ?? ''));
+        if ($isPlaceholder) {
+            $updates['label'] = $newLabel !== '' ? $newLabel : mb_substr(ucfirst(trim($brief)), 0, 60);
+        } else {
+            unset($updates['label']); // o utilizador já tem um label real — nunca substituir
+        }
 
         return $updates;
     }
@@ -1017,12 +1050,15 @@ BASE;
 
         $task = match ($agentId) {
             'design' => <<<DESIGN
-Gera o design global e branding do tema (cores light e dark, fontes de títulos/corpo, layout, capacidades e a secção do rodapé).
-Responsável por atualizar os campos: colors, fonts, layout_config, capabilities, e a secção "footer" (em sections.footer).
-OBRIGATÓRIO: o bloco json_updates TEM SEMPRE de incluir "fonts" com "heading" E "body" preenchidos (nunca vazios, nunca omitidos), escolhendo um par tipográfico que combine com o brief. Usa apenas fontes do Google Fonts; valores recomendados: Inter, Poppins, DM Sans, Outfit, Plus Jakarta Sans, Playfair Display, Fraunces, Sora. Para temas elegantes/editoriais usa uma serifa (ex.: Playfair Display ou Fraunces) no heading. "heading" e "body" podem ser iguais, mas nunca podem faltar.
+Gera o design global e branding do tema (nome comercial, descrição, cores light e dark, fontes de títulos/corpo, layout, capacidades e a secção do rodapé).
+Responsável por atualizar os campos: label, description, colors, fonts, layout_config, capabilities, e a secção "footer" (em sections.footer).
+OBRIGATÓRIO 1: o bloco json_updates TEM SEMPRE de incluir "fonts" com "heading" E "body" preenchidos (nunca vazios, nunca omitidos), escolhendo um par tipográfico que combine com o brief. Usa apenas fontes do Google Fonts; valores recomendados: Inter, Poppins, DM Sans, Outfit, Plus Jakarta Sans, Playfair Display, Fraunces, Sora. Para temas elegantes/editoriais usa uma serifa (ex.: Playfair Display ou Fraunces) no heading. "heading" e "body" podem ser iguais, mas nunca podem faltar.
+OBRIGATÓRIO 2: inclui SEMPRE "description" — uma frase curta (1 linha) a descrever o tema. Inclui também "label" (nome comercial curto e apelativo) SE o nome actual do tema for genérico (vazio ou a começar por "Novo Tema"); caso contrário mantém o label actual e não o devolvas.
 Exemplo de retorno em json_updates:
 ```json_updates
 {
+  "label": "Sorriso Clínica",
+  "description": "Tema moderno e acolhedor para clínicas dentárias.",
   "colors": {
     "light": {
       "--color-primary": "#..",
