@@ -294,8 +294,8 @@ assert_contains($vue, 'loadSkillFile',  'Função loadSkillFile');
 assert_contains($vue, 'buildSkill',     'Estado buildSkill');
 assert_contains($vue, 'skillFileInput', 'Input de ficheiro do skill');
 assert_contains($vue, "fd.append('skill'", 'Envia skill ao pipeline');
-// Backend aceita skill
-assert_contains($aiFile, 'string $skill = \'\'): string', 'pluginAgentSystem aceita skill');
+// Backend aceita skill (system agora devolvido em [estável, variável])
+assert_contains($aiFile, 'string $skill = \'\'): array', 'pluginAgentSystem aceita skill');
 assert_contains($ctrlFile, "\$data['skill'] ?? ''", 'buildStep passa skill ao agente');
 
 // Runtime: o skill chega ao system prompt do agente de plugin
@@ -308,7 +308,10 @@ try {
     $last = $rec[count($rec) - 1] ?? null;
     $body = $last ? json_decode($last[0]->body(), true) : [];
     $sys  = $body['system'] ?? '';
-    assert_true(str_contains($sys, $skillText), 'Skill aparece no system prompt do agente de plugin');
+    // O system do Claude é agora um array de blocos: [estável (cache_control), variável]
+    $sysText = is_array($sys) ? implode("\n", array_map(fn($b) => $b['text'] ?? '', $sys)) : $sys;
+    assert_true(str_contains($sysText, $skillText), 'Skill aparece no system prompt do agente de plugin');
+    assert_true(is_array($sys) && ($sys[0]['cache_control']['type'] ?? '') === 'ephemeral', 'Prompt caching: bloco estável marcado com cache_control ephemeral');
 } catch (\Throwable $e) {
     fail('runPluginAgent com skill lançou excepção', $e->getMessage());
 }

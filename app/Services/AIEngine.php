@@ -609,17 +609,14 @@ SYSTEM;
             ? "INSTRUÇÕES/SKILL DO UTILIZADOR (o plugin TEM de cumprir isto):\n{$skill}\n\n"
             : '';
 
-        $system = <<<SYSTEM
+        // Estável (cacheável): papel + regras + formato. Variável: brief/direcção/plugin.
+        $stable = <<<SYSTEM
 Você é o agente VERIFICADOR de qualidade de plugins do AnimusFlow CMS.
 Analisa o estado actual do plugin face ao brief e identifica partes em falta, fracas ou incoerentes.
 
 AGENTES QUE PODEM CORRIGIR (ids válidos): {$list}
 
-{$skillBlock}BRIEF: {$brief}
-DIRECÇÃO: {$direction}
-ESTADO ACTUAL DO PLUGIN: {$pluginJson}
-
-Responde APENAS com um bloco json_updates, sem texto fora dele:
+{$skillBlock}Responde APENAS com um bloco json_updates, sem texto fora dele:
 ```json_updates
 {
   "summary": "1-2 frases sobre o estado geral do plugin",
@@ -629,8 +626,10 @@ Responde APENAS com um bloco json_updates, sem texto fora dele:
 Regras: usa só ids válidos; lista APENAS os 3 problemas MAIS IMPORTANTES (reais e accionáveis), por ordem de prioridade; se o plugin estiver bom, devolve "issues": [].
 SYSTEM;
 
+        $variable = "BRIEF: {$brief}\nDIRECÇÃO: {$direction}\nESTADO ACTUAL DO PLUGIN: {$pluginJson}";
+
         $historyMsg = [['role' => 'user', 'content' => 'Verifica o plugin e lista o que corrigir.']];
-        $raw = self::chatDispatch($system, $historyMsg, [], 2000);
+        $raw = self::chatDispatch([$stable, $variable], $historyMsg, [], 2000);
 
         $out = ['summary' => '', 'issues' => []];
         if (preg_match('/```json_updates\s*([\s\S]*?)```/m', $raw, $m)) {
@@ -651,8 +650,11 @@ SYSTEM;
         return $out;
     }
 
-    /** Build the focused system prompt for one plugin agent. */
-    private static function pluginAgentSystem(string $agentId, string $brief, string $direction, string $pluginJson, string $skill = ''): string
+    /**
+     * Build the focused system prompt for one plugin agent, separado em
+     * [estável, variável] para o prompt caching da Anthropic.
+     */
+    private static function pluginAgentSystem(string $agentId, string $brief, string $direction, string $pluginJson, string $skill = ''): array
     {
         $skillBlock = trim($skill) !== ''
             ? "INSTRUÇÕES/SKILL DO UTILIZADOR (segue à risca, têm prioridade sobre o brief):\n{$skill}\n\n"
@@ -662,13 +664,9 @@ SYSTEM;
 Você é um agente especializado de construção de plugins para o AnimusFlow CMS.
 Responde em português (PT-PT). Produzes UMA frase curta de resumo seguida de um bloco json_updates APENAS com os campos da tua responsabilidade — nada mais.
 
-{$skillBlock}BRIEF: {$brief}
-DIRECÇÃO: {$direction}
-PLUGIN ACTUAL (resumo): {$pluginJson}
-
 ESTRUTURA AnimusFlow: page.render→onPageRender(\$page):string; content.publish→onContentPublish(\$page):void; admin.sidebar→onAdminSidebar():array.
 
-TAREFA:
+{$skillBlock}TAREFA:
 BASE;
 
         $task = match ($agentId) {
@@ -711,7 +709,10 @@ SETTINGS,
             default => 'Gera a tua parte e devolve o json_updates apropriado.',
         };
 
-        return $base . "\n" . $task;
+        $stable   = $base . "\n" . $task;
+        $variable = "BRIEF: {$brief}\nDIRECÇÃO: {$direction}\nPLUGIN ACTUAL (resumo): {$pluginJson}";
+
+        return [$stable, $variable];
     }
 
     // ──────────────────────────────────────────────
@@ -1052,17 +1053,14 @@ SYSTEM;
             ? "INSTRUÇÕES/SKILL DO UTILIZADOR (o tema TEM de cumprir isto):\n{$skill}\n\n"
             : '';
 
-        $system = <<<SYSTEM
+        // Estável (cacheável): papel + regras + formato. Variável: brief/direcção/tema.
+        $stable = <<<SYSTEM
 Você é o agente VERIFICADOR de qualidade de temas do AnimusFlow CMS.
 Analisa o estado actual do tema face ao brief e identifica partes em falta, fracas ou incoerentes.
 
 AGENTES QUE PODEM CORRIGIR (ids válidos): {$list}
 
-{$skillBlock}BRIEF: {$brief}
-DIRECÇÃO DE DESIGN: {$direction}
-ESTADO ACTUAL DO TEMA: {$themeJson}
-
-Responde APENAS com um bloco json_updates, sem texto fora dele:
+{$skillBlock}Responde APENAS com um bloco json_updates, sem texto fora dele:
 ```json_updates
 {
   "summary": "1-2 frases sobre o estado geral do tema",
@@ -1072,8 +1070,10 @@ Responde APENAS com um bloco json_updates, sem texto fora dele:
 Regras: usa só ids válidos; lista APENAS os 3 problemas MAIS IMPORTANTES (reais e accionáveis), por ordem de prioridade; se o tema estiver bom, devolve "issues": [].
 SYSTEM;
 
+        $variable = "BRIEF: {$brief}\nDIRECÇÃO DE DESIGN: {$direction}\nESTADO ACTUAL DO TEMA: {$themeJson}";
+
         $history = [['role' => 'user', 'content' => 'Verifica o tema e lista o que corrigir.']];
-        $raw     = self::chatDispatch($system, $history, [], 2000);
+        $raw     = self::chatDispatch([$stable, $variable], $history, [], 2000);
 
         $out = ['summary' => '', 'issues' => []];
         if (preg_match('/```json_updates\s*([\s\S]*?)```/m', $raw, $m)) {
@@ -1097,8 +1097,12 @@ SYSTEM;
         return $out;
     }
 
-    /** Build the focused system prompt for one agent. */
-    private static function themeAgentSystem(string $agentId, string $brief, string $direction, string $themeJson, string $skill = ''): string
+    /**
+     * Build the focused system prompt for one agent, separado em [estável, variável]
+     * para tirar partido do prompt caching da Anthropic: o bloco estável (instruções
+     * + skill + exemplo do agente) é cacheável; o variável (brief/direcção/tema) não.
+     */
+    private static function themeAgentSystem(string $agentId, string $brief, string $direction, string $themeJson, string $skill = ''): array
     {
         $skillBlock = trim($skill) !== ''
             ? "INSTRUÇÕES/SKILL DO UTILIZADOR (segue à risca, têm prioridade sobre o brief):\n{$skill}\n\n"
@@ -1109,11 +1113,7 @@ Você é um agente especializado de construção de temas para o AnimusFlow CMS.
 Responde em português (PT-PT). Produzes UMA frase curta de resumo seguida de um bloco json_updates APENAS com os campos da tua responsabilidade — nada mais.
 Regras de HTML/CSS: HTML semântico; usa SEMPRE variáveis CSS do tema (var(--color-primary), var(--color-bg), var(--color-text), var(--font-heading), var(--font-body), etc.); nada de frameworks externos; conteúdo de demonstração realista para o contexto do brief.
 
-{$skillBlock}BRIEF: {$brief}
-DIREÇÃO DE DESIGN: {$direction}
-TEMA ACTUAL (resumo): {$themeJson}
-
-TAREFA:
+{$skillBlock}TAREFA:
 BASE;
 
         $task = match ($agentId) {
@@ -1225,11 +1225,19 @@ CODE,
             default => "Gera a tua parte e devolve o json_updates apropriado.",
         };
 
-        return $base . "\n" . $task;
+        $stable   = $base . "\n" . $task;
+        $variable = "BRIEF: {$brief}\nDIREÇÃO DE DESIGN: {$direction}\nTEMA ACTUAL (resumo): {$themeJson}";
+
+        return [$stable, $variable];
     }
 
-    /** Dispatch one focused LLM call to the active provider. */
-    private static function chatDispatch(string $system, array $history, array $attachments, int $maxTokens): string
+    /**
+     * Dispatch one focused LLM call to the active provider.
+     * $system pode ser string OU [estável, variável] — neste caso, no Claude o
+     * bloco estável é marcado com cache_control (prompt caching da Anthropic),
+     * poupando tokens de input nos prompts reutilizados (agentes/verificador).
+     */
+    private static function chatDispatch(string|array $system, array $history, array $attachments, int $maxTokens): string
     {
         $provider = StudioSetting::get('ai_provider', 'claude');
         $model    = StudioSetting::get('ai_model', '');
@@ -1246,7 +1254,29 @@ CODE,
         };
     }
 
-    private static function chatClaude(string $key, string $model, string $system, array $history, array $attachments, int $maxTokens = 4096): string
+    /**
+     * Constrói o payload "system" para o Claude. Se receber [estável, variável],
+     * devolve blocos de conteúdo com cache_control no bloco estável (prompt
+     * caching). Se for string, devolve-a tal como está.
+     */
+    private static function claudeSystemPayload(string|array $system): string|array
+    {
+        if (!is_array($system)) {
+            return $system;
+        }
+        $stable   = trim((string) ($system[0] ?? ''));
+        $variable = trim((string) ($system[1] ?? ''));
+        $blocks = [];
+        if ($stable !== '') {
+            $blocks[] = ['type' => 'text', 'text' => $stable, 'cache_control' => ['type' => 'ephemeral']];
+        }
+        if ($variable !== '') {
+            $blocks[] = ['type' => 'text', 'text' => $variable];
+        }
+        return $blocks ?: '';
+    }
+
+    private static function chatClaude(string $key, string $model, string|array $system, array $history, array $attachments, int $maxTokens = 4096): string
     {
         $messages = [];
 
@@ -1295,7 +1325,7 @@ CODE,
         ])->timeout(240)->post('https://api.anthropic.com/v1/messages', [
             'model'      => $model,
             'max_tokens' => $maxTokens,
-            'system'     => $system,
+            'system'     => self::claudeSystemPayload($system),
             'messages'   => $messages,
         ]);
 
@@ -1306,8 +1336,10 @@ CODE,
         return $response->json('content.0.text', '');
     }
 
-    private static function chatOpenAI(string $key, string $model, string $system, array $history, array $attachments, int $maxTokens = 4096): string
+    private static function chatOpenAI(string $key, string $model, string|array $system, array $history, array $attachments, int $maxTokens = 4096): string
     {
+        // OpenAI não suporta o prompt caching da Anthropic — achata [estável, variável].
+        if (is_array($system)) { $system = trim(implode("\n\n", array_filter($system))); }
         $messages = [['role' => 'system', 'content' => $system]];
 
         foreach ($history as $i => $msg) {
@@ -1348,8 +1380,10 @@ CODE,
         return $response->json('choices.0.message.content', '');
     }
 
-    private static function chatGemini(string $key, string $model, string $system, array $history, array $attachments, int $maxTokens = 4096): string
+    private static function chatGemini(string $key, string $model, string|array $system, array $history, array $attachments, int $maxTokens = 4096): string
     {
+        // Gemini não suporta o prompt caching da Anthropic — achata [estável, variável].
+        if (is_array($system)) { $system = trim(implode("\n\n", array_filter($system))); }
         $contents = [];
 
         foreach ($history as $i => $msg) {
