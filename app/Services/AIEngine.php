@@ -473,7 +473,7 @@ SYSTEM;
 
         $updates = null;
         if (preg_match('/```json_updates\s*([\s\S]*?)```/m', $raw, $m)) {
-            $parsed = json_decode(trim($m[1]), true);
+            $parsed = self::looseJsonDecode($m[1]);
             if (is_array($parsed)) {
                 $updates = $parsed;
             }
@@ -562,7 +562,7 @@ SYSTEM;
 
         $plan = ['direction' => '', 'agents' => []];
         if (preg_match('/```json_updates\s*([\s\S]*?)```/m', $raw, $m)) {
-            $parsed = json_decode(trim($m[1]), true);
+            $parsed = self::looseJsonDecode($m[1]);
             if (is_array($parsed)) {
                 $plan['direction'] = (string) ($parsed['direction'] ?? '');
                 $plan['agents']    = array_values(array_intersect($parsed['agents'] ?? [], $ids));
@@ -589,7 +589,7 @@ SYSTEM;
 
         $updates = null;
         if (preg_match('/```json_updates\s*([\s\S]*?)```/m', $raw, $m)) {
-            $parsed = json_decode(trim($m[1]), true);
+            $parsed = self::looseJsonDecode($m[1]);
             if (is_array($parsed)) {
                 $updates = $parsed;
             }
@@ -633,7 +633,7 @@ SYSTEM;
 
         $out = ['summary' => '', 'issues' => []];
         if (preg_match('/```json_updates\s*([\s\S]*?)```/m', $raw, $m)) {
-            $parsed = json_decode(trim($m[1]), true);
+            $parsed = self::looseJsonDecode($m[1]);
             if (is_array($parsed)) {
                 $out['summary'] = (string) ($parsed['summary'] ?? '');
                 foreach (($parsed['issues'] ?? []) as $iss) {
@@ -787,7 +787,7 @@ SYSTEM;
         // Extract json_updates block
         $updates = null;
         if (preg_match('/```json_updates\s*([\s\S]*?)```/m', $raw, $m)) {
-            $parsed = json_decode(trim($m[1]), true);
+            $parsed = self::looseJsonDecode($m[1]);
             if (is_array($parsed)) {
                 $updates = $parsed;
             }
@@ -936,7 +936,7 @@ SYSTEM;
 
         $plan = ['direction' => '', 'agents' => []];
         if (preg_match('/```json_updates\s*([\s\S]*?)```/m', $raw, $m)) {
-            $parsed = json_decode(trim($m[1]), true);
+            $parsed = self::looseJsonDecode($m[1]);
             if (is_array($parsed)) {
                 $plan['direction'] = (string) ($parsed['direction'] ?? '');
                 $plan['agents']    = array_values(array_intersect($parsed['agents'] ?? [], $ids));
@@ -970,7 +970,7 @@ SYSTEM;
 
         $updates = null;
         if (preg_match('/```json_updates\s*([\s\S]*?)```/m', $raw, $m)) {
-            $parsed = json_decode(trim($m[1]), true);
+            $parsed = self::looseJsonDecode($m[1]);
             if (is_array($parsed)) {
                 $updates = $parsed;
             }
@@ -1077,7 +1077,7 @@ SYSTEM;
 
         $out = ['summary' => '', 'issues' => []];
         if (preg_match('/```json_updates\s*([\s\S]*?)```/m', $raw, $m)) {
-            $parsed = json_decode(trim($m[1]), true);
+            $parsed = self::looseJsonDecode($m[1]);
             if (is_array($parsed)) {
                 $out['summary'] = (string) ($parsed['summary'] ?? '');
                 foreach (($parsed['issues'] ?? []) as $iss) {
@@ -1229,6 +1229,52 @@ CODE,
         $variable = "BRIEF: {$brief}\nDIREÇÃO DE DESIGN: {$direction}\nTEMA ACTUAL (resumo): {$themeJson}";
 
         return [$stable, $variable];
+    }
+
+    /**
+     * Descodifica um bloco JSON vindo da IA de forma tolerante. Tenta o decode
+     * normal; se falhar (causa comum: CSS/JS/HTML multi-linha com newlines
+     * literais dentro de strings, que invalidam o JSON), repara escapando os
+     * caracteres de controlo dentro das strings e tenta de novo.
+     */
+    private static function looseJsonDecode(string $json): mixed
+    {
+        $json   = trim($json);
+        $parsed = json_decode($json, true);
+        if (is_array($parsed)) {
+            return $parsed;
+        }
+        return json_decode(self::repairJsonString($json), true);
+    }
+
+    /**
+     * Escapa newlines/tabs/CR literais que apareçam DENTRO de strings JSON
+     * (mantém intacto tudo o que está fora de strings). Percorre byte a byte e
+     * acompanha o estado "dentro de string" — seguro para UTF-8 (bytes de
+     * continuação >= 0x80 nunca colidem com os caracteres ASCII testados).
+     */
+    private static function repairJsonString(string $s): string
+    {
+        $out = '';
+        $inString = false;
+        $escaped  = false;
+        $len = strlen($s);
+        for ($i = 0; $i < $len; $i++) {
+            $ch = $s[$i];
+            if ($inString) {
+                if ($escaped)        { $out .= $ch; $escaped = false; continue; }
+                if ($ch === '\\')    { $out .= $ch; $escaped = true;  continue; }
+                if ($ch === '"')     { $out .= $ch; $inString = false; continue; }
+                if ($ch === "\n")    { $out .= '\\n'; continue; }
+                if ($ch === "\r")    { $out .= '\\r'; continue; }
+                if ($ch === "\t")    { $out .= '\\t'; continue; }
+                $out .= $ch;
+            } else {
+                if ($ch === '"') { $inString = true; }
+                $out .= $ch;
+            }
+        }
+        return $out;
     }
 
     /**

@@ -225,6 +225,24 @@ try {
     fail('runThemeAgent (null) lançou excepção', $e->getMessage());
 }
 
+// CSS multi-linha com NEWLINES LITERAIS dentro da string JSON (o caso que
+// partia o passo Código nas construções). O parser tolerante deve recuperar.
+$brokenBlock = "```json_updates\n"
+    . "{\n"
+    . "  \"custom_css\": \"/* AeroSpace */\nbody { color: var(--color-text); }\n.btn { transition: all .2s; }\",\n"
+    . "  \"custom_js\": \"document.title='AeroSpace';\"\n"
+    . "}\n"
+    . "```";
+fake_ai("Gerei o CSS premium.\n" . $brokenBlock);
+try {
+    $resCss = AIEngine::runThemeAgent('code', 'b', 'd', '{}', [], '');
+    assert_true(is_array($resCss['updates']), 'Parser tolerante: CSS multi-linha (newlines literais) ainda decodifica');
+    assert_true(str_contains($resCss['updates']['custom_css'] ?? '', 'body {'), 'custom_css recuperado apesar do JSON inválido');
+    assert_true(str_contains($resCss['updates']['custom_js'] ?? '', 'AeroSpace'), 'custom_js também recuperado');
+} catch (\Throwable $e) {
+    fail('runThemeAgent (CSS multi-linha) lançou excepção', $e->getMessage());
+}
+
 // ────────────────────────────────────────────────────────────────
 //  5. AIEngine::verifyTheme — mock + filtragem
 // ────────────────────────────────────────────────────────────────
