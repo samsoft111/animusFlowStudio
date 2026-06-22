@@ -17,8 +17,8 @@ Route::middleware('guest')->group(function () {
 
 Route::post('/logout', [LoginController::class, 'logout'])->name('logout')->middleware('auth');
 
-/* ── Public — theme preview (no auth required) ── */
-Route::get('/preview/theme/{uuid}', [ThemeController::class, 'preview'])->name('themes.preview');
+/* ── Theme preview (auth required: o preview compila Blade das secções server-side) ── */
+Route::get('/preview/theme/{uuid}', [ThemeController::class, 'preview'])->name('themes.preview')->middleware('auth');
 
 /* ── Authenticated routes ── */
 Route::middleware('auth')->group(function () {

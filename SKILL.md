@@ -39,7 +39,7 @@ description: >
 | `resources/js/Pages/Recipes/Index.vue` | Lista de receitas com stats e toggle |
 | `resources/js/Pages/Recipes/Form.vue` | Formulário de criação/edição de receitas |
 | `resources/js/Pages/Recipes/Analytics.vue` | Dashboard de analytics de receitas |
-| `resources/views/preview/theme.blade.php` | Iframe de preview + Modo Edição overlay |
+| `resources/views/preview/theme.blade.php` | Preview (auth): Tailwind + custom_css/js + `Blade::render` das secções + Modo Edição |
 | `routes/web.php` | Todas as rotas do Studio |
 | `tests/` | Scripts de teste manuais (php tests/xxx.php) |
 
@@ -65,6 +65,20 @@ private const LAYOUT_MAP = [
 - `menu_layout: 'normal'` → barra horizontal clássica
 - Em Blade CMS usar **sempre** `$layout['menu_layout']` — **nunca** `$theme->layout_config['menu_layout']`
 - Ver documentação completa em `references/theme-development.md` Secção 10
+
+### Preview de tema no Studio — pipeline de rendering
+`resources/views/preview/theme.blade.php` (rota `themes.preview`, **`->middleware('auth')`**) reflecte o tema real:
+- **Tailwind Play CDN** + `tailwind.config` que mapeia `font-heading`/`font-body` → `var(--font-*)`. Permite as classes utilitárias usadas pelos temas (`py-24`, `bg-[#070C18]`, `md:grid-cols-2`, valores arbitrários `[#...]`).
+- **`custom_css`** injectado em `<style id="af-theme-custom-css">` (a seguir aos estilos default, para os poder sobrepor).
+- **`custom_js`** injectado em `<script id="af-theme-custom-js">` no fim do `<body>` (depois do editor de tokens).
+- **Secções compiladas via `Blade::render($html, ['theme' => $theme], deleteCachedView: true)`** (com try/catch) — `@if`/`@foreach`/`{{ }}` são resolvidos. As secções **são Blade** (o export grava cada uma como `sections/{tipo}.blade.php`). Erro de compilação → fallback gracioso (comentário `<!-- Blade render error -->` + HTML cru, sem rebentar a página).
+- ⚠️ **A rota é auth-only precisamente porque compila Blade armazenado server-side** — torná-la pública seria RCE. `StudioTheme` não tem `user_id` (Studio mono-utilizador), por isso exigir login é o controlo suficiente; **nunca** reverter para rota pública.
+- Secções com default no preview: `hero`, `features`, `testimonials`, `pricing`, `cta`. Qualquer outra chave (`about`, `stats`, `footer`, `ai_*`, …) é renderizada no `@foreach` final, pela ordem de inserção no JSON; chaves `ai_*` vazias têm mockups de fallback.
+
+### Convenções do bloco `json_updates` de um tema
+- HTML/CSS/JS dentro dos valores de string: **escapar sempre as aspas como `\"`**. Aspas cruas (`class="..."`) quebram o JSON — mesmo com o parser tolerante a string fica truncada no 1.º `"`. Ao gerar secções novas, produzir os valores com `json_encode`/`json.dumps` (escape garantido).
+- Chaves do bloco: `label`, `description`, `version`, `status` (`draft` → só promover depois de validar no preview), `colors.{light,dark}`, `fonts`, `layout_config`, `capabilities`, `sections`, `custom_css`, `custom_js`.
+- HUD com `hud_bg_type:"video"`: o `<video>` do screensaver não tem `poster` — dar **fallback CSS** no `.screensaver-container` (gradiente animado, ex.: `@keyframes` de nebulosa) para degradar quando o `.mp4`/imagem faltar. Os assets referenciados (`/videos/...`, `/images/...`) têm de existir no destino.
 
 ---
 

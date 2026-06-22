@@ -63,7 +63,25 @@
             ],
         ];
 
-        $sections = $theme->sections ?? [];
+        // As secções são templates Blade (o export grava-as como {tipo}.blade.php).
+        // Compilamos cada uma para que @if/@foreach/{{ }} sejam resolvidos no preview,
+        // reflectindo o tema real. Rota protegida por auth (ver routes/web.php).
+        $sections = collect($theme->sections ?? [])
+            ->map(function ($html) use ($theme) {
+                if (!is_string($html) || trim($html) === '') {
+                    return $html;
+                }
+                try {
+                    return \Illuminate\Support\Facades\Blade::render(
+                        $html,
+                        ['theme' => $theme],
+                        deleteCachedView: true
+                    );
+                } catch (\Throwable $e) {
+                    return '<!-- Blade render error: ' . e($e->getMessage()) . " -->\n" . $html;
+                }
+            })
+            ->all();
     @endphp
 
     @if($googleUrl)
@@ -71,6 +89,21 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="{{ $googleUrl }}" rel="stylesheet">
     @endif
+
+    {{-- Tailwind (Play CDN) — para que as classes utilitárias dos temas (py-24, bg-[#070C18], md:grid-cols-2, …) funcionem no preview --}}
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        heading: ['var(--font-heading)', 'system-ui', 'sans-serif'],
+                        body:    ['var(--font-body)', 'system-ui', 'sans-serif'],
+                    },
+                },
+            },
+        };
+    </script>
 
     <style>
         :root {
@@ -356,6 +389,13 @@
         }
         .af-font-input:focus { outline: 1px solid #cba6f7; }
     </style>
+
+    {{-- CSS personalizado do tema (injetado depois dos estilos default para poder sobrepô-los) --}}
+    @if(!empty($theme->custom_css))
+    <style id="af-theme-custom-css">
+{!! $theme->custom_css !!}
+    </style>
+    @endif
 </head>
 <body>
     <div class="preview-banner">
@@ -956,5 +996,12 @@
         }
     })();
     </script>
+
+    {{-- JS personalizado do tema (interações: preloader, malha 3D, efeitos sonoros, comandos de voz, …) --}}
+    @if(!empty($theme->custom_js))
+    <script id="af-theme-custom-js">
+{!! $theme->custom_js !!}
+    </script>
+    @endif
 </body>
 </html>
