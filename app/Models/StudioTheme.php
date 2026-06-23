@@ -100,6 +100,9 @@ class StudioTheme extends Model
             'back_to_top'          => true,
             'menu_layout'          => 'circular',
             'normal_menu_position' => 'horizontal-right',
+            'gallery_layout'       => '3d-carousel',
+            'gallery_auto_rotate'  => true,
+            'gallery_tilt_enabled' => true,
         ];
     }
 
