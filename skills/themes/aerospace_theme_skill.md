@@ -86,12 +86,6 @@ Aplica exatamente o seguinte bloco de atualizações JSON no final da tua respos
                 "label": "Galeria",
                 "target": "_self",
                 "children": []
-            },
-            {
-                "url": "/contactos",
-                "label": "Contactos",
-                "target": "_self",
-                "children": []
             }
         ],
         "hud_bg_type": "video",
