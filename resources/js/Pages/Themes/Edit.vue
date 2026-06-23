@@ -367,6 +367,25 @@
           </div>
         </section-card>
 
+        <!-- Widgets interativos (cockpit) -->
+        <section-card title="🛰️ Widgets interativos">
+          <p class="field-hint mb-4">Controlos dos widgets flutuantes de cockpit (aplicam-se a temas que os usem, como o AeroSpace).</p>
+          <div class="grid grid-cols-2 gap-6">
+            <div>
+              <toggle-field v-model="form.layout_config.telemetry_enabled" label="Mostrar Telemetria Live" />
+              <p class="field-hint mt-1.5">Painel flutuante de monitorização (só leitura). Desligado por defeito — liga para o mostrar no site.</p>
+            </div>
+            <div>
+              <label class="field-label">Canal de Apoio — modo</label>
+              <select v-model="form.layout_config.chat_popup_mode" class="field-input">
+                <option value="ai">IA (chat conversacional)</option>
+                <option value="form">Formulário (nome, email, mensagem)</option>
+              </select>
+              <p class="field-hint"><em>IA</em>: chat com assistente. <em>Formulário</em>: captura de contacto/lead. Controla também o widget de suporte ativo via "Mostrar Canal de Apoio".</p>
+            </div>
+          </div>
+        </section-card>
+
         <btn-save @click="save" :saving="saving" />
       </div>
 
@@ -2240,6 +2259,9 @@ const form = reactive({
   variants:   JSON.parse(JSON.stringify(props.theme?.variants ?? [])),
   _demoApplied: false, // flag local — não enviada ao servidor
   layout_config: {
+    // preserva quaisquer chaves específicas do tema (hud_bg_*, chat_*, etc.)
+    // para que um Save pelo editor não as apague (update() substitui o JSON inteiro)
+    ...defaultLayout,
     header_type:      defaultLayout.header_type      ?? 'glass',
     header_sticky:    defaultLayout.header_sticky    ?? true,
     header_cta_text:  defaultLayout.header_cta_text  ?? '',
@@ -2254,6 +2276,8 @@ const form = reactive({
     show_dark_toggle: defaultLayout.show_dark_toggle ?? true,
     back_to_top:      defaultLayout.back_to_top      ?? true,
     menu_layout:      defaultLayout.menu_layout      ?? 'circular',
+    telemetry_enabled: defaultLayout.telemetry_enabled ?? false,
+    chat_popup_mode:   defaultLayout.chat_popup_mode   ?? 'form',
   },
   capabilities: {
     video_bg:        defaultCaps.video_bg        ?? false,
