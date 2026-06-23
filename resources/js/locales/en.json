@@ -52,6 +52,8 @@
     "published": "Published",
     "recent_themes": "Recent themes",
     "recent_plugins": "Recent plugins",
+    "preview_theme": "Preview theme",
+    "edit_theme": "Edit theme",
     "no_themes": "No themes yet",
     "no_plugins": "No plugins yet",
     "create_theme": "Create first theme",

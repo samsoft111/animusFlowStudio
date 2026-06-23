@@ -63,15 +63,23 @@
           <h2 class="font-semibold text-foreground">{{ t('dashboard.recent_themes') }}</h2>
         </div>
         <div v-if="recentThemes.length" class="space-y-2">
-          <Link v-for="th in recentThemes" :key="th.uuid" :href="`/themes/${th.uuid}/edit`"
-            class="flex items-center justify-between p-3 hover:bg-muted rounded-xl transition-colors group cursor-pointer">
-            <div>
-              <p class="text-sm font-medium text-foreground group-hover:text-primary transition-colors">{{ th.label }}</p>
-              <p class="text-xs text-muted-foreground">{{ th.name }}</p>
+          <div v-for="th in recentThemes" :key="th.uuid"
+            class="flex items-center justify-between gap-3 p-3 hover:bg-muted rounded-xl transition-colors group">
+            <Link :href="`/themes/${th.uuid}/edit`" :title="t('dashboard.edit_theme')"
+              class="min-w-0 flex-1 cursor-pointer">
+              <p class="text-sm font-medium text-foreground group-hover:text-primary transition-colors truncate">{{ th.label }}</p>
+              <p class="text-xs text-muted-foreground truncate">{{ th.name }}</p>
+            </Link>
+            <div class="flex items-center gap-2 shrink-0">
+              <a :href="`/preview/theme/${th.uuid}`" target="_blank" rel="noopener"
+                :title="t('dashboard.preview_theme')" :aria-label="t('dashboard.preview_theme')"
+                class="inline-flex items-center justify-center w-8 h-8 rounded-lg text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors">
+                <EyeIcon class="w-4 h-4" />
+              </a>
+              <span class="px-2 py-0.5 rounded-full text-[11px] font-semibold transition-colors"
+                :class="statusClass(th.status)">{{ t('themes.status.' + th.status) }}</span>
             </div>
-            <span class="px-2 py-0.5 rounded-full text-[11px] font-semibold transition-colors"
-              :class="statusClass(th.status)">{{ t('themes.status.' + th.status) }}</span>
-          </Link>
+          </div>
         </div>
         <p v-else class="text-sm text-muted-foreground py-4 text-center">{{ t('dashboard.no_themes') }}</p>
       </div>
@@ -103,7 +111,7 @@ import { Link } from '@inertiajs/vue3';
 import { useI18n } from 'vue-i18n';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import StatCard from '@/Components/StatCard.vue';
-import { PaletteIcon, PuzzleIcon, ArrowRightIcon } from 'lucide-vue-next';
+import { PaletteIcon, PuzzleIcon, ArrowRightIcon, EyeIcon } from 'lucide-vue-next';
 
 const { t } = useI18n();
 
