@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" width="1600" height="900" role="img" aria-label="AeroSpace slide 2 — monitorização orbital">
+  <defs>
+    <radialGradient id="s2bg" cx="70%" cy="40%" r="100%">
+      <stop offset="0%" stop-color="#10204a"/><stop offset="60%" stop-color="#060e24"/><stop offset="100%" stop-color="#030712"/>
+    </radialGradient>
+    <linearGradient id="s2p" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#34D399"/><stop offset="100%" stop-color="#0b3a55"/></linearGradient>
+  </defs>
+  <rect width="1600" height="900" fill="url(#s2bg)"/>
+  <g fill="#fff">
+    <circle cx="140" cy="100" r="1.5" opacity="0.7"/><circle cx="560" cy="160" r="1" opacity="0.5"/>
+    <circle cx="1300" cy="90" r="1.4" opacity="0.7"/><circle cx="980" cy="250" r="1.1" opacity="0.5"/>
+    <circle cx="260" cy="420" r="1.2" opacity="0.6"/><circle cx="1480" cy="380" r="1" opacity="0.5"/>
+  </g>
+  <circle cx="560" cy="500" r="220" fill="url(#s2p)"/>
+  <circle cx="560" cy="500" r="220" fill="none" stroke="#34D399" stroke-opacity="0.4" stroke-width="2"/>
+  <!-- satelite em orbita -->
+  <ellipse cx="560" cy="500" rx="360" ry="120" fill="none" stroke="#22D3EE" stroke-opacity="0.5" stroke-width="2" transform="rotate(-22 560 500)"/>
+  <g transform="translate(900 380) rotate(-22)" stroke="#22D3EE" stroke-width="3" fill="#0b1838">
+    <rect x="-26" y="-14" width="52" height="28" rx="5"/>
+    <rect x="-78" y="-10" width="44" height="20" fill="#3B82F6" fill-opacity="0.5"/>
+    <rect x="34" y="-10" width="44" height="20" fill="#3B82F6" fill-opacity="0.5"/>
+  </g>
+  <!-- pulsos de sonar -->
+  <g fill="none" stroke="#22D3EE" stroke-width="2">
+    <circle cx="1250" cy="640" r="40" stroke-opacity="0.6"/><circle cx="1250" cy="640" r="90" stroke-opacity="0.35"/><circle cx="1250" cy="640" r="150" stroke-opacity="0.15"/>
+  </g>
+  <text x="80" y="820" font-family="Outfit, Inter, sans-serif" font-size="34" font-weight="700" fill="#F9FAFB">Monitorização orbital em tempo real</text>
+</svg>

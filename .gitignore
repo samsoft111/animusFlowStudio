@@ -26,3 +26,7 @@ Thumbs.db
 # Documentos de planeamento (não são assets web — manter fora do public/ e do git)
 /public/**/*Blueprint*.pdf
 /public/**/*blueprint*.pdf
+
+# Ficheiros de scratch/debug (não pertencem ao repo)
+/scratch
+*.bak_*

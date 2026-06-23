@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" width="1600" height="900" role="img" aria-label="AeroSpace slide 1 — frota de drones">
+  <defs>
+    <radialGradient id="s1bg" cx="50%" cy="0%" r="120%">
+      <stop offset="0%" stop-color="#0c2150"/><stop offset="60%" stop-color="#050d22"/><stop offset="100%" stop-color="#030712"/>
+    </radialGradient>
+  </defs>
+  <rect width="1600" height="900" fill="url(#s1bg)"/>
+  <g fill="#fff">
+    <circle cx="180" cy="120" r="1.4" opacity="0.7"/><circle cx="700" cy="80" r="1" opacity="0.5"/>
+    <circle cx="1240" cy="140" r="1.6" opacity="0.8"/><circle cx="1450" cy="260" r="1" opacity="0.5"/>
+    <circle cx="420" cy="240" r="1.2" opacity="0.6"/><circle cx="1020" cy="200" r="1.3" opacity="0.6"/>
+  </g>
+  <g stroke="#22D3EE" stroke-opacity="0.5" stroke-width="3" fill="#0b1838">
+    <g transform="translate(800 420)"><rect x="-50" y="-18" width="100" height="36" rx="9"/><line x1="-50" y1="0" x2="-120" y2="-30"/><line x1="50" y1="0" x2="120" y2="-30"/><circle cx="-120" cy="-30" r="12" fill="#030712"/><circle cx="120" cy="-30" r="12" fill="#030712"/></g>
+    <g transform="translate(480 300) scale(0.7)"><rect x="-50" y="-18" width="100" height="36" rx="9"/><line x1="-50" y1="0" x2="-120" y2="-30"/><line x1="50" y1="0" x2="120" y2="-30"/><circle cx="-120" cy="-30" r="12" fill="#030712"/><circle cx="120" cy="-30" r="12" fill="#030712"/></g>
+    <g transform="translate(1120 320) scale(0.7)"><rect x="-50" y="-18" width="100" height="36" rx="9"/><line x1="-50" y1="0" x2="-120" y2="-30"/><line x1="50" y1="0" x2="120" y2="-30"/><circle cx="-120" cy="-30" r="12" fill="#030712"/><circle cx="120" cy="-30" r="12" fill="#030712"/></g>
+    <g transform="translate(650 560) scale(0.5)"><rect x="-50" y="-18" width="100" height="36" rx="9"/><line x1="-50" y1="0" x2="-120" y2="-30"/><line x1="50" y1="0" x2="120" y2="-30"/><circle cx="-120" cy="-30" r="12" fill="#030712"/><circle cx="120" cy="-30" r="12" fill="#030712"/></g>
+    <g transform="translate(980 580) scale(0.5)"><rect x="-50" y="-18" width="100" height="36" rx="9"/><line x1="-50" y1="0" x2="-120" y2="-30"/><line x1="50" y1="0" x2="120" y2="-30"/><circle cx="-120" cy="-30" r="12" fill="#030712"/><circle cx="120" cy="-30" r="12" fill="#030712"/></g>
+  </g>
+  <g stroke="#3B82F6" stroke-opacity="0.18" stroke-width="1"><path d="M0 720 H1600"/><path d="M0 780 H1600"/><path d="M0 845 H1600"/></g>
+  <text x="80" y="820" font-family="Outfit, Inter, sans-serif" font-size="34" font-weight="700" fill="#F9FAFB">Frota de carga autónoma</text>
+</svg>

@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" width="1600" height="900" role="img" aria-label="AeroSpace slide 3 — transporte vertical">
+  <defs>
+    <radialGradient id="s3bg" cx="30%" cy="20%" r="120%">
+      <stop offset="0%" stop-color="#0d1c44"/><stop offset="60%" stop-color="#050c20"/><stop offset="100%" stop-color="#030712"/>
+    </radialGradient>
+    <linearGradient id="beam" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#22D3EE" stop-opacity="0.5"/><stop offset="100%" stop-color="#22D3EE" stop-opacity="0"/></linearGradient>
+  </defs>
+  <rect width="1600" height="900" fill="url(#s3bg)"/>
+  <g fill="#fff">
+    <circle cx="220" cy="120" r="1.4" opacity="0.7"/><circle cx="760" cy="90" r="1" opacity="0.5"/>
+    <circle cx="1180" cy="160" r="1.5" opacity="0.7"/><circle cx="1420" cy="280" r="1" opacity="0.5"/>
+    <circle cx="520" cy="300" r="1.1" opacity="0.5"/><circle cx="1040" cy="240" r="1.2" opacity="0.6"/>
+  </g>
+  <!-- feixe de transporte vertical -->
+  <polygon points="760,120 840,120 920,820 680,820" fill="url(#beam)"/>
+  <!-- contentores a subir -->
+  <g stroke="#3B82F6" stroke-width="3" fill="#0b2a55">
+    <rect x="730" y="640" width="140" height="80" rx="8"/>
+    <rect x="745" y="470" width="110" height="64" rx="7" fill="#0b1838" stroke="#22D3EE"/>
+    <rect x="760" y="320" width="80" height="48" rx="6" fill="#0b1838" stroke="#22D3EE"/>
+  </g>
+  <!-- plataforma -->
+  <rect x="600" y="800" width="400" height="20" rx="6" fill="#22D3EE" fill-opacity="0.4"/>
+  <g stroke="#3B82F6" stroke-opacity="0.18" stroke-width="1"><path d="M0 820 H1600"/><path d="M0 860 H1600"/></g>
+  <text x="80" y="820" font-family="Outfit, Inter, sans-serif" font-size="34" font-weight="700" fill="#F9FAFB">Transporte vertical de mercadorias</text>
+</svg>
