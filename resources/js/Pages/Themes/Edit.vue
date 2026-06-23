@@ -386,6 +386,23 @@
           </div>
         </section-card>
 
+        <!-- Espaçamento da barra de menu -->
+        <section-card title="📏 Espaçamento da barra de menu">
+          <p class="field-hint mb-4">Ajusta o espaço acima e abaixo da barra de menu (páginas internas).</p>
+          <div class="grid grid-cols-2 gap-6">
+            <div>
+              <label class="field-label">Espaço acima <span class="text-muted-foreground font-normal">— {{ form.layout_config.menu_space_top }}px</span></label>
+              <input type="range" min="0" max="160" step="4" v-model.number="form.layout_config.menu_space_top" class="w-full accent-primary" />
+              <p class="field-hint mt-1.5">Distância entre o topo e a barra de menu.</p>
+            </div>
+            <div>
+              <label class="field-label">Espaço abaixo <span class="text-muted-foreground font-normal">— {{ form.layout_config.menu_space_bottom }}px</span></label>
+              <input type="range" min="0" max="160" step="4" v-model.number="form.layout_config.menu_space_bottom" class="w-full accent-primary" />
+              <p class="field-hint mt-1.5">Distância entre a barra de menu e o conteúdo.</p>
+            </div>
+          </div>
+        </section-card>
+
         <btn-save @click="save" :saving="saving" />
       </div>
 
@@ -2278,6 +2295,8 @@ const form = reactive({
     menu_layout:      defaultLayout.menu_layout      ?? 'circular',
     telemetry_enabled: defaultLayout.telemetry_enabled ?? false,
     chat_popup_mode:   defaultLayout.chat_popup_mode   ?? 'form',
+    menu_space_top:    defaultLayout.menu_space_top    ?? 24,
+    menu_space_bottom: defaultLayout.menu_space_bottom ?? 24,
   },
   capabilities: {
     video_bg:        defaultCaps.video_bg        ?? false,
