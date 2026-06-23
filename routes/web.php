@@ -19,6 +19,12 @@ Route::post('/logout', [LoginController::class, 'logout'])->name('logout')->midd
 
 /* ── Theme preview (auth required: o preview compila Blade das secções server-side) ── */
 Route::get('/preview/theme/{uuid}', [ThemeController::class, 'preview'])->name('themes.preview')->middleware('auth');
+Route::get('/sobre', [ThemeController::class, 'previewPage'])->name('themes.preview.sobre')->middleware('auth');
+Route::get('/servicos', [ThemeController::class, 'previewPage'])->name('themes.preview.servicos')->middleware('auth');
+Route::get('/galeria', [ThemeController::class, 'previewPage'])->name('themes.preview.galeria')->middleware('auth');
+Route::get('/contactos', [ThemeController::class, 'previewPage'])->name('themes.preview.contactos')->middleware('auth');
+Route::get('/preview-home', [ThemeController::class, 'previewPage'])->name('themes.preview.home')->middleware('auth');
+
 
 /* ── Authenticated routes ── */
 Route::middleware('auth')->group(function () {

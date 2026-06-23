@@ -831,9 +831,26 @@ class ThemeController extends Controller
     public function preview(string $uuid)
     {
         $theme = StudioTheme::where('uuid', $uuid)->firstOrFail();
+        session(['preview_theme_uuid' => $uuid]);
 
         return view('preview.theme', compact('theme'));
     }
+
+    public function previewPage(Request $request)
+    {
+        $uuid = session('preview_theme_uuid');
+        if (!$uuid) {
+            $theme = StudioTheme::where('name', 'aero-space')->first();
+            if ($theme) {
+                $uuid = $theme->uuid;
+            } else {
+                return redirect()->route('dashboard');
+            }
+        }
+        $theme = StudioTheme::where('uuid', $uuid)->firstOrFail();
+        return view('preview.theme', compact('theme'));
+    }
+
 
     // ──────────────────────────────────────────────
     //  Install directly in a local CMS instance

@@ -23,6 +23,29 @@
                     $families
                 )) . '&display=swap';
         }
+        // Determine current page based on the request path
+        $currentPath = request()->path();
+        $currentPage = 'home';
+        if (str_contains($currentPath, 'sobre')) {
+            $currentPage = 'sobre';
+        } elseif (str_contains($currentPath, 'servicos')) {
+            $currentPage = 'servicos';
+        } elseif (str_contains($currentPath, 'galeria')) {
+            $currentPage = 'galeria';
+        } elseif (str_contains($currentPath, 'contactos')) {
+            $currentPage = 'contactos';
+        }
+
+        // Page section maps
+        $pageSectionsMap = [
+            'home'      => ['hero', 'stats', 'features', 'testimonials', 'cta'],
+            'sobre'     => ['hero', 'text', 'stats', 'features', 'team', 'cta'],
+            'servicos'  => ['hero', 'features', 'stats', 'steps', 'cta'],
+            'galeria'   => ['hero', 'gallery', 'cta'],
+            'contactos' => ['hero', 'features', 'contact', 'map']
+        ];
+
+        $allowedSections = $pageSectionsMap[$currentPage] ?? ['hero', 'stats', 'features', 'testimonials', 'cta'];
 
         // Sample data for each section
         $sampleData = [
@@ -74,7 +97,10 @@
                 try {
                     return \Illuminate\Support\Facades\Blade::render(
                         $html,
-                        ['theme' => $theme],
+                        [
+                            'theme' => $theme,
+                            'nav_links' => $theme->layout_config['nav_links'] ?? []
+                        ],
                         deleteCachedView: true
                     );
                 } catch (\Throwable $e) {
@@ -407,101 +433,157 @@
     <div class="preview-content">
 
         {{-- Hero --}}
-        @if(isset($sections['hero']))
-            <div class="ai-section">{!! $sections['hero'] !!}</div>
-        @else
-            <section class="default-hero">
-                <div class="container">
-                    <h1>{{ $sampleData['hero']['heading'] }}</h1>
-                    <p>{{ $sampleData['hero']['subtext'] }}</p>
-                    <a href="{{ $sampleData['hero']['cta_url'] }}">{{ $sampleData['hero']['cta_text'] }}</a>
-                </div>
-            </section>
+        @if(in_array('hero', $allowedSections))
+            @if(isset($sections['hero']))
+                <div class="ai-section">{!! $sections['hero'] !!}</div>
+            @else
+                <section class="default-hero">
+                    <div class="container">
+                        <h1>{{ $sampleData['hero']['heading'] }}</h1>
+                        <p>{{ $sampleData['hero']['subtext'] }}</p>
+                        <a href="{{ $sampleData['hero']['cta_url'] }}">{{ $sampleData['hero']['cta_text'] }}</a>
+                    </div>
+                </section>
+            @endif
         @endif
 
         {{-- Features --}}
-        @if(isset($sections['features']))
-            <div class="ai-section">{!! $sections['features'] !!}</div>
-        @else
-            <section class="default-features">
-                <div class="container">
-                    <h2>{{ $sampleData['features']['heading'] }}</h2>
-                    <div class="features-grid">
-                        @foreach($sampleData['features']['items'] as $item)
-                            <div class="feature-card">
-                                <div class="icon">{{ $item['icon'] }}</div>
-                                <h3>{{ $item['title'] }}</h3>
-                                <p>{{ $item['text'] }}</p>
-                            </div>
-                        @endforeach
+        @if(in_array('features', $allowedSections))
+            @if(isset($sections['features']))
+                <div class="ai-section">{!! $sections['features'] !!}</div>
+            @else
+                <section class="default-features">
+                    <div class="container">
+                        <h2>{{ $sampleData['features']['heading'] }}</h2>
+                        <div class="features-grid">
+                            @foreach($sampleData['features']['items'] as $item)
+                                <div class="feature-card">
+                                    <div class="icon">{{ $item['icon'] }}</div>
+                                    <h3>{{ $item['title'] }}</h3>
+                                    <p>{{ $item['text'] }}</p>
+                                </div>
+                            @endforeach
+                        </div>
                     </div>
-                </div>
-            </section>
+                </section>
+            @endif
         @endif
 
         {{-- Testimonials --}}
-        @if(isset($sections['testimonials']))
-            <div class="ai-section">{!! $sections['testimonials'] !!}</div>
-        @else
-            <section class="default-testimonials">
-                <div class="container">
-                    <h2>{{ $sampleData['testimonials']['heading'] }}</h2>
-                    <div class="testimonials-grid">
-                        @foreach($sampleData['testimonials']['items'] as $item)
-                            <div class="testimonial-card">
-                                <blockquote>"{{ $item['quote'] }}"</blockquote>
-                                <cite>
-                                    <strong>{{ $item['author'] }}</strong>
-                                    {{ $item['role'] }}
-                                </cite>
-                            </div>
-                        @endforeach
+        @if(in_array('testimonials', $allowedSections))
+            @if(isset($sections['testimonials']))
+                <div class="ai-section">{!! $sections['testimonials'] !!}</div>
+            @else
+                <section class="default-testimonials">
+                    <div class="container">
+                        <h2>{{ $sampleData['testimonials']['heading'] }}</h2>
+                        <div class="testimonials-grid">
+                            @foreach($sampleData['testimonials']['items'] as $item)
+                                <div class="testimonial-card">
+                                    <blockquote>"{{ $item['quote'] }}"</blockquote>
+                                    <cite>
+                                        <strong>{{ $item['author'] }}</strong>
+                                        {{ $item['role'] }}
+                                    </cite>
+                                </div>
+                            @endforeach
+                        </div>
                     </div>
-                </div>
-            </section>
+                </section>
+            @endif
         @endif
 
         {{-- Pricing --}}
-        @if(isset($sections['pricing']))
-            <div class="ai-section">{!! $sections['pricing'] !!}</div>
-        @else
-            <section class="default-pricing">
-                <div class="container">
-                    <h2>{{ $sampleData['pricing']['heading'] }}</h2>
-                    <div class="pricing-grid">
-                        @foreach($sampleData['pricing']['items'] as $item)
-                            <div class="pricing-card">
-                                <h3>{{ $item['label'] }}</h3>
-                                <div class="price">{{ $item['price'] }}</div>
-                                <ul>
-                                    @foreach($item['features'] as $feature)
-                                        <li>{{ $feature }}</li>
-                                    @endforeach
-                                </ul>
-                                <a href="#">Get started</a>
-                            </div>
-                        @endforeach
+        @if(in_array('pricing', $allowedSections))
+            @if(isset($sections['pricing']))
+                <div class="ai-section">{!! $sections['pricing'] !!}</div>
+            @else
+                <section class="default-pricing">
+                    <div class="container">
+                        <h2>{{ $sampleData['pricing']['heading'] }}</h2>
+                        <div class="pricing-grid">
+                            @foreach($sampleData['pricing']['items'] as $item)
+                                <div class="pricing-card">
+                                    <h3>{{ $item['label'] }}</h3>
+                                    <div class="price">{{ $item['price'] }}</div>
+                                    <ul>
+                                        @foreach($item['features'] as $feature)
+                                            <li>{{ $feature }}</li>
+                                        @endforeach
+                                    </ul>
+                                    <a href="#">Get started</a>
+                                </div>
+                            @endforeach
+                        </div>
                     </div>
-                </div>
-            </section>
+                </section>
+            @endif
         @endif
 
         {{-- CTA --}}
-        @if(isset($sections['cta']))
-            <div class="ai-section">{!! $sections['cta'] !!}</div>
-        @else
-            <section class="default-cta">
-                <div class="container">
-                    <h2>{{ $sampleData['cta']['heading'] }}</h2>
-                    <p>{{ $sampleData['cta']['subtext'] }}</p>
-                    <a href="{{ $sampleData['cta']['cta_url'] }}">{{ $sampleData['cta']['cta_text'] }}</a>
-                </div>
-            </section>
+        @if(in_array('cta', $allowedSections))
+            @if(isset($sections['cta']))
+                <div class="ai-section">{!! $sections['cta'] !!}</div>
+            @else
+                <section class="default-cta">
+                    <div class="container">
+                        <h2>{{ $sampleData['cta']['heading'] }}</h2>
+                        <p>{{ $sampleData['cta']['subtext'] }}</p>
+                        <a href="{{ $sampleData['cta']['cta_url'] }}">{{ $sampleData['cta']['cta_text'] }}</a>
+                    </div>
+                </section>
+            @endif
+        @endif
+
+        {{-- About --}}
+        @if(in_array('about', $allowedSections) && isset($sections['about']))
+            <div class="ai-section">{!! $sections['about'] !!}</div>
+        @endif
+
+        {{-- Stats --}}
+        @if(in_array('stats', $allowedSections) && isset($sections['stats']))
+            <div class="ai-section">{!! $sections['stats'] !!}</div>
+        @endif
+
+        {{-- Text --}}
+        @if(in_array('text', $allowedSections) && isset($sections['text']))
+            <div class="ai-section">{!! $sections['text'] !!}</div>
+        @endif
+
+        {{-- Team --}}
+        @if(in_array('team', $allowedSections) && isset($sections['team']))
+            <div class="ai-section">{!! $sections['team'] !!}</div>
+        @endif
+
+        {{-- Steps --}}
+        @if(in_array('steps', $allowedSections) && isset($sections['steps']))
+            <div class="ai-section">{!! $sections['steps'] !!}</div>
+        @endif
+
+        {{-- Gallery --}}
+        @if(in_array('gallery', $allowedSections) && isset($sections['gallery']))
+            <div class="ai-section">{!! $sections['gallery'] !!}</div>
+        @endif
+
+        {{-- Contact --}}
+        @if(in_array('contact', $allowedSections) && isset($sections['contact']))
+            <div class="ai-section">{!! $sections['contact'] !!}</div>
+        @endif
+
+        {{-- Map --}}
+        @if(in_array('map', $allowedSections) && isset($sections['map']))
+            <div class="ai-section">{!! $sections['map'] !!}</div>
+        @endif
+
+        {{-- Footer --}}
+        @if(isset($sections['footer']))
+            <div class="ai-section">{!! $sections['footer'] !!}</div>
         @endif
 
         {{-- Any extra AI-generated sections --}}
         @foreach($sections as $type => $html)
-            @if(!in_array($type, ['hero', 'features', 'testimonials', 'pricing', 'cta']))
+            @if(!in_array($type, ['hero', 'features', 'testimonials', 'pricing', 'cta', 'text', 'team', 'steps', 'gallery', 'contact', 'map', 'about', 'stats', 'footer']))
+
                 <div class="ai-section">
                     @if(empty($html))
                         @if($type === 'ai_chatbox')
@@ -1003,5 +1085,22 @@
 {!! $theme->custom_js !!}
     </script>
     @endif
+    {{-- Interceptar cliques em links no preview para evitar sair do preview ao clicar na Home --}}
+    <script>
+    document.addEventListener('click', function(e) {
+        const link = e.target.closest('a');
+        if (link && link.href) {
+            try {
+                const url = new URL(link.href);
+                if (url.origin === window.location.origin) {
+                    if (url.pathname === '/') {
+                        e.preventDefault();
+                        window.location.href = '/preview-home';
+                    }
+                }
+            } catch(err) {}
+        }
+    }, true);
+    </script>
 </body>
 </html>
