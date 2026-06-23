@@ -54,16 +54,23 @@ private const LAYOUT_MAP = [
     'header_sticky'    => 'layout_header_sticky',     // bool → '1'/'0'
     'header_cta_text'  => 'layout_header_cta_text',  // string
     'header_cta_url'   => 'layout_header_cta_url',   // string
-    'footer_copyright' => 'layout_footer_copyright', // string
-    'menu_layout'      => 'layout_menu_layout',       // circular / normal (In9vador)
-    'back_to_top'      => null,                       // via capabilities
+    'footer_copyright'     => 'layout_footer_copyright', // string
+    'menu_layout'          => 'layout_menu_layout',       // circular / normal
+    'normal_menu_position' => 'layout_normal_menu_position', // horizontal-right / horizontal-left / vertical-left / vertical-center / vertical-right
+    'back_to_top'          => null,                       // via capabilities
 ];
 ```
 
-### Padrão de tema avançado — In9vador
-- `menu_layout: 'circular'` → menu orbital com HOME no centro
-- `menu_layout: 'normal'` → barra horizontal clássica
-- Em Blade CMS usar **sempre** `$layout['menu_layout']` — **nunca** `$theme->layout_config['menu_layout']`
+### Padrão de tema avançado — AeroSpace
+- `menu_layout: 'circular'` → menu orbital com HOME no centro (cockpit circular)
+- `menu_layout: 'normal'` → barra normal clássica (horizontal ou vertical)
+- `normal_menu_position` → 5 posições/orientações para o menu normal:
+  - `horizontal-right` (barra horizontal, links alinhados à direita)
+  - `horizontal-left` (barra horizontal, links alinhados à esquerda)
+  - `vertical-left` (sidebar vertical fixa à esquerda)
+  - `vertical-right` (sidebar vertical fixa à direita)
+  - `vertical-center` (sidebar vertical flutuante centrada no ecrã)
+- Em Blade CMS usar **sempre** `$layout['menu_layout']` e `$layout['normal_menu_position']` — **nunca** `$theme->layout_config[...]`
 - Ver documentação completa em `references/theme-development.md` Secção 10
 
 ### Preview de tema no Studio — pipeline de rendering

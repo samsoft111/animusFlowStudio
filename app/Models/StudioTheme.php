@@ -96,8 +96,10 @@ class StudioTheme extends Model
             'layout_type'      => 'full-width',  // full-width|boxed|sidebar-left|sidebar-right
             'max_width'        => '1120',
             'spacing'          => 'normal',      // compact|normal|spacious
-            'show_dark_toggle' => true,
-            'back_to_top'      => true,
+            'show_dark_toggle'     => true,
+            'back_to_top'          => true,
+            'menu_layout'          => 'circular',
+            'normal_menu_position' => 'horizontal-right',
         ];
     }
 

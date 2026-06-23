@@ -1282,17 +1282,18 @@ PROMPT;
      * Used by exportPrompt() to build af_settings payload.
      */
     private const LAYOUT_MAP = [
-        'header_type'      => 'layout_header_bg',
-        'nav_position'     => 'layout_header_menu',
-        'max_width'        => 'layout_content_max_width',
-        'spacing'          => 'layout_content_spacing',
-        'show_dark_toggle' => 'layout_header_show_toggle',
-        'header_sticky'    => 'layout_header_sticky',
-        'header_cta_text'  => 'layout_header_cta_text',
-        'header_cta_url'   => 'layout_header_cta_url',
-        'footer_copyright' => 'layout_footer_copyright',
-        'menu_layout'      => 'layout_menu_layout',
-        'back_to_top'      => null,   // handled separately via capabilities
+        'header_type'          => 'layout_header_bg',
+        'nav_position'         => 'layout_header_menu',
+        'max_width'            => 'layout_content_max_width',
+        'spacing'              => 'layout_content_spacing',
+        'show_dark_toggle'     => 'layout_header_show_toggle',
+        'header_sticky'        => 'layout_header_sticky',
+        'header_cta_text'      => 'layout_header_cta_text',
+        'header_cta_url'       => 'layout_header_cta_url',
+        'footer_copyright'     => 'layout_footer_copyright',
+        'menu_layout'          => 'layout_menu_layout',
+        'normal_menu_position' => 'layout_normal_menu_position',
+        'back_to_top'          => null,   // handled separately via capabilities
     ];
 
     private function mapStudioColors(array $colors): array
