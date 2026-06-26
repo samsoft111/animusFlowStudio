@@ -71,7 +71,7 @@ Variáveis CSS emitidas pelo hero e o que controlam:
 | `menu_space_top` (px) | `--circular-menu-y` (= valor−84 px) | altura do menu circular (24 → −60px) | 24 |
 | `navbar_color` + `navbar_opacity` (%) | `--navbar-bg` (rgba via `@php`) | cor/opacidade da barra `.normal-navbar` | #1E293B / 72 |
 | `hero_bg_color` | `--hero-bg` | cor do fundo (visível com screensaver esmaecido / modo `none`) | #0F1A2E |
-| `hero_internal_padding_top` (px) | `--subpage-padding-top` | início do conteúdo no modo `hero-internal` — **dormente** enquanto o screensaver cobrir as subpáginas | 50 |
+| `hero_internal_padding_top` (px) | `--subpage-padding-top` | início do conteúdo nas subpáginas (modo `hero-internal`) | 50 |
 | `info_card_{title,subtitle,hint}_text` | — (Blade `{{ }}`) | textos do card | AEROSPACE / Operações & Logística Aérea / Passe o cursor… |
 | `info_card_{title,subtitle,hint}_size` (px) | `style` inline | tamanho de cada texto | 20 / 12 / 10 |
 | `info_card_{title,subtitle,hint}_color` | `style` inline | cor de cada texto | #FFFFFF / #06B6D4 / #94A3B8 |
@@ -114,9 +114,10 @@ mostra o mapa (`contact_map_iframe`) e newsletter conforme as flags.
 
 ### Home vs Subpáginas
 - **Home** (`/`): hero com o screensaver interativo a cobrir o ecrã.
-- **Subpáginas** (`/sobre`, `/servicos`, `/galeria`, `/contactos`): **também** com o screensaver a cobrir
-  (mesmo hero `aerospace-hero group` que a home); as secções da página renderizam por baixo. O menu
-  efetivo passa a `normal` nas subpáginas (`$effectiveMenuLayout`, derivado de `$isHome`).
+- **Subpáginas** (`/sobre`, `/servicos`, `/galeria`, `/contactos`): hero **compacto**
+  (`hero-internal hero-revealed`) — conteúdo logo abaixo do menu, com o screensaver **visível como
+  fundo** (`.hero-internal .screensaver-container` opacity 0.55, sem blur). Espaço do topo configurável
+  via `hero_internal_padding_top` → `--subpage-padding-top`. Menu efetivo = `normal` (via `$isHome`).
 - **Preview por página** (`resources/views/preview/theme.blade.php`): deriva `$currentPage` do caminho,
   filtra secções por `$pageSectionsMap`, e injeta o conteúdo de
   `skills/themes/aerospace-demo-content.json` (fallback `sampleData`). Rotas `/sobre … /contactos` →
