@@ -906,6 +906,14 @@ $css = str_replace(
     '.aerospace-hero.hero-internal .hero-content { min-height: auto; justify-content: flex-start; padding-top: var(--subpage-padding-top, 50px); padding-bottom: 3rem; }',
     $css
 );
+
+// Aumentar o espaço abaixo da barra de menus nas subpáginas (+50px → 74px total)
+$css = str_replace(
+    '.aerospace-hero.hero-internal .hero-text-area { margin-top: var(--menu-space-bottom, 24px); }',
+    '.aerospace-hero.hero-internal .hero-text-area { margin-top: 74px; }',
+    $css
+);
+
 $theme->custom_css = $css;
 
 $theme->save();
