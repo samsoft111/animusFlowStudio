@@ -8,8 +8,9 @@ Construção, botão ✦) para gerar um tema completo.
 | Ficheiro | Tipo | Usar quando |
 |----------|------|-------------|
 | `theme-creation-skill.md` | **Genérico** | Ponto de partida para qualquer tema novo — contrato `json_updates`, design system, secções, schema `theme_settings`, convenções. |
-| `aerospace_theme_skill.md` | **Exemplo concreto** | Receita completa do tema AeroSpace (referência de um tema premium real). |
-| `aerospace-demo-content.json` | **Dados (não-skill)** | Conteúdo demo do AeroSpace (5 páginas + nav) para **importar no AnimusFlow** quando o tema for instalado. O preview do tema já mostra este conteúdo via as `sections`. |
+| `aerospace_theme_skill.md` | **Skill carregável** | Brief de design do tema AeroSpace (~4 KB, cabe no limite de 60 000 do upload ✦). É o que **carregas no Chat IA** para *gerar* o tema. |
+| `aerospace_theme_snapshot.md` | **Snapshot / referência** | Tema AeroSpace já resolvido (HTML/CSS/JS literal, espelho da BD, ~120 KB). **Referência** e fonte do `build_aerospace_skill.php --write`; **não** carregar no ✦ (excede o limite). |
+| `aerospace-demo-content.json` | **Dados (não-skill)** | Conteúdo demo do AeroSpace (páginas + nav) para **importar no AnimusFlow** quando o tema for instalado. O preview do tema já mostra as 13 `sections` do próprio tema. |
 
 ## Como usar
 1. Abre/edita um tema no Studio → aba **Chat IA**.

@@ -5,7 +5,7 @@
 Instruções para o **Chat IA do editor de tema** gerar um tema completo, profissional e coerente.
 Aplica as alterações como um bloco ` ```json_updates ``` ` no fim da resposta.
 
-> Exemplo concreto de um tema premium real: `aerospace_theme_skill.md` (nesta pasta).
+> Exemplo carregável (brief): `aerospace_theme_skill.md`. Snapshot resolvido (referência): `aerospace_theme_snapshot.md` (ambos nesta pasta).
 > Guia técnico completo (Sistema A): `animusFlow/skills/animusflow/references/theme-development.md`.
 
 ---

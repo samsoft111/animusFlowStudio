@@ -28,7 +28,7 @@
 
 | Pasta | Gera | Skills |
 |-------|------|--------|
-| `themes/` | Temas (via editor de tema → Modo Construção) | `theme-creation-skill.md` (genérico) · `aerospace_theme_skill.md` (exemplo concreto) |
+| `themes/` | Temas (via editor de tema → Modo Construção) | `theme-creation-skill.md` (genérico) · `aerospace_theme_skill.md` (brief carregável) · `aerospace_theme_snapshot.md` (referência resolvida) |
 | `plugins/` | Plugins (via editor de plugin → Modo Construção) | `plugin-creation-skill.md` (genérico) |
 
 > A geração de **site** vive no repo do CMS: `animusFlow/skills/sites/` (porque o site cria-se no

@@ -3,10 +3,12 @@
 declare(strict_types=1);
 
 /**
- * Regenerador / verificador do skill do tema AeroSpace — AnimusFlowStudio
+ * Regenerador / verificador do SNAPSHOT do tema AeroSpace — AnimusFlowStudio
  *
- * O skill `aerospace_theme_skill.md` é um SNAPSHOT do tema guardado na BD
- * (StudioTheme label = "AeroSpace"). Este script mantém os dois em sincronia
+ * `aerospace_theme_snapshot.md` é um SNAPSHOT literal do tema guardado na BD
+ * (StudioTheme label = "AeroSpace") — o `json_updates` já resolvido, espelho da
+ * BD. (O skill carregável `aerospace_theme_skill.md` é um brief de design e NÃO
+ * é sincronizado por este script.) Este script mantém snapshot e BD em sincronia
  * SEM nunca usar preg_replace sobre o conteúdo JSON (ver memória
  * "skill-json-preg-replace-gotcha": \ e $ escapam mal). Em vez disso:
  *
@@ -30,7 +32,7 @@ $app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap();
 
 use App\Models\StudioTheme;
 
-const SKILL_PATH  = __DIR__ . '/aerospace_theme_skill.md';
+const SKILL_PATH  = __DIR__ . '/aerospace_theme_snapshot.md';
 const THEME_LABEL = 'AeroSpace';
 const FENCE_OPEN  = '```json_updates';
 

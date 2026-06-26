@@ -7,8 +7,8 @@ declare(strict_types=1);
  *
  * Protege o tema demo "AeroSpace" (StudioTheme) contra regressões nos próximos
  * fixes: garante que continua publicado, com as 13 secções, CSS/JS substanciais,
- * design system completo, media referenciada existente em disco, e que o skill
- * `skills/themes/aerospace_theme_skill.md` se mantém em sincronia com a BD.
+ * design system completo, media referenciada existente em disco, e que o snapshot
+ * `skills/themes/aerospace_theme_snapshot.md` se mantém em sincronia com a BD.
  *
  * Execução: php tests/aerospace_theme_test.php
  *
@@ -118,15 +118,15 @@ foreach ($mediaRefs as $ref) {
 
 // ═══════════════════════════════════════════════════
 echo PHP_EOL . '═══════════════════════════════════════════════════' . PHP_EOL;
-echo 'BLOCO 6: Skill .md em sincronia com a BD' . PHP_EOL;
+echo 'BLOCO 6: Snapshot .md em sincronia com a BD' . PHP_EOL;
 echo '═══════════════════════════════════════════════════' . PHP_EOL;
 
-$skillPath = __DIR__ . '/../skills/themes/aerospace_theme_skill.md';
-check('Skill aerospace_theme_skill.md existe', is_file($skillPath));
+$skillPath = __DIR__ . '/../skills/themes/aerospace_theme_snapshot.md';
+check('Snapshot aerospace_theme_snapshot.md existe', is_file($skillPath));
 
 if (is_file($skillPath)) {
     $raw = file_get_contents($skillPath);
-    check('Skill tem bloco ```json_updates', str_contains($raw, '```json_updates'));
+    check('Snapshot tem bloco ```json_updates', str_contains($raw, '```json_updates'));
 
     $start = strpos($raw, '```json_updates');
     $body  = $start !== false ? substr($raw, $start + strlen('```json_updates')) : '';
@@ -136,14 +136,14 @@ if (is_file($skillPath)) {
 
     check('Bloco json_updates é JSON válido', is_array($data));
     if (is_array($data)) {
-        check('Skill label == BD label', ($data['label'] ?? null) === $theme->label);
-        check('Skill version == BD version', ($data['version'] ?? null) === $theme->version);
-        check('Skill status == BD status', ($data['status'] ?? null) === $theme->status);
+        check('Snapshot label == BD label', ($data['label'] ?? null) === $theme->label);
+        check('Snapshot version == BD version', ($data['version'] ?? null) === $theme->version);
+        check('Snapshot status == BD status', ($data['status'] ?? null) === $theme->status);
         $skillSecs = array_keys($data['sections'] ?? []);
         sort($skillSecs);
         $dbSecs = array_keys($sections);
         sort($dbSecs);
-        check('Skill e BD têm as mesmas secções', $skillSecs === $dbSecs);
+        check('Snapshot e BD têm as mesmas secções', $skillSecs === $dbSecs);
     }
 }
 
