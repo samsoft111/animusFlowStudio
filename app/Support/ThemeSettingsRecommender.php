@@ -80,6 +80,23 @@ final class ThemeSettingsRecommender
             self::f(['key' => 'hud_bg_gallery', 'label' => 'Galeria de fundo', 'type' => 'media_gallery', 'group' => 'fundo', 'default' => $lc['hud_bg_gallery'] ?? [], 'hint' => 'Slideshow quando o tipo = Galeria.']),
             self::f(['key' => 'hud_overlay_enabled', 'label' => 'Overlay escuro por cima', 'type' => 'toggle', 'group' => 'fundo', 'default' => $lc['hud_overlay_enabled'] ?? true]),
 
+            // Brilho do vídeo (estado inicial, antes do hover)
+            self::f(['key' => 'screensaver_scrim', 'label' => 'Escurecimento do vídeo (%)', 'type' => 'range', 'group' => 'fundo', 'default' => $lc['screensaver_scrim'] ?? 10, 'min' => 0, 'max' => 100, 'step' => 5, 'hint' => 'Mais alto = vídeo mais escuro antes do hover.']),
+            self::f(['key' => 'screensaver_blur', 'label' => 'Desfoque do vídeo (px)', 'type' => 'range', 'group' => 'fundo', 'default' => $lc['screensaver_blur'] ?? 0, 'min' => 0, 'max' => 8, 'step' => 1]),
+            self::f(['key' => 'screensaver_video_opacity', 'label' => 'Opacidade do vídeo (%)', 'type' => 'range', 'group' => 'fundo', 'default' => $lc['screensaver_video_opacity'] ?? 100, 'min' => 0, 'max' => 100, 'step' => 5]),
+
+            // Card da mensagem do screensaver
+            self::f(['key' => 'info_card_top', 'label' => 'Card — posição vertical (%)', 'type' => 'range', 'group' => 'fundo', 'default' => $lc['info_card_top'] ?? 36, 'min' => 0, 'max' => 100, 'step' => 1, 'hint' => '50 = centro do ecrã; menor = mais acima.']),
+            self::f(['key' => 'info_card_title_text', 'label' => 'Card — título (texto)', 'type' => 'text', 'group' => 'fundo', 'default' => $lc['info_card_title_text'] ?? 'AEROSPACE']),
+            self::f(['key' => 'info_card_title_size', 'label' => 'Card — título (tamanho px)', 'type' => 'range', 'group' => 'fundo', 'default' => $lc['info_card_title_size'] ?? 20, 'min' => 10, 'max' => 48, 'step' => 1]),
+            self::f(['key' => 'info_card_title_color', 'label' => 'Card — título (cor)', 'type' => 'color', 'group' => 'fundo', 'default' => $lc['info_card_title_color'] ?? '#FFFFFF']),
+            self::f(['key' => 'info_card_subtitle_text', 'label' => 'Card — subtítulo (texto)', 'type' => 'text', 'group' => 'fundo', 'default' => $lc['info_card_subtitle_text'] ?? 'Operações & Logística Aérea']),
+            self::f(['key' => 'info_card_subtitle_size', 'label' => 'Card — subtítulo (tamanho px)', 'type' => 'range', 'group' => 'fundo', 'default' => $lc['info_card_subtitle_size'] ?? 12, 'min' => 8, 'max' => 32, 'step' => 1]),
+            self::f(['key' => 'info_card_subtitle_color', 'label' => 'Card — subtítulo (cor)', 'type' => 'color', 'group' => 'fundo', 'default' => $lc['info_card_subtitle_color'] ?? '#06B6D4']),
+            self::f(['key' => 'info_card_hint_text', 'label' => 'Card — dica (texto)', 'type' => 'text', 'group' => 'fundo', 'default' => $lc['info_card_hint_text'] ?? 'Passe o cursor ou toque no ecrã para aceder']),
+            self::f(['key' => 'info_card_hint_size', 'label' => 'Card — dica (tamanho px)', 'type' => 'range', 'group' => 'fundo', 'default' => $lc['info_card_hint_size'] ?? 10, 'min' => 8, 'max' => 24, 'step' => 1]),
+            self::f(['key' => 'info_card_hint_color', 'label' => 'Card — dica (cor)', 'type' => 'color', 'group' => 'fundo', 'default' => $lc['info_card_hint_color'] ?? '#94A3B8']),
+
             // ── Layout & Conteúdo ────────────────────────────────────────
             self::f(['key' => 'layout_type', 'label' => 'Tipo de layout', 'type' => 'select', 'group' => 'layout', 'default' => $lc['layout_type'] ?? 'full-width',
                 'options' => ['full-width' => 'Largura total', 'boxed' => 'Em caixa', 'sidebar-left' => 'Sidebar esquerda', 'sidebar-right' => 'Sidebar direita']]),
