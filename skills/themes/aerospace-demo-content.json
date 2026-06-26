@@ -1,0 +1,671 @@
+{
+    "_note": "Conteúdo demo do tema AeroSpace (extraído do seeder antes de reverter). Importar no AnimusFlow quando o tema for instalado.",
+    "nav_links": [
+        {
+            "label": "Home",
+            "url": "/",
+            "target": "_self"
+        },
+        {
+            "label": "Sobre",
+            "url": "/sobre",
+            "target": "_self"
+        },
+        {
+            "label": "Serviços",
+            "url": "/servicos",
+            "target": "_self"
+        },
+        {
+            "label": "Galeria",
+            "url": "/galeria",
+            "target": "_self"
+        },
+        {
+            "label": "Contactos",
+            "url": "/contactos",
+            "target": "_self"
+        }
+    ],
+    "pages": [
+        {
+            "slug": "home",
+            "title": "Home",
+            "blocks": [
+                {
+                    "type": "hero",
+                    "sort_order": 0,
+                    "content": {
+                        "eyebrow": "Logística Aeroespacial do Futuro",
+                        "heading": "Soberania nos Céus, Precisão na Terra",
+                        "subheading": "A AeroSpace opera a primeira plataforma integrada de transporte vertical autónomo, cartografia orbital e vigilância aérea em Angola — com frota de drones de última geração e IA embarcada.",
+                        "cta_text": "Explorar Serviços",
+                        "cta_url": "/servicos",
+                        "cta2_text": "Falar com a Equipa",
+                        "cta2_url": "/contactos"
+                    },
+                    "settings": {
+                        "style": "dark"
+                    }
+                },
+                {
+                    "type": "stats",
+                    "sort_order": 1,
+                    "content": {
+                        "heading": "",
+                        "items": [
+                            {
+                                "icon": "🛸",
+                                "value": "1.240+",
+                                "label": "Missões Concluídas"
+                            },
+                            {
+                                "icon": "📡",
+                                "value": "99,98%",
+                                "label": "Disponibilidade Operacional"
+                            },
+                            {
+                                "icon": "🚁",
+                                "value": "48",
+                                "label": "Drones na Frota"
+                            },
+                            {
+                                "icon": "🌍",
+                                "value": "24/7",
+                                "label": "Monitorização Orbital"
+                            }
+                        ]
+                    },
+                    "settings": {
+                        "style": "dark"
+                    }
+                },
+                {
+                    "type": "features",
+                    "sort_order": 2,
+                    "content": {
+                        "heading": "Tecnologia que Voa Além do Convencional",
+                        "items": [
+                            {
+                                "icon": "🛡️",
+                                "title": "Autonomia Total",
+                                "text": "Frotas de aeronaves não tripuladas controladas por IA para missões de transporte de carga pesada sem intervenção humana."
+                            },
+                            {
+                                "icon": "🛰️",
+                                "title": "Cartografia Orbital",
+                                "text": "Mapeamento geoespacial de alta resolução por satélite e sensores multiespectrais para decisões críticas de engenharia."
+                            },
+                            {
+                                "icon": "⚙️",
+                                "title": "Propulsão Eléctrica VTOL",
+                                "text": "Descolagem e aterragem vertical em qualquer terreno com propulsores eléctricos de alta eficiência energética."
+                            },
+                            {
+                                "icon": "🔐",
+                                "title": "Segurança Certificada",
+                                "text": "Corredores aéreos certificados, geofencing dinâmico e redundância de rota com telemetria contínua em tempo real."
+                            }
+                        ]
+                    },
+                    "settings": {
+                        "background": "muted"
+                    }
+                },
+                {
+                    "type": "testimonials",
+                    "sort_order": 3,
+                    "content": {
+                        "heading": "O Que Dizem os Nossos Parceiros",
+                        "items": [
+                            {
+                                "quote": "A AeroSpace transformou completamente a nossa operação de distribuição logística. Os drones chegam antes do prazo, com precisão surpreendente.",
+                                "name": "Carlos Fernandes",
+                                "role": "Director de Operações",
+                                "company": "Grupo Logística Angola",
+                                "rating": 5
+                            },
+                            {
+                                "quote": "A cartografia orbital que nos forneceram reduziu em 40% o tempo de planeamento das nossas obras de infraestrutura. Tecnologia sem igual.",
+                                "name": "Eng.ª Sofia Mendes",
+                                "role": "Engenheira Chefe",
+                                "company": "Construções INGA",
+                                "rating": 5
+                            },
+                            {
+                                "quote": "Monitorização em tempo real, equipa disponível 24/7 e tecnologia de ponta. Recomendo a AeroSpace sem reservas.",
+                                "name": "Maj. António Silva",
+                                "role": "Coordenador de Segurança",
+                                "company": "Ministério do Interior",
+                                "rating": 5
+                            }
+                        ]
+                    },
+                    "settings": {
+                        "background": "muted"
+                    }
+                },
+                {
+                    "type": "cta",
+                    "sort_order": 4,
+                    "content": {
+                        "heading": "Pronto para Lançar a Missão?",
+                        "text": "Solicite uma demonstração operacional ou o estudo de viabilidade da sua operação. A nossa equipa responde em menos de 24 horas.",
+                        "button_text": "Iniciar Contacto",
+                        "button_url": "/contactos"
+                    },
+                    "settings": {
+                        "style": "dark"
+                    }
+                }
+            ]
+        },
+        {
+            "slug": "sobre",
+            "title": "Sobre",
+            "blocks": [
+                {
+                    "type": "hero",
+                    "sort_order": 0,
+                    "content": {
+                        "eyebrow": "Quem Somos",
+                        "heading": "Missão Orbital, Impacto Terrestre",
+                        "subheading": "A AeroSpace é uma empresa angolana de tecnologia aeroespacial fundada em 2019, com foco em logística autónoma de carga, transporte vertical e monitorização orbital de alta resolução.",
+                        "cta_text": "Ver Serviços",
+                        "cta_url": "/servicos",
+                        "cta2_text": "Falar Connosco",
+                        "cta2_url": "/contactos"
+                    },
+                    "settings": []
+                },
+                {
+                    "type": "text",
+                    "sort_order": 1,
+                    "content": {
+                        "heading": "A Nossa História",
+                        "body": "A AeroSpace nasceu em Luanda em 2019, quando um grupo de engenheiros aeronáuticos e especialistas em inteligência artificial uniram forças com uma missão clara: levar a tecnologia aeroespacial ao serviço do desenvolvimento de Angola e de África. Desde os primeiros protótipos de drones de carga até às actuais frotas autónomas com monitorização orbital em tempo real, percorremos um caminho de inovação constante, sempre com foco na fiabilidade, segurança e impacto social positivo. Hoje, a AeroSpace é parceira estratégica de organizações governamentais, empresas de construção, operadores logísticos e entidades de segurança em toda a região da África Austral."
+                    },
+                    "settings": []
+                },
+                {
+                    "type": "stats",
+                    "sort_order": 2,
+                    "content": {
+                        "heading": "AeroSpace em Números",
+                        "items": [
+                            {
+                                "icon": "📅",
+                                "value": "2019",
+                                "label": "Ano de Fundação"
+                            },
+                            {
+                                "icon": "👥",
+                                "value": "120+",
+                                "label": "Colaboradores"
+                            },
+                            {
+                                "icon": "🌍",
+                                "value": "6",
+                                "label": "Países Operacionais"
+                            },
+                            {
+                                "icon": "🏆",
+                                "value": "14",
+                                "label": "Prémios de Inovação"
+                            }
+                        ]
+                    },
+                    "settings": {
+                        "style": "dark"
+                    }
+                },
+                {
+                    "type": "features",
+                    "sort_order": 3,
+                    "content": {
+                        "heading": "Os Nossos Valores",
+                        "items": [
+                            {
+                                "icon": "💡",
+                                "title": "Inovação Contínua",
+                                "text": "Investimos 20% da receita em I&D para permanecermos na fronteira tecnológica do sector aeroespacial africano."
+                            },
+                            {
+                                "icon": "🤝",
+                                "title": "Parceria Estratégica",
+                                "text": "Construímos relações de longo prazo com os nossos clientes, adaptando soluções às necessidades específicas de cada operação."
+                            },
+                            {
+                                "icon": "🌱",
+                                "title": "Sustentabilidade",
+                                "text": "Toda a nossa frota é 100% eléctrica. Zero emissões directas, com programa de compensação de carbono certificado."
+                            },
+                            {
+                                "icon": "🔬",
+                                "title": "Precisão Técnica",
+                                "text": "Redundância tripla em todos os sistemas críticos. Padrões de segurança superiores às normas internacionais ICAO."
+                            }
+                        ]
+                    },
+                    "settings": {
+                        "background": "muted"
+                    }
+                },
+                {
+                    "type": "team",
+                    "sort_order": 4,
+                    "content": {
+                        "heading": "A Nossa Liderança",
+                        "subtext": "Engenheiros, cientistas e visionários com décadas de experiência aeroespacial e tecnológica.",
+                        "items": [
+                            {
+                                "name": "Dr. Miguel Afonso",
+                                "role": "CEO & Co-Fundador",
+                                "bio": "Doutorado em Engenharia Aeroespacial pelo IST Lisboa. Ex-investigador da ESA. Lidera a visão estratégica da AeroSpace.",
+                                "photo": "",
+                                "linkedin": "#"
+                            },
+                            {
+                                "name": "Eng.ª Beatriz Nkosi",
+                                "role": "CTO & Co-Fundadora",
+                                "bio": "Especialista em sistemas de IA embarcada e autonomia de voo. Mestre em Robótica pela Universidade de Cape Town.",
+                                "photo": "",
+                                "linkedin": "#"
+                            },
+                            {
+                                "name": "Cmdt. João Lopes",
+                                "role": "Director de Operações",
+                                "bio": "20 anos de experiência militar em operações aéreas. Certificado ANAC/CAA. Lidera todas as operações de frota.",
+                                "photo": "",
+                                "linkedin": "#"
+                            },
+                            {
+                                "name": "Dra. Ana Fernandes",
+                                "role": "Directora Comercial",
+                                "bio": "MBA pela Nova SBE. Especialista em parcerias estratégicas em mercados emergentes de África e Médio Oriente.",
+                                "photo": "",
+                                "linkedin": "#"
+                            }
+                        ]
+                    },
+                    "settings": {
+                        "style": "cards"
+                    }
+                },
+                {
+                    "type": "cta",
+                    "sort_order": 5,
+                    "content": {
+                        "heading": "Junte-se à Missão",
+                        "text": "Estamos sempre à procura de talentos excepcionais. Engenheiros, pilotos, cientistas de dados — a sua missão começa aqui.",
+                        "button_text": "Ver Oportunidades",
+                        "button_url": "/contactos"
+                    },
+                    "settings": {
+                        "style": "dark"
+                    }
+                }
+            ]
+        },
+        {
+            "slug": "servicos",
+            "title": "Serviços",
+            "blocks": [
+                {
+                    "type": "hero",
+                    "sort_order": 0,
+                    "content": {
+                        "eyebrow": "O Que Fazemos",
+                        "heading": "Soluções Aeroespaciais de Alta Precisão",
+                        "subheading": "Da logística autónoma à cartografia orbital, desenvolvemos e operamos sistemas aeroespaciais integrados para os sectores mais exigentes da economia.",
+                        "cta_text": "Solicitar Orçamento",
+                        "cta_url": "/contactos",
+                        "cta2_text": ""
+                    },
+                    "settings": []
+                },
+                {
+                    "type": "features",
+                    "sort_order": 1,
+                    "content": {
+                        "heading": "As Nossas Áreas de Actuação",
+                        "items": [
+                            {
+                                "icon": "🛸",
+                                "title": "Transporte Autónomo de Carga",
+                                "text": "Entrega de cargas até 40 kg em rotas de até 150 km com precisão centimétrica. Ideal para zonas remotas, obras e emergências médicas."
+                            },
+                            {
+                                "icon": "🛰️",
+                                "title": "Cartografia & Fotogrametria",
+                                "text": "Levantamentos topográficos, ortofotomapas e modelos 3D do terreno com resolução até 2 cm/pixel para engenharia e construção."
+                            },
+                            {
+                                "icon": "👁️",
+                                "title": "Vigilância & Patrulhamento",
+                                "text": "Monitorização aérea de perímetros, infraestruturas críticas e eventos de grande dimensão com drones de visão térmica e nocturna."
+                            },
+                            {
+                                "icon": "🔬",
+                                "title": "Inspecção Industrial",
+                                "text": "Inspecção de torres de alta tensão, oleodutos, pontes e estruturas de difícil acesso, reduzindo riscos humanos e custos operacionais."
+                            },
+                            {
+                                "icon": "🚑",
+                                "title": "Logística de Emergência",
+                                "text": "Entrega de medicamentos, sangue e equipamentos médicos em zonas de acesso condicionado em tempo crítico."
+                            },
+                            {
+                                "icon": "🌾",
+                                "title": "Agricultura de Precisão",
+                                "text": "Monitorização de culturas, análise multiespectral do solo e aplicação precisa de correctivos agrícolas por drone."
+                            }
+                        ]
+                    },
+                    "settings": {
+                        "background": "muted"
+                    }
+                },
+                {
+                    "type": "stats",
+                    "sort_order": 2,
+                    "content": {
+                        "heading": "Resultados Comprovados",
+                        "items": [
+                            {
+                                "icon": "📦",
+                                "value": "850 ton",
+                                "label": "Carga Transportada"
+                            },
+                            {
+                                "icon": "⏱️",
+                                "value": "< 2h",
+                                "label": "Tempo Médio de Entrega"
+                            },
+                            {
+                                "icon": "🗺️",
+                                "value": "12.000 km²",
+                                "label": "Área Cartografada"
+                            },
+                            {
+                                "icon": "✅",
+                                "value": "99,8%",
+                                "label": "Taxa de Missões Bem-Sucedidas"
+                            }
+                        ]
+                    },
+                    "settings": {
+                        "style": "dark"
+                    }
+                },
+                {
+                    "type": "steps",
+                    "sort_order": 3,
+                    "content": {
+                        "heading": "Como Funciona",
+                        "items": [
+                            {
+                                "number": "01",
+                                "title": "Briefing da Missão",
+                                "text": "Reunião técnica para definir objectivos, rotas, payload e requisitos específicos da operação."
+                            },
+                            {
+                                "number": "02",
+                                "title": "Planeamento & Licenças",
+                                "text": "A nossa equipa trata de toda a burocracia: licenças ANAC, corredores aéreos e planos de contingência."
+                            },
+                            {
+                                "number": "03",
+                                "title": "Execução Autónoma",
+                                "text": "Lançamento da missão com monitorização em tempo real pelo nosso centro de controlo em Luanda."
+                            },
+                            {
+                                "number": "04",
+                                "title": "Relatório Técnico",
+                                "text": "Entrega de relatório completo com telemetria, imagens, métricas e dados de qualidade da missão."
+                            }
+                        ]
+                    },
+                    "settings": []
+                },
+                {
+                    "type": "cta",
+                    "sort_order": 4,
+                    "content": {
+                        "heading": "Pronto para a Sua Missão?",
+                        "text": "Contacte-nos para um estudo de viabilidade gratuito. Analisamos a sua necessidade e apresentamos a solução mais adequada.",
+                        "button_text": "Solicitar Estudo de Viabilidade",
+                        "button_url": "/contactos"
+                    },
+                    "settings": {
+                        "style": "dark"
+                    }
+                }
+            ]
+        },
+        {
+            "slug": "galeria",
+            "title": "Galeria",
+            "blocks": [
+                {
+                    "type": "hero",
+                    "sort_order": 0,
+                    "content": {
+                        "eyebrow": "Arquivo Visual",
+                        "heading": "Missões em Imagens",
+                        "subheading": "Um registo fotográfico das nossas operações, da nossa frota e dos territórios que mapeámos — do interior de Angola ao litoral atlântico.",
+                        "cta_text": "",
+                        "cta2_text": ""
+                    },
+                    "settings": []
+                },
+                {
+                    "type": "gallery",
+                    "sort_order": 1,
+                    "content": {
+                        "heading": "Operações de Transporte Autónomo",
+                        "images": [
+                            {
+                                "src": "https://images.unsplash.com/photo-1473968512647-3e447244af8f?w=800&q=80",
+                                "alt": "Drone de carga em voo",
+                                "caption": "Drone Série AX-7 em missão de transporte de medicamentos — Malanje, 2024"
+                            },
+                            {
+                                "src": "https://images.unsplash.com/photo-1518623489648-a173ef7824f3?w=800&q=80",
+                                "alt": "Descida em zona remota",
+                                "caption": "Aterragem de precisão em zona de floresta densa — Uíge, 2024"
+                            },
+                            {
+                                "src": "https://images.unsplash.com/photo-1601618440254-abf3e87f87e8?w=800&q=80",
+                                "alt": "Frota em hangar",
+                                "caption": "Preparação da frota no Hangar Central — Luanda, 2025"
+                            }
+                        ]
+                    },
+                    "settings": {
+                        "columns": 3
+                    }
+                },
+                {
+                    "type": "gallery",
+                    "sort_order": 2,
+                    "content": {
+                        "heading": "Cartografia & Fotogrametria",
+                        "images": [
+                            {
+                                "src": "https://images.unsplash.com/photo-1446776811953-b23d57bd21aa?w=800&q=80",
+                                "alt": "Vista orbital",
+                                "caption": "Imagem multiespectral de culturas agrícolas — Huambo, 2024"
+                            },
+                            {
+                                "src": "https://images.unsplash.com/photo-1614728894747-a83421e2b9c9?w=800&q=80",
+                                "alt": "Modelo 3D terreno",
+                                "caption": "Modelo digital de elevação — Bacia do Kwanza, 2024"
+                            },
+                            {
+                                "src": "https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=800&q=80",
+                                "alt": "Vista nocturna Terra",
+                                "caption": "Monitorização nocturna de infraestruturas energéticas — Cabinda, 2025"
+                            }
+                        ]
+                    },
+                    "settings": {
+                        "columns": 3
+                    }
+                },
+                {
+                    "type": "gallery",
+                    "sort_order": 3,
+                    "content": {
+                        "heading": "Vigilância & Inspecção Industrial",
+                        "images": [
+                            {
+                                "src": "https://images.unsplash.com/photo-1504711434969-e33886168f5c?w=800&q=80",
+                                "alt": "Patrulhamento aéreo",
+                                "caption": "Patrulhamento do perímetro de infraestrutura petrolífera — Soyo, 2024"
+                            },
+                            {
+                                "src": "https://images.unsplash.com/photo-1559297434-fae8a1916a79?w=800&q=80",
+                                "alt": "Inspecção de torre",
+                                "caption": "Inspecção termográfica de linha de alta tensão — Benguela, 2025"
+                            },
+                            {
+                                "src": "https://images.unsplash.com/photo-1540979388789-6cee28a1cdc9?w=800&q=80",
+                                "alt": "Centro de controlo",
+                                "caption": "Centro de Controlo de Missões — Luanda, operacional 24/7"
+                            }
+                        ]
+                    },
+                    "settings": {
+                        "columns": 3
+                    }
+                },
+                {
+                    "type": "cta",
+                    "sort_order": 4,
+                    "content": {
+                        "heading": "A Sua Missão, Documentada",
+                        "text": "Todas as nossas operações incluem relatório fotográfico e vídeo completo. Solicite uma demonstração.",
+                        "button_text": "Contactar a Equipa",
+                        "button_url": "/contactos"
+                    },
+                    "settings": {
+                        "style": "dark"
+                    }
+                }
+            ]
+        },
+        {
+            "slug": "contactos",
+            "title": "Contactos",
+            "blocks": [
+                {
+                    "type": "hero",
+                    "sort_order": 0,
+                    "content": {
+                        "eyebrow": "Centro de Controlo",
+                        "heading": "Inicie a Sua Missão",
+                        "subheading": "A nossa equipa de especialistas está disponível 24 horas por dia, 7 dias por semana. Respondemos a todas as mensagens em menos de 2 horas em dias úteis.",
+                        "cta_text": "",
+                        "cta2_text": ""
+                    },
+                    "settings": []
+                },
+                {
+                    "type": "features",
+                    "sort_order": 1,
+                    "content": {
+                        "heading": "Canais de Contacto",
+                        "items": [
+                            {
+                                "icon": "📡",
+                                "title": "Canal Operacional",
+                                "text": "ops@aerospace.ao | +244 923 456 789\nDisponível 24/7 para emergências e missões activas."
+                            },
+                            {
+                                "icon": "💼",
+                                "title": "Propostas Comerciais",
+                                "text": "comercial@aerospace.ao | +244 923 456 780\nSegunda a Sexta — 08h00 às 18h00 (WAT)"
+                            },
+                            {
+                                "icon": "📍",
+                                "title": "Sede — Luanda",
+                                "text": "Rua Rainha Ginga, Edifício AeroSpace Tower\nMiramar, Luanda, Angola · LAT -8.8124 · LON 13.2306"
+                            },
+                            {
+                                "icon": "✈️",
+                                "title": "Hangar & Testes",
+                                "text": "Aeroporto Internacional 4 de Fevereiro\nZona Técnica Norte — Hangar AX, Luanda, Angola"
+                            }
+                        ]
+                    },
+                    "settings": {
+                        "background": "muted"
+                    }
+                },
+                {
+                    "type": "contact",
+                    "sort_order": 2,
+                    "content": {
+                        "heading": "Enviar Mensagem",
+                        "subtext": "Descreva a sua necessidade e um especialista da AeroSpace entrará em contacto para detalhar a solução mais adequada.",
+                        "fields": [
+                            {
+                                "name": "nome",
+                                "label": "Nome / Empresa",
+                                "type": "text",
+                                "required": true
+                            },
+                            {
+                                "name": "email",
+                                "label": "E-mail de Contacto",
+                                "type": "email",
+                                "required": true
+                            },
+                            {
+                                "name": "telefone",
+                                "label": "Telefone (opcional)",
+                                "type": "tel",
+                                "required": false
+                            },
+                            {
+                                "name": "servico",
+                                "label": "Serviço de Interesse",
+                                "type": "select",
+                                "required": true,
+                                "options": [
+                                    "Transporte Autónomo de Carga",
+                                    "Cartografia & Fotogrametria",
+                                    "Vigilância & Patrulhamento",
+                                    "Inspecção Industrial",
+                                    "Logística de Emergência",
+                                    "Agricultura de Precisão",
+                                    "Outro"
+                                ]
+                            },
+                            {
+                                "name": "mensagem",
+                                "label": "Descrição da Missão",
+                                "type": "textarea",
+                                "required": true
+                            }
+                        ],
+                        "button_text": "Submeter Pedido de Missão",
+                        "success_message": "Mensagem enviada com sucesso! A nossa equipa responderá em menos de 2 horas."
+                    },
+                    "settings": []
+                },
+                {
+                    "type": "map",
+                    "sort_order": 3,
+                    "content": {
+                        "heading": "Localização da Sede",
+                        "embed_url": "https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d15760.84157778939!2d13.23005872895697!3d-8.813958742512686!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x1a51f3c83786adbf%3A0x6b772c676bb7db4b!2sLuanda!5e0!3m2!1spt-PT!2sao!4v1700000000000!5m2!1spt-PT!2sao",
+                        "address": "Miramar, Luanda, Angola"
+                    },
+                    "settings": []
+                }
+            ]
+        }
+    ]
+}
