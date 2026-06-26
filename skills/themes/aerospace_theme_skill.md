@@ -71,6 +71,7 @@ Variáveis CSS emitidas pelo hero e o que controlam:
 | `menu_space_top` (px) | `--circular-menu-y` (= valor−84 px) | altura do menu circular (24 → −60px) | 24 |
 | `navbar_color` + `navbar_opacity` (%) | `--navbar-bg` (rgba via `@php`) | cor/opacidade da barra `.normal-navbar` | #1E293B / 72 |
 | `hero_bg_color` | `--hero-bg` | cor do fundo (visível com screensaver esmaecido / modo `none`) | #0F1A2E |
+| `hero_internal_padding_top` (px) | `--subpage-padding-top` | início do conteúdo no modo `hero-internal` — **dormente** enquanto o screensaver cobrir as subpáginas | 50 |
 | `info_card_{title,subtitle,hint}_text` | — (Blade `{{ }}`) | textos do card | AEROSPACE / Operações & Logística Aérea / Passe o cursor… |
 | `info_card_{title,subtitle,hint}_size` (px) | `style` inline | tamanho de cada texto | 20 / 12 / 10 |
 | `info_card_{title,subtitle,hint}_color` | `style` inline | cor de cada texto | #FFFFFF / #06B6D4 / #94A3B8 |
@@ -90,7 +91,7 @@ contact_show_map: true · contact_map_iframe: "<embed Google Maps>" · contact_s
 menu_space_top: 24 · menu_space_bottom: 24      // menu_space_top = altura do menu circular
 nav_links: [ Home /, Sobre /sobre, Serviços /servicos, Galeria /galeria, Contactos /contactos ]
 + (configuráveis acima): screensaver_scrim/blur/video_opacity · info_card_top · info_card_*_text/size/color
-  · navbar_color · navbar_opacity · hero_bg_color
+  · navbar_color · navbar_opacity · hero_bg_color · hero_internal_padding_top (subpáginas)
 ```
 
 ## capabilities
@@ -98,15 +99,28 @@ nav_links: [ Home /, Sobre /sobre, Serviços /servicos, Galeria /galeria, Contac
 `video_bg`, `parallax`, `animations`, `lightbox`, `cookie_banner`, `preloader`, `scroll_progress`,
 `back_to_top` → **true**. `mega_menu`, `search` → false.
 
-## sections (Blade)
+## sections (Blade) — dirigidas por conteúdo + por página
 
-Gera as **13** secções, cada uma como HTML/Blade que pode ler `$theme->layout_config[...]`:
+Gera as **13** secções como HTML/Blade. Lêem `$theme->layout_config[...]` e — importante — são
+**dirigidas por conteúdo**: cada secção começa com `@php $c = $content ?? []; … @endphp` e usa
+`{{ $c['heading'] ?? 'fallback' }}` (+ `$settings`), para mostrar o conteúdo real da página no CMS, com
+fallback para texto demo. (12 secções são dinâmicas; o `footer` é global/estático.)
 
 `hero` · `about` · `features` · `stats` · `steps` · `gallery` · `testimonials` · `team` ·
 `contact` · `map` · `cta` · `text` · `footer`
 
 A `gallery` usa o carrossel 3D (`gallery_layout`); o `hero` é o screensaver (acima); o `contact`
 mostra o mapa (`contact_map_iframe`) e newsletter conforme as flags.
+
+### Home vs Subpáginas
+- **Home** (`/`): hero com o screensaver interativo a cobrir o ecrã.
+- **Subpáginas** (`/sobre`, `/servicos`, `/galeria`, `/contactos`): **também** com o screensaver a cobrir
+  (mesmo hero `aerospace-hero group` que a home); as secções da página renderizam por baixo. O menu
+  efetivo passa a `normal` nas subpáginas (`$effectiveMenuLayout`, derivado de `$isHome`).
+- **Preview por página** (`resources/views/preview/theme.blade.php`): deriva `$currentPage` do caminho,
+  filtra secções por `$pageSectionsMap`, e injeta o conteúdo de
+  `skills/themes/aerospace-demo-content.json` (fallback `sampleData`). Rotas `/sobre … /contactos` →
+  `ThemeController::previewPage` (tema via sessão).
 
 ## custom_css / custom_js
 
@@ -122,7 +136,8 @@ perspetiva**, **menu orbital com sonar**, **widgets de cockpit arrastáveis**, *
 *Fundo & HUD*, etc.).
 
 Ao alterar o tema (BD `StudioTheme` "AeroSpace"):
-1. editar a BD (custom_css / sections.hero / layout_config),
+1. editar a BD (custom_css / sections.* / layout_config). Para regenerar as secções dirigidas por
+   conteúdo há o script `skills/themes/make_aerospace_dynamic.php` (reescreve os 12 templates dinâmicos),
 2. se mudou o schema → `php skills/themes/seed_aerospace_settings.php`,
 3. **`php skills/themes/build_aerospace_skill.php --write`** (resync do snapshot),
 4. `php tests/aerospace_theme_test.php` deve ficar **verde**.
