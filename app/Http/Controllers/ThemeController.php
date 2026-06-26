@@ -1069,6 +1069,7 @@ class ThemeController extends Controller
                     'version'     => $theme->version ?? '1.0.0',
                     'author'      => $author,
                     'author_url'  => $authorUrl,
+                    'settings'    => $theme->theme_settings ?? [],   // schema "Definições do Tema"
                     'blocks'      => $this->allBlockTypes(),
                 ],
                 'colors'     => $afColors,   // mapped to --primary, --accent, etc.

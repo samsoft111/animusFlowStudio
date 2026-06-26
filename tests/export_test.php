@@ -80,6 +80,10 @@ $theme->update([
     'custom_js'  => 'console.log("Luxe Store loaded");',
     'sections'   => ['hero' => '<section>Hero HTML</section>'],
     'assets'     => [],
+    'theme_settings' => [
+        ['key' => 'hud_bg_type', 'label' => 'Fundo', 'type' => 'select', 'group' => 'fundo', 'source' => 'layout', 'default' => 'video', 'options' => ['video' => 'Vídeo', 'photo' => 'Foto']],
+        ['key' => '--color-primary', 'label' => 'Primária', 'type' => 'color', 'group' => 'cores', 'source' => 'color_light', 'default' => '#b8860b'],
+    ],
 ]);
 $theme = $theme->fresh();
 
@@ -129,6 +133,8 @@ if ($opened === true) {
         check('theme.json: layout presente',     isset($themeJson['layout']));
         check('theme.json: capabilities presente', isset($themeJson['capabilities']));
         check('theme.json: blocks presente',     isset($themeJson['blocks']) && is_array($themeJson['blocks']));
+        check('theme.json: settings (schema) presente', isset($themeJson['settings']) && is_array($themeJson['settings']));
+        check('theme.json: settings round-trip do schema', ($themeJson['settings'][0]['key'] ?? '') === 'hud_bg_type');
     } else {
         check('theme.json legível dentro do ZIP', false, 'Não encontrado');
     }
