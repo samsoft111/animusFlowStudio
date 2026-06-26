@@ -74,7 +74,7 @@ final class ThemeSettingsRecommender
 
             // ── Fundo & HUD ──────────────────────────────────────────────
             self::f(['key' => 'hud_bg_type', 'label' => 'Tipo de fundo do HUD', 'type' => 'select', 'group' => 'fundo', 'default' => $lc['hud_bg_type'] ?? 'video',
-                'options' => ['video' => 'Vídeo', 'photo' => 'Foto única', 'gallery' => 'Galeria de fotos'], 'hint' => 'Fundo do ecrã inicial (boot / screensaver).']),
+                'options' => ['video' => 'Vídeo', 'photo' => 'Foto única', 'gallery' => 'Galeria de fotos', 'none' => 'Sem vídeo/foto (só gradiente)'], 'hint' => 'Fundo do ecrã inicial (boot / screensaver). Todos os modos têm o mesmo efeito de recuo no hover/foco.']),
             self::f(['key' => 'hud_bg_video', 'label' => 'Vídeo de fundo', 'type' => 'media_video', 'group' => 'fundo', 'default' => $lc['hud_bg_video'] ?? '/videos/aerospace-fundo.mp4', 'hint' => 'Usado quando o tipo = Vídeo.']),
             self::f(['key' => 'hud_bg_single_photo', 'label' => 'Foto de fundo', 'type' => 'media_image', 'group' => 'fundo', 'default' => $lc['hud_bg_single_photo'] ?? '/images/aerospace-hero.svg', 'hint' => 'Usada quando o tipo = Foto única.']),
             self::f(['key' => 'hud_bg_gallery', 'label' => 'Galeria de fundo', 'type' => 'media_gallery', 'group' => 'fundo', 'default' => $lc['hud_bg_gallery'] ?? [], 'hint' => 'Slideshow quando o tipo = Galeria.']),
