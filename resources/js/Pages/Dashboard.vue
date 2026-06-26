@@ -4,8 +4,48 @@
     <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
       <StatCard :label="t('dashboard.themes')"    :value="stats.themes"           icon="palette" href="/themes" />
       <StatCard :label="t('dashboard.plugins')"   :value="stats.plugins"          icon="puzzle" href="/plugins" />
-      <StatCard :label="t('themes.status.published') + ' ' + t('nav.themes')"
-                :value="stats.published_themes"   icon="upload" color="success" href="/themes?status=published" />
+      <!-- Temas publicados — preview directo de QUALQUER tema (sem abrir a edição) -->
+      <div ref="publishedCard" class="relative bg-card border border-border rounded-2xl p-5 transition-all hover:border-success/40 hover:shadow-sm">
+        <Link href="/themes?status=published" class="block group">
+          <p class="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-1.5 group-hover:text-foreground transition-colors">
+            {{ t('themes.status.published') + ' ' + t('nav.themes') }}
+          </p>
+          <p class="text-3xl font-black text-success transition-all duration-300 group-hover:translate-x-0.5">{{ stats.published_themes }}</p>
+        </Link>
+
+        <!-- Botão que abre a lista de todos os temas publicados -->
+        <button v-if="publishedThemes.length" type="button" @click="togglePublished"
+                :title="t('dashboard.preview_theme')" :aria-label="t('dashboard.preview_theme')"
+                :aria-expanded="showPublished"
+                class="absolute top-3.5 right-3.5 inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-semibold text-success bg-success/10 hover:bg-success hover:text-white transition-colors">
+          <EyeIcon class="w-3.5 h-3.5" />
+          <span class="hidden sm:inline">{{ t('dashboard.preview') }}</span>
+          <ChevronDownIcon class="w-3 h-3 transition-transform" :class="showPublished ? 'rotate-180' : ''" />
+        </button>
+
+        <!-- Dropdown: pesquisar + previsualizar qualquer tema publicado -->
+        <div v-if="showPublished"
+             class="absolute z-30 top-12 right-3.5 w-72 max-w-[calc(100vw-2rem)] bg-card border border-border rounded-xl shadow-lg p-2">
+          <div v-if="publishedThemes.length > 6" class="mb-2">
+            <input v-model="publishedFilter" type="text" :placeholder="t('dashboard.search_theme')"
+                   class="w-full px-2.5 py-1.5 text-xs rounded-lg bg-muted border border-border text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary/50" />
+          </div>
+          <div class="max-h-64 overflow-y-auto space-y-0.5">
+            <a v-for="th in filteredPublishedThemes" :key="th.uuid"
+               :href="`/preview/theme/${th.uuid}`" target="_blank" rel="noopener"
+               class="flex items-center justify-between gap-2 px-2.5 py-2 rounded-lg hover:bg-success/10 group/item transition-colors">
+              <span class="min-w-0 flex-1">
+                <span class="block text-sm font-medium text-foreground group-hover/item:text-success transition-colors truncate">{{ th.label }}</span>
+                <span class="block text-[11px] text-muted-foreground truncate">{{ th.name }}</span>
+              </span>
+              <EyeIcon class="w-4 h-4 shrink-0 text-muted-foreground group-hover/item:text-success transition-colors" />
+            </a>
+            <p v-if="!filteredPublishedThemes.length" class="text-xs text-muted-foreground text-center py-3">
+              {{ t('dashboard.no_match') }}
+            </p>
+          </div>
+        </div>
+      </div>
       <StatCard :label="t('themes.status.published') + ' ' + t('nav.plugins')"
                 :value="stats.published_plugins"  icon="upload" color="success" href="/plugins?status=published" />
     </div>
@@ -107,19 +147,48 @@
 </template>
 
 <script setup>
+import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { Link } from '@inertiajs/vue3';
 import { useI18n } from 'vue-i18n';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import StatCard from '@/Components/StatCard.vue';
-import { PaletteIcon, PuzzleIcon, ArrowRightIcon, EyeIcon } from 'lucide-vue-next';
+import { PaletteIcon, PuzzleIcon, ArrowRightIcon, EyeIcon, ChevronDownIcon } from 'lucide-vue-next';
 
 const { t } = useI18n();
 
-defineProps({
-  stats:         { type: Object, default: () => ({}) },
-  recentThemes:  { type: Array,  default: () => [] },
-  recentPlugins: { type: Array,  default: () => [] },
+const props = defineProps({
+  stats:           { type: Object, default: () => ({}) },
+  recentThemes:    { type: Array,  default: () => [] },
+  recentPlugins:   { type: Array,  default: () => [] },
+  publishedThemes: { type: Array,  default: () => [] },
 });
+
+// Dropdown de preview de qualquer tema publicado
+const showPublished = ref(false);
+const publishedFilter = ref('');
+const publishedCard = ref(null);
+
+const filteredPublishedThemes = computed(() => {
+  const q = publishedFilter.value.trim().toLowerCase();
+  if (!q) return props.publishedThemes;
+  return props.publishedThemes.filter(th =>
+    (th.label || '').toLowerCase().includes(q) || (th.name || '').toLowerCase().includes(q));
+});
+
+function togglePublished() {
+  showPublished.value = !showPublished.value;
+  if (!showPublished.value) publishedFilter.value = '';
+}
+
+function onDocClick(e) {
+  if (showPublished.value && publishedCard.value && !publishedCard.value.contains(e.target)) {
+    showPublished.value = false;
+    publishedFilter.value = '';
+  }
+}
+
+onMounted(() => document.addEventListener('click', onDocClick));
+onUnmounted(() => document.removeEventListener('click', onDocClick));
 
 function statusClass(status) {
   return {

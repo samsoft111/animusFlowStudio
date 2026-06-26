@@ -22,6 +22,9 @@ class DashboardController extends Controller
             ],
             'recentThemes'  => StudioTheme::latest()->limit(5)->get(['id', 'uuid', 'name', 'label', 'status', 'created_at']),
             'recentPlugins' => StudioPlugin::latest()->limit(5)->get(['id', 'uuid', 'name', 'label', 'status', 'created_at']),
+            'publishedThemes' => StudioTheme::where('is_published', true)
+                ->orderBy('label')
+                ->get(['uuid', 'label', 'name']),
         ]);
     }
 }
