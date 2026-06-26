@@ -109,15 +109,23 @@
           <h2 class="font-semibold text-foreground">{{ t('dashboard.recent_plugins') }}</h2>
         </div>
         <div v-if="recentPlugins.length" class="space-y-2">
-          <Link v-for="pl in recentPlugins" :key="pl.uuid" :href="`/plugins/${pl.uuid}/edit`"
-            class="flex items-center justify-between p-3 hover:bg-muted rounded-xl transition-colors group cursor-pointer">
-            <div>
-              <p class="text-sm font-medium text-foreground group-hover:text-indigo-500 transition-colors">{{ pl.label }}</p>
-              <p class="text-xs text-muted-foreground">{{ pl.name }}</p>
+          <div v-for="pl in recentPlugins" :key="pl.uuid"
+            class="flex items-center justify-between gap-3 p-3 hover:bg-muted rounded-xl transition-colors group">
+            <Link :href="`/plugins/${pl.uuid}/edit`" :title="t('dashboard.edit_plugin')"
+              class="min-w-0 flex-1 cursor-pointer">
+              <p class="text-sm font-medium text-foreground group-hover:text-indigo-500 transition-colors truncate">{{ pl.label }}</p>
+              <p class="text-xs text-muted-foreground truncate">{{ pl.name }}</p>
+            </Link>
+            <div class="flex items-center gap-2 shrink-0">
+              <a :href="`/plugins/${pl.uuid}/preview-widget`" target="_blank" rel="noopener"
+                :title="t('dashboard.preview_plugin')" :aria-label="t('dashboard.preview_plugin')"
+                class="inline-flex items-center justify-center w-8 h-8 rounded-lg text-muted-foreground hover:text-indigo-500 hover:bg-indigo-500/10 transition-colors">
+                <EyeIcon class="w-4 h-4" />
+              </a>
+              <span class="px-2 py-0.5 rounded-full text-[11px] font-semibold transition-colors"
+                :class="statusClass(pl.status)">{{ t('plugins.status.' + pl.status) }}</span>
             </div>
-            <span class="px-2 py-0.5 rounded-full text-[11px] font-semibold transition-colors"
-              :class="statusClass(pl.status)">{{ t('plugins.status.' + pl.status) }}</span>
-          </Link>
+          </div>
         </div>
         <p v-else class="text-sm text-muted-foreground py-4 text-center">{{ t('dashboard.no_plugins') }}</p>
       </div>
