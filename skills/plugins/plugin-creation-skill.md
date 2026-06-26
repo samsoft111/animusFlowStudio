@@ -1,5 +1,7 @@
 # Skill genérico — Criação de Plugin (AnimusFlowStudio)
 
+> 🏷️ **Sistema B — Geração.** Fluxo: criar tema/plugin no Studio → **instalar no AnimusFlow** → criar site.
+
 Instruções para o **Chat IA do editor de plugin** gerar um plugin completo e instalável no AnimusFlow.
 
 > Guia técnico completo (Sistema A): `animusFlow/skills/animusflow/references/plugin-development.md`.

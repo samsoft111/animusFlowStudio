@@ -1,5 +1,7 @@
 # Skill genérico — Criação de Tema (AnimusFlowStudio)
 
+> 🏷️ **Sistema B — Geração.** Fluxo: criar tema/plugin no Studio → **instalar no AnimusFlow** → criar site.
+
 Instruções para o **Chat IA do editor de tema** gerar um tema completo, profissional e coerente.
 Aplica as alterações como um bloco ` ```json_updates ``` ` no fim da resposta.
 
