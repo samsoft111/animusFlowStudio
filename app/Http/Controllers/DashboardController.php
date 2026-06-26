@@ -25,6 +25,9 @@ class DashboardController extends Controller
             'publishedThemes' => StudioTheme::where('is_published', true)
                 ->orderBy('label')
                 ->get(['uuid', 'label', 'name']),
+            'publishedPlugins' => StudioPlugin::where('is_published', true)
+                ->orderBy('label')
+                ->get(['uuid', 'label', 'name']),
         ]);
     }
 }
