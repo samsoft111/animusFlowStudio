@@ -111,6 +111,7 @@ final class ThemeSettingsRecommender
                 'options' => ['3d-carousel' => 'Carrossel 3D', 'grid' => 'Grelha', 'masonry' => 'Masonry']]),
             self::f(['key' => 'gallery_auto_rotate', 'label' => 'Galeria — rotação automática', 'type' => 'toggle', 'group' => 'layout', 'default' => $lc['gallery_auto_rotate'] ?? true]),
             self::f(['key' => 'gallery_tilt_enabled', 'label' => 'Galeria — efeito de inclinação', 'type' => 'toggle', 'group' => 'layout', 'default' => $lc['gallery_tilt_enabled'] ?? true]),
+            self::f(['key' => 'hero_internal_padding_top', 'label' => 'Subpáginas — Início do conteúdo (px)', 'type' => 'range', 'group' => 'layout', 'default' => $lc['hero_internal_padding_top'] ?? 50, 'min' => 0, 'max' => 160, 'step' => 4, 'hint' => 'Ajusta o espaço no topo do conteúdo nas páginas secundárias (evita sobreposição com o cabeçalho).']),
 
             // ── Rodapé ───────────────────────────────────────────────────
             self::f(['key' => 'footer_type', 'label' => 'Estilo do rodapé', 'type' => 'select', 'group' => 'rodape', 'default' => $lc['footer_type'] ?? 'simple',

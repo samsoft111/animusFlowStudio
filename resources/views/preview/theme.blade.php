@@ -86,20 +86,46 @@
             ],
         ];
 
-        // As secções são templates Blade (o export grava-as como {tipo}.blade.php).
-        // Compilamos cada uma para que @if/@foreach/{{ }} sejam resolvidos no preview,
-        // reflectindo o tema real. Rota protegida por auth (ver routes/web.php).
+        // Carrega o conteúdo demo (ex: tema AeroSpace)
+        $demoData = null;
+        $demoPath = base_path('skills/themes/aerospace-demo-content.json');
+        if (file_exists($demoPath)) {
+            $demoData = json_decode(file_get_contents($demoPath), true);
+        }
+
+        $pageBlocksMap = [];
+        if ($demoData && isset($demoData['pages'])) {
+            foreach ($demoData['pages'] as $page) {
+                if ($page['slug'] === $currentPage) {
+                    foreach ($page['blocks'] ?? [] as $block) {
+                        $pageBlocksMap[$block['type']] = $block;
+                    }
+                    break;
+                }
+            }
+        }
+
+        // Compilamos cada secção para que @if/@foreach/{{ }} sejam resolvidos no preview,
+        // passando o conteúdo/settings específico de cada página
         $sections = collect($theme->sections ?? [])
-            ->map(function ($html) use ($theme) {
+            ->map(function ($html, $type) use ($theme, $pageBlocksMap, $sampleData) {
                 if (!is_string($html) || trim($html) === '') {
                     return $html;
                 }
+                
+                // Vai buscar o bloco da página ou fallback para sampleData
+                $block = $pageBlocksMap[$type] ?? null;
+                $content = $block['content'] ?? ($sampleData[$type] ?? []);
+                $settings = $block['settings'] ?? [];
+
                 try {
                     return \Illuminate\Support\Facades\Blade::render(
                         $html,
                         [
                             'theme' => $theme,
-                            'nav_links' => $theme->layout_config['nav_links'] ?? []
+                            'nav_links' => $theme->layout_config['nav_links'] ?? [],
+                            'content' => $content,
+                            'settings' => $settings
                         ],
                         deleteCachedView: true
                     );
