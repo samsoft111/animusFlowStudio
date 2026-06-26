@@ -35,6 +35,8 @@ class StudioTheme extends Model
         'chat_history',
         // Step journal (schema espelho — estado + histórico + snapshots por passo)
         'step_journal',
+        // Theme settings schema (definições configuráveis pelo criador no AnimusFlow)
+        'theme_settings',
         // Meta
         'status', 'is_published', 'animus_package_uuid',
     ];
@@ -50,6 +52,7 @@ class StudioTheme extends Model
         'variants'      => 'array',
         'chat_history'  => 'array',
         'step_journal'  => 'array',
+        'theme_settings' => 'array',
         'is_published'  => 'boolean',
     ];
 

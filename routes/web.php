@@ -57,6 +57,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/themes/{uuid}/generate-ai',   [ThemeController::class, 'generateAi'])->name('themes.generate-ai');
     Route::post('/themes/{uuid}/publish',       [ThemeController::class, 'publish'])->name('themes.publish');
     Route::post('/themes/{uuid}/install-in-cms', [ThemeController::class, 'installInCms'])->name('themes.install-cms');
+    Route::post('/themes/{uuid}/settings/recommend', [ThemeController::class, 'recommendSettings'])->name('themes.settings.recommend');
     Route::post('/themes/{uuid}/upload-asset',  [ThemeController::class, 'uploadAsset'])->name('themes.upload-asset');
     Route::delete('/themes/{uuid}/asset',       [ThemeController::class, 'deleteAsset'])->name('themes.delete-asset');
 

@@ -9,6 +9,7 @@ use App\Models\StudioTheme;
 use App\Models\StudioThemeVersion;
 use App\Services\AIEngine;
 use App\Services\ThemeStepEngine;
+use App\Support\ThemeSettingsRecommender;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -125,6 +126,8 @@ class ThemeController extends Controller
             'custom_js'  => 'nullable|string',
             // Variants
             'variants' => 'nullable|array',
+            // Definições do site (schema configurável pelo criador no AnimusFlow)
+            'theme_settings' => 'nullable|array',
         ]);
 
         // Snapshot dos campos do espelho ANTES de gravar (para detectar mudanças reais)
@@ -150,6 +153,25 @@ class ThemeController extends Controller
         return back()->with('success', 'Theme saved.');
     }
 
+    /**
+     * Repõe o schema de "Definições do site" para os valores recomendados,
+     * derivados do design atual do tema (layout_config / colors / fonts /
+     * capabilities). Guarda e devolve o novo schema para o editor aplicar.
+     */
+    public function recommendSettings(string $uuid): JsonResponse
+    {
+        $theme = StudioTheme::where('uuid', $uuid)->firstOrFail();
+
+        $settings = ThemeSettingsRecommender::recommend($theme);
+        $theme->update(['theme_settings' => $settings]);
+
+        return response()->json([
+            'success'        => true,
+            'theme_settings' => $settings,
+            'count'          => count($settings),
+        ]);
+    }
+
     // ──────────────────────────────────────────────
     //  Asset Upload
     // ──────────────────────────────────────────────
@@ -171,6 +193,8 @@ class ThemeController extends Controller
             'about_bg', 'features_bg', 'cta_bg', 'testimonials_bg', 'pricing_bg', 'footer_bg',
             // Social / SEO
             'og_image', 'twitter_card', 'apple_touch',
+            // Fundo HUD / Screensaver (temas tipo AeroSpace — layout_config.hud_*)
+            'hud_bg_video', 'hud_bg_photo', 'hud_gallery_1', 'hud_gallery_2', 'hud_gallery_3',
         ];
 
         $request->validate([
@@ -1226,6 +1250,7 @@ PROMPT;
             'fonts'         => $theme->fonts   ?? [],
             'layout'        => $theme->layout_config,
             'capabilities'  => $theme->capabilities,
+            'settings'      => $theme->theme_settings ?? [],
             'blocks'        => $this->allBlockTypes(),
         ], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
 

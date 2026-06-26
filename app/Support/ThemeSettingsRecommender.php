@@ -1,0 +1,127 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Support;
+
+use App\Models\StudioTheme;
+
+/**
+ * Constrói o schema de "Definições do site" RECOMENDADO para um tema —
+ * a lista declarativa de campos que o criador configurará no AnimusFlow.
+ *
+ * Os `default` são tirados dos valores ATUAIS do tema (layout_config / colors /
+ * fonts / capabilities), por isso o schema reflete o design real do tema.
+ *
+ * Fonte única de verdade partilhada por:
+ *   - skills/themes/seed_aerospace_settings.php (seed em CLI)
+ *   - ThemeController::recommendSettings() (botão "Repor definições recomendadas")
+ */
+final class ThemeSettingsRecommender
+{
+    private const FONT_OPTIONS = [
+        'Inter' => 'Inter', 'Poppins' => 'Poppins', 'DM Sans' => 'DM Sans', 'Outfit' => 'Outfit',
+        'Plus Jakarta Sans' => 'Plus Jakarta Sans', 'Playfair Display' => 'Playfair Display',
+        'Fraunces' => 'Fraunces', 'Sora' => 'Sora',
+    ];
+
+    /** @return array<int,array<string,mixed>> */
+    public static function recommend(StudioTheme $theme): array
+    {
+        $lc    = $theme->layout_config ?? [];
+        $cl    = $theme->colors['light'] ?? [];
+        $cd    = $theme->colors['dark'] ?? [];
+        $fonts = $theme->fonts ?? [];
+        $caps  = $theme->capabilities ?? [];
+
+        return [
+            // ── Geral ────────────────────────────────────────────────────
+            self::f(['key' => 'show_dark_toggle', 'label' => 'Mostrar alternância claro/escuro', 'type' => 'toggle', 'group' => 'geral', 'default' => $lc['show_dark_toggle'] ?? true, 'hint' => 'Botão de tema claro/escuro no cabeçalho.']),
+            self::f(['key' => 'back_to_top', 'label' => 'Botão "voltar ao topo"', 'type' => 'toggle', 'group' => 'geral', 'default' => $lc['back_to_top'] ?? true]),
+
+            // ── Cabeçalho ────────────────────────────────────────────────
+            self::f(['key' => 'header_type', 'label' => 'Estilo do cabeçalho', 'type' => 'select', 'group' => 'cabecalho', 'default' => $lc['header_type'] ?? 'glass',
+                'options' => ['glass' => 'Glass / Blur', 'solid' => 'Sólido', 'transparent' => 'Transparente', 'centered' => 'Logo centrado', 'sidebar' => 'Sidebar']]),
+            self::f(['key' => 'header_sticky', 'label' => 'Cabeçalho fixo (sticky)', 'type' => 'toggle', 'group' => 'cabecalho', 'default' => $lc['header_sticky'] ?? true]),
+            self::f(['key' => 'header_cta_text', 'label' => 'Botão CTA — texto', 'type' => 'text', 'group' => 'cabecalho', 'default' => $lc['header_cta_text'] ?? '', 'hint' => 'Vazio = sem botão.']),
+            self::f(['key' => 'header_cta_url', 'label' => 'Botão CTA — URL', 'type' => 'text', 'group' => 'cabecalho', 'default' => $lc['header_cta_url'] ?? '#']),
+
+            // ── Menus & Navegação ────────────────────────────────────────
+            self::f(['key' => 'menu_layout', 'label' => 'Estilo do menu', 'type' => 'select', 'group' => 'menus', 'default' => $lc['menu_layout'] ?? 'circular',
+                'options' => ['circular' => 'Circular Orbital', 'normal' => 'Barra Horizontal']]),
+            self::f(['key' => 'nav_position', 'label' => 'Posição do menu', 'type' => 'select', 'group' => 'menus', 'default' => $lc['nav_position'] ?? 'center',
+                'options' => ['left' => 'Esquerda', 'center' => 'Centro', 'right' => 'Direita']]),
+            self::f(['key' => 'normal_menu_position', 'label' => 'Posição (barra clássica)', 'type' => 'select', 'group' => 'menus', 'default' => $lc['normal_menu_position'] ?? 'horizontal-right',
+                'options' => ['horizontal-left' => 'Horizontal esquerda', 'horizontal-center' => 'Horizontal centro', 'horizontal-right' => 'Horizontal direita']]),
+            self::f(['key' => 'submenu_type', 'label' => 'Tipo de submenu', 'type' => 'select', 'group' => 'menus', 'default' => $lc['submenu_type'] ?? 'circular',
+                'options' => ['circular' => 'Circular', 'dropdown' => 'Dropdown']]),
+            self::f(['key' => 'menu_space_top', 'label' => 'Espaço acima da barra (px)', 'type' => 'range', 'group' => 'menus', 'default' => $lc['menu_space_top'] ?? 24, 'min' => 0, 'max' => 160, 'step' => 4]),
+            self::f(['key' => 'menu_space_bottom', 'label' => 'Espaço abaixo da barra (px)', 'type' => 'range', 'group' => 'menus', 'default' => $lc['menu_space_bottom'] ?? 24, 'min' => 0, 'max' => 160, 'step' => 4]),
+
+            // ── Cores ────────────────────────────────────────────────────
+            self::f(['key' => '--color-primary', 'label' => 'Primária (claro)', 'type' => 'color', 'group' => 'cores', 'source' => 'color_light', 'default' => $cl['--color-primary'] ?? '#2563EB']),
+            self::f(['key' => '--color-accent', 'label' => 'Destaque (claro)', 'type' => 'color', 'group' => 'cores', 'source' => 'color_light', 'default' => $cl['--color-accent'] ?? '#06B6D4']),
+            self::f(['key' => '--color-background', 'label' => 'Fundo (claro)', 'type' => 'color', 'group' => 'cores', 'source' => 'color_light', 'default' => $cl['--color-background'] ?? '#070C18']),
+            self::f(['key' => '--color-foreground', 'label' => 'Texto (claro)', 'type' => 'color', 'group' => 'cores', 'source' => 'color_light', 'default' => $cl['--color-foreground'] ?? '#F3F4F6']),
+            self::f(['key' => '--color-primary', 'label' => 'Primária (escuro)', 'type' => 'color', 'group' => 'cores', 'source' => 'color_dark', 'default' => $cd['--color-primary'] ?? '#3B82F6']),
+            self::f(['key' => '--color-accent', 'label' => 'Destaque (escuro)', 'type' => 'color', 'group' => 'cores', 'source' => 'color_dark', 'default' => $cd['--color-accent'] ?? '#22D3EE']),
+            self::f(['key' => '--color-background', 'label' => 'Fundo (escuro)', 'type' => 'color', 'group' => 'cores', 'source' => 'color_dark', 'default' => $cd['--color-background'] ?? '#030712']),
+            self::f(['key' => '--color-foreground', 'label' => 'Texto (escuro)', 'type' => 'color', 'group' => 'cores', 'source' => 'color_dark', 'default' => $cd['--color-foreground'] ?? '#F9FAFB']),
+
+            // ── Tipografia ───────────────────────────────────────────────
+            self::f(['key' => 'heading', 'label' => 'Fonte dos títulos', 'type' => 'select', 'group' => 'tipografia', 'source' => 'font', 'default' => $fonts['heading'] ?? 'Outfit', 'options' => self::FONT_OPTIONS]),
+            self::f(['key' => 'body', 'label' => 'Fonte do corpo', 'type' => 'select', 'group' => 'tipografia', 'source' => 'font', 'default' => $fonts['body'] ?? 'Inter', 'options' => self::FONT_OPTIONS]),
+
+            // ── Fundo & HUD ──────────────────────────────────────────────
+            self::f(['key' => 'hud_bg_type', 'label' => 'Tipo de fundo do HUD', 'type' => 'select', 'group' => 'fundo', 'default' => $lc['hud_bg_type'] ?? 'video',
+                'options' => ['video' => 'Vídeo', 'photo' => 'Foto única', 'gallery' => 'Galeria de fotos'], 'hint' => 'Fundo do ecrã inicial (boot / screensaver).']),
+            self::f(['key' => 'hud_bg_video', 'label' => 'Vídeo de fundo', 'type' => 'media_video', 'group' => 'fundo', 'default' => $lc['hud_bg_video'] ?? '/videos/aerospace-fundo.mp4', 'hint' => 'Usado quando o tipo = Vídeo.']),
+            self::f(['key' => 'hud_bg_single_photo', 'label' => 'Foto de fundo', 'type' => 'media_image', 'group' => 'fundo', 'default' => $lc['hud_bg_single_photo'] ?? '/images/aerospace-hero.svg', 'hint' => 'Usada quando o tipo = Foto única.']),
+            self::f(['key' => 'hud_bg_gallery', 'label' => 'Galeria de fundo', 'type' => 'media_gallery', 'group' => 'fundo', 'default' => $lc['hud_bg_gallery'] ?? [], 'hint' => 'Slideshow quando o tipo = Galeria.']),
+            self::f(['key' => 'hud_overlay_enabled', 'label' => 'Overlay escuro por cima', 'type' => 'toggle', 'group' => 'fundo', 'default' => $lc['hud_overlay_enabled'] ?? true]),
+
+            // ── Layout & Conteúdo ────────────────────────────────────────
+            self::f(['key' => 'layout_type', 'label' => 'Tipo de layout', 'type' => 'select', 'group' => 'layout', 'default' => $lc['layout_type'] ?? 'full-width',
+                'options' => ['full-width' => 'Largura total', 'boxed' => 'Em caixa', 'sidebar-left' => 'Sidebar esquerda', 'sidebar-right' => 'Sidebar direita']]),
+            self::f(['key' => 'max_width', 'label' => 'Largura máxima do conteúdo', 'type' => 'select', 'group' => 'layout', 'default' => (string) ($lc['max_width'] ?? '1120'),
+                'options' => ['960' => '960px', '1120' => '1120px', '1280' => '1280px', '1440' => '1440px', 'full' => 'Total']]),
+            self::f(['key' => 'spacing', 'label' => 'Espaçamento das secções', 'type' => 'select', 'group' => 'layout', 'default' => $lc['spacing'] ?? 'normal',
+                'options' => ['compact' => 'Compacto', 'normal' => 'Normal', 'spacious' => 'Amplo']]),
+            self::f(['key' => 'gallery_layout', 'label' => 'Layout da galeria', 'type' => 'select', 'group' => 'layout', 'default' => $lc['gallery_layout'] ?? '3d-carousel',
+                'options' => ['3d-carousel' => 'Carrossel 3D', 'grid' => 'Grelha', 'masonry' => 'Masonry']]),
+            self::f(['key' => 'gallery_auto_rotate', 'label' => 'Galeria — rotação automática', 'type' => 'toggle', 'group' => 'layout', 'default' => $lc['gallery_auto_rotate'] ?? true]),
+            self::f(['key' => 'gallery_tilt_enabled', 'label' => 'Galeria — efeito de inclinação', 'type' => 'toggle', 'group' => 'layout', 'default' => $lc['gallery_tilt_enabled'] ?? true]),
+
+            // ── Rodapé ───────────────────────────────────────────────────
+            self::f(['key' => 'footer_type', 'label' => 'Estilo do rodapé', 'type' => 'select', 'group' => 'rodape', 'default' => $lc['footer_type'] ?? 'simple',
+                'options' => ['simple' => 'Simples', 'columns' => 'Colunas', 'minimal' => 'Minimal', 'dark' => 'Escuro', 'accent' => 'Destaque']]),
+            self::f(['key' => 'footer_copyright', 'label' => 'Texto de copyright', 'type' => 'text', 'group' => 'rodape', 'default' => $lc['footer_copyright'] ?? '', 'hint' => 'Vazio = automático a partir do nome do site.']),
+            self::f(['key' => 'contact_show_map', 'label' => 'Mostrar mapa de contacto', 'type' => 'toggle', 'group' => 'rodape', 'default' => $lc['contact_show_map'] ?? true]),
+            self::f(['key' => 'contact_map_iframe', 'label' => 'Embed do mapa (iframe src)', 'type' => 'textarea', 'group' => 'rodape', 'default' => $lc['contact_map_iframe'] ?? '', 'hint' => 'URL do Google Maps embed.']),
+            self::f(['key' => 'contact_show_newsletter', 'label' => 'Mostrar newsletter', 'type' => 'toggle', 'group' => 'rodape', 'default' => $lc['contact_show_newsletter'] ?? true]),
+
+            // ── Funcionalidades ──────────────────────────────────────────
+            self::f(['key' => 'telemetry_enabled', 'label' => 'Painel de telemetria live', 'type' => 'toggle', 'group' => 'funcionalidades', 'default' => $lc['telemetry_enabled'] ?? false]),
+            self::f(['key' => 'chat_popup_enabled', 'label' => 'Canal de apoio (popup)', 'type' => 'toggle', 'group' => 'funcionalidades', 'default' => $lc['chat_popup_enabled'] ?? true]),
+            self::f(['key' => 'chat_popup_mode', 'label' => 'Canal de apoio — modo', 'type' => 'select', 'group' => 'funcionalidades', 'default' => $lc['chat_popup_mode'] ?? 'form',
+                'options' => ['ai' => 'IA (chat)', 'form' => 'Formulário']]),
+            self::f(['key' => 'chat_voice_commands', 'label' => 'Comandos por voz', 'type' => 'toggle', 'group' => 'funcionalidades', 'default' => $lc['chat_voice_commands'] ?? true]),
+            self::f(['key' => 'preloader_terminal', 'label' => 'Preloader de consola de boot', 'type' => 'toggle', 'group' => 'funcionalidades', 'default' => $lc['preloader_terminal'] ?? true]),
+            self::f(['key' => 'hover_sound_effects', 'label' => 'Efeitos sonoros no hover', 'type' => 'toggle', 'group' => 'funcionalidades', 'default' => $lc['hover_sound_effects'] ?? true]),
+            self::f(['key' => 'parallax', 'label' => 'Parallax', 'type' => 'toggle', 'group' => 'funcionalidades', 'source' => 'capability', 'default' => $caps['parallax'] ?? true]),
+            self::f(['key' => 'animations', 'label' => 'Animações de scroll', 'type' => 'toggle', 'group' => 'funcionalidades', 'source' => 'capability', 'default' => $caps['animations'] ?? true]),
+            self::f(['key' => 'lightbox', 'label' => 'Lightbox de imagens', 'type' => 'toggle', 'group' => 'funcionalidades', 'source' => 'capability', 'default' => $caps['lightbox'] ?? true]),
+            self::f(['key' => 'scroll_progress', 'label' => 'Barra de progresso de scroll', 'type' => 'toggle', 'group' => 'funcionalidades', 'source' => 'capability', 'default' => $caps['scroll_progress'] ?? true]),
+            self::f(['key' => 'cookie_banner', 'label' => 'Banner de cookies', 'type' => 'toggle', 'group' => 'funcionalidades', 'source' => 'capability', 'default' => $caps['cookie_banner'] ?? true]),
+        ];
+    }
+
+    /** Normaliza um campo, preenchendo defaults seguros. */
+    private static function f(array $field): array
+    {
+        return array_merge([
+            'key' => '', 'label' => '', 'type' => 'text', 'group' => 'geral',
+            'default' => '', 'source' => 'layout', 'hint' => '',
+        ], $field);
+    }
+}

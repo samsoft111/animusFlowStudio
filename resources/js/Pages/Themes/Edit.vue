@@ -229,6 +229,98 @@
         </div>
       </div>
 
+      <!-- ════════════════════ TAB: Definições do site ════════════════════ -->
+      <div v-show="activeTab === 'settings'" class="max-w-4xl space-y-5">
+
+        <div class="bg-indigo-500/10 border border-indigo-500/20 rounded-xl px-4 py-3 text-xs text-indigo-700 dark:text-indigo-300 space-y-1">
+          <p class="font-semibold">🎛️ O que configuras aqui?</p>
+          <p>As <strong>definições que o criador do site vai poder alterar no AnimusFlow</strong> ao usar este tema, agrupadas por área. Cada campo viaja no <code class="bg-indigo-500/10 px-1 rounded">theme.json</code> exportado (secção <code class="bg-indigo-500/10 px-1 rounded">settings</code>) e gera o formulário de configuração no CMS.</p>
+          <p class="text-indigo-500/70">💡 A <code>key</code> é a chave que o tema lê em runtime · <code>origem</code> diz onde o valor vive (layout, cor, fonte, capacidade).</p>
+        </div>
+
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <p class="text-xs text-muted-foreground">{{ settingsCount }} definição(ões) em {{ SETTING_GROUPS.length }} grupos</p>
+          <button type="button" @click="resetRecommendedSettings" :disabled="recommending"
+            class="text-xs px-3 py-1.5 rounded-lg border border-border bg-muted hover:bg-border/50 transition-colors disabled:opacity-50 flex items-center gap-1.5">
+            <span>♻️</span>{{ recommending ? 'A repor…' : 'Repor definições recomendadas' }}
+          </button>
+        </div>
+
+        <div v-for="g in SETTING_GROUPS" :key="g.id" class="bg-card border border-border rounded-2xl p-5 space-y-3">
+          <div class="flex items-center justify-between pb-2 border-b border-border">
+            <h3 class="text-sm font-semibold text-foreground">{{ g.label }}</h3>
+            <button type="button" @click="addSetting(g.id)"
+              class="text-xs px-2.5 py-1 rounded-lg bg-primary/10 text-primary hover:bg-primary/20 transition-colors">+ Campo</button>
+          </div>
+
+          <p v-if="settingsInGroup(g.id).length === 0" class="text-xs text-muted-foreground italic">Sem campos neste grupo.</p>
+
+          <div v-for="(field, idx) in settingsInGroup(g.id)" :key="g.id + '-' + idx"
+            class="rounded-xl border border-border p-3 space-y-2 bg-muted/30">
+            <div class="grid grid-cols-12 gap-2">
+              <div class="col-span-4">
+                <label class="field-label">Rótulo</label>
+                <input v-model="field.label" class="field-input text-xs" placeholder="Ex: Vídeo de fundo" />
+              </div>
+              <div class="col-span-3">
+                <label class="field-label">Key</label>
+                <input v-model="field.key" class="field-input font-mono text-xs" placeholder="hud_bg_video" />
+              </div>
+              <div class="col-span-3">
+                <label class="field-label">Tipo</label>
+                <select v-model="field.type" class="field-input text-xs">
+                  <option v-for="ty in SETTING_TYPES" :key="ty.value" :value="ty.value">{{ ty.label }}</option>
+                </select>
+              </div>
+              <div class="col-span-2">
+                <label class="field-label">Origem</label>
+                <select v-model="field.source" class="field-input text-xs">
+                  <option v-for="so in SETTING_SOURCES" :key="so.value" :value="so.value">{{ so.label }}</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-12 gap-2 items-start">
+              <div class="col-span-5">
+                <label class="field-label">Valor por defeito</label>
+                <toggle-field v-if="field.type === 'toggle'" v-model="field.default" label="Ligado por defeito" />
+                <select v-else-if="field.type === 'select'" v-model="field.default" class="field-input text-xs">
+                  <option v-for="(lbl, val) in (field.options || {})" :key="val" :value="val">{{ lbl }}</option>
+                </select>
+                <input v-else-if="field.type === 'color'" type="color" v-model="field.default"
+                  class="h-9 w-full rounded border border-border bg-transparent cursor-pointer" />
+                <input v-else-if="field.type === 'number' || field.type === 'range'" type="number"
+                  v-model.number="field.default" class="field-input text-xs" />
+                <input v-else v-model="field.default" class="field-input text-xs"
+                  :placeholder="field.type.startsWith('media') ? '/caminho/ficheiro' : ''" />
+              </div>
+              <div class="col-span-5">
+                <label class="field-label">Ajuda (hint)</label>
+                <input v-model="field.hint" class="field-input text-xs" placeholder="Texto de ajuda opcional" />
+              </div>
+              <div class="col-span-2 flex justify-end pt-5">
+                <button type="button" @click="removeSetting(field)"
+                  class="text-xs px-2.5 py-1 rounded-lg bg-red-500/10 text-red-500 hover:bg-red-500/20 transition-colors">Remover</button>
+              </div>
+            </div>
+
+            <div v-if="field.type === 'select'">
+              <label class="field-label">Opções <span class="text-muted-foreground font-normal">— uma por linha: <code>valor = rótulo</code></span></label>
+              <textarea :value="optionsToText(field.options)" @input="field.options = textToOptions($event.target.value)"
+                rows="3" class="field-input font-mono text-xs" placeholder="video = Vídeo&#10;photo = Foto única"></textarea>
+            </div>
+
+            <div v-if="field.type === 'range' || field.type === 'number'" class="grid grid-cols-3 gap-2">
+              <div><label class="field-label">Mín</label><input type="number" v-model.number="field.min" class="field-input text-xs" /></div>
+              <div><label class="field-label">Máx</label><input type="number" v-model.number="field.max" class="field-input text-xs" /></div>
+              <div><label class="field-label">Passo</label><input type="number" v-model.number="field.step" class="field-input text-xs" /></div>
+            </div>
+          </div>
+        </div>
+
+        <btn-save @click="save" :saving="saving" />
+      </div>
+
       <!-- ════════════════════ TAB: Layout ════════════════════ -->
       <div v-show="activeTab === 'layout'" class="max-w-3xl space-y-5">
 
@@ -364,6 +456,31 @@
                 class="field-input" />
               <p class="field-hint">Texto mostrado no rodapé. Suporta HTML simples (ex: links). Deixa vazio para o AnimusFlow usar o nome do site automaticamente.</p>
             </div>
+          </div>
+        </section-card>
+
+        <!-- Fundo do HUD / Screensaver -->
+        <section-card v-if="hasHud" title="🛰️ Fundo do HUD / Screensaver">
+          <p class="field-hint mb-4">Define o que aparece no ecrã inicial (boot / screensaver) deste tema. Carrega os ficheiros na aba 🖼️ <strong>Assets → Fundo HUD / Screensaver</strong>.</p>
+          <div class="grid grid-cols-2 gap-6">
+            <div>
+              <label class="field-label">Tipo de fundo</label>
+              <select v-model="form.layout_config.hud_bg_type" class="field-input">
+                <option value="video">🎬 Vídeo</option>
+                <option value="photo">🖼️ Foto única</option>
+                <option value="gallery">🎞️ Galeria de fotos</option>
+              </select>
+              <p class="field-hint mt-1.5"><em>Vídeo</em>: clip em loop · <em>Foto única</em>: imagem fixa · <em>Galeria</em>: slideshow de várias fotos.</p>
+            </div>
+            <div>
+              <toggle-field v-model="form.layout_config.hud_overlay_enabled" label="Overlay escuro por cima" />
+              <p class="field-hint mt-1.5">Camada escura sobre o fundo para dar legibilidade ao conteúdo.</p>
+            </div>
+          </div>
+          <div class="mt-4 text-xs rounded-lg bg-muted px-3 py-2 text-muted-foreground">
+            <template v-if="(form.layout_config.hud_bg_type ?? 'video') === 'video'">Ficheiro atual: <code>{{ form.layout_config.hud_bg_video || '— (nenhum)' }}</code></template>
+            <template v-else-if="form.layout_config.hud_bg_type === 'photo'">Ficheiro atual: <code>{{ form.layout_config.hud_bg_single_photo || '— (nenhum)' }}</code></template>
+            <template v-else>{{ (form.layout_config.hud_bg_gallery ?? []).length }} foto(s) na galeria</template>
           </div>
         </section-card>
 
@@ -641,6 +758,54 @@
               <toggle-field v-model="form.assets.bg_video_muted" label="Muted (sem som)" />
               <toggle-field v-model="form.assets.bg_video_loop" label="Loop automático" />
             </div>
+          </div>
+        </div>
+
+        <!-- Fundo HUD / Screensaver (temas tipo AeroSpace — layout_config.hud_*) -->
+        <div v-if="hasHud" class="bg-card border border-border rounded-2xl p-5 space-y-4">
+          <div class="flex items-start justify-between gap-4">
+            <div>
+              <h3 class="text-sm font-semibold text-foreground">🛰️ Fundo HUD / Screensaver</h3>
+              <p class="text-xs text-muted-foreground mt-0.5">Fundo do ecrã inicial (boot / screensaver) deste tema. Substitui aqui o <strong>vídeo de exemplo</strong>, ou usa foto única / galeria.</p>
+            </div>
+            <div class="shrink-0 w-44">
+              <label class="field-label">Tipo de fundo</label>
+              <select v-model="form.layout_config.hud_bg_type" class="field-input text-xs">
+                <option value="video">Vídeo</option>
+                <option value="photo">Foto única</option>
+                <option value="gallery">Galeria</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Vídeo -->
+          <div v-if="(form.layout_config.hud_bg_type ?? 'video') === 'video'" class="space-y-3">
+            <div class="grid grid-cols-3 gap-4">
+              <asset-slot slot-id="hud_bg_video" label="🎬 Vídeo de fundo" hint="MP4/WebM, máx 50MB" accept="video/*"
+                :current-url="form.layout_config.hud_bg_video" :uploading="uploadingSlot === 'hud_bg_video'"
+                @upload="handleHudUpload" @delete="handleHudDelete" />
+            </div>
+            <div>
+              <label class="field-label">…ou caminho do vídeo (URL)</label>
+              <input v-model="form.layout_config.hud_bg_video" class="field-input font-mono text-xs"
+                placeholder="/videos/aerospace-fundo.mp4" />
+              <p class="field-hint">Podes apontar para um ficheiro já existente em <code>public/</code> sem fazer upload.</p>
+            </div>
+          </div>
+
+          <!-- Foto única -->
+          <div v-else-if="form.layout_config.hud_bg_type === 'photo'" class="grid grid-cols-3 gap-4">
+            <asset-slot slot-id="hud_bg_photo" label="🖼️ Foto de fundo" hint="JPG/PNG/WebP/SVG" accept="image/*"
+              :current-url="form.layout_config.hud_bg_single_photo" :uploading="uploadingSlot === 'hud_bg_photo'"
+              @upload="handleHudUpload" @delete="handleHudDelete" />
+          </div>
+
+          <!-- Galeria -->
+          <div v-else-if="form.layout_config.hud_bg_type === 'gallery'" class="grid grid-cols-3 gap-4">
+            <asset-slot v-for="n in 3" :key="'hud_gallery_' + n" :slot-id="'hud_gallery_' + n"
+              :label="'🖼️ Slide ' + n" hint="JPG/PNG/WebP/SVG" accept="image/*"
+              :current-url="(form.layout_config.hud_bg_gallery ?? [])[n - 1]" :uploading="uploadingSlot === ('hud_gallery_' + n)"
+              @upload="handleHudUpload" @delete="handleHudDelete" />
           </div>
         </div>
 
@@ -2120,6 +2285,7 @@ const props = defineProps({
 const activeTab = ref('details');
 const tabs = [
   { id: 'details',      icon: '📋', label: 'Detalhes'    },
+  { id: 'settings',     icon: '🎛️',  label: 'Definições do site' },
   { id: 'layout',       icon: '📐', label: 'Layout'      },
   { id: 'capabilities', icon: '⚙️',  label: 'Capacidades' },
   { id: 'design',       icon: '🎨', label: 'Design'      },
@@ -2274,6 +2440,7 @@ const form = reactive({
   custom_js:  props.theme?.custom_js  ?? '',
   assets:     { ...(props.theme?.assets ?? {}) },
   variants:   JSON.parse(JSON.stringify(props.theme?.variants ?? [])),
+  theme_settings: JSON.parse(JSON.stringify(props.theme?.theme_settings ?? [])),
   _demoApplied: false, // flag local — não enviada ao servidor
   layout_config: {
     // preserva quaisquer chaves específicas do tema (hud_bg_*, chat_*, etc.)
@@ -2457,6 +2624,131 @@ async function handleAssetDelete({ slotId }) {
   });
   delete form.assets[slotId];
   feedback.success = `Asset "${slotId}" removido.`;
+}
+
+// ── Fundo HUD / Screensaver (layout_config.hud_*) — AeroSpace e afins ──
+const hasHud = computed(() => {
+  const lc = form.layout_config ?? {};
+  return 'hud_bg_type' in lc || 'hud_bg_video' in lc || 'hud_bg_single_photo' in lc;
+});
+const HUD_FIELD_MAP = { hud_bg_video: 'hud_bg_video', hud_bg_photo: 'hud_bg_single_photo' };
+
+function setHudMedia(slotId, url) {
+  if (slotId.startsWith('hud_gallery_')) {
+    const idx = parseInt(slotId.split('_').pop(), 10) - 1;
+    if (!Array.isArray(form.layout_config.hud_bg_gallery)) form.layout_config.hud_bg_gallery = [];
+    form.layout_config.hud_bg_gallery[idx] = url;
+  } else {
+    form.layout_config[HUD_FIELD_MAP[slotId]] = url;
+  }
+}
+
+async function handleHudUpload({ slotId, file }) {
+  uploadingSlot.value = slotId;
+  const csrf = document.querySelector('meta[name="csrf-token"]')?.content ?? '';
+  const fd   = new FormData();
+  fd.append('file', file); fd.append('slot', slotId);
+  try {
+    const res  = await fetch(`/themes/${props.theme.uuid}/upload-asset`, {
+      method: 'POST', headers: { 'X-CSRF-TOKEN': csrf }, body: fd,
+    });
+    const data = await res.json();
+    if (data.success) {
+      setHudMedia(slotId, data.url);
+      feedback.success = `Media HUD "${slotId}" carregada — guarda para persistir.`;
+    } else {
+      feedback.error = data.message ?? 'Upload falhou.';
+    }
+  } catch(e) { feedback.error = e.message; }
+  finally { uploadingSlot.value = ''; }
+}
+
+function handleHudDelete({ slotId }) {
+  if (slotId.startsWith('hud_gallery_')) {
+    const idx = parseInt(slotId.split('_').pop(), 10) - 1;
+    if (Array.isArray(form.layout_config.hud_bg_gallery)) form.layout_config.hud_bg_gallery.splice(idx, 1);
+  } else {
+    form.layout_config[HUD_FIELD_MAP[slotId]] = '';
+  }
+  feedback.success = `Media HUD "${slotId}" removida — guarda para persistir.`;
+}
+
+// ── Definições do site (theme_settings) — schema configurável no CMS ───
+const SETTING_GROUPS = [
+  { id: 'geral',           label: '⚙️ Geral' },
+  { id: 'cabecalho',       label: '🔝 Cabeçalho' },
+  { id: 'menus',           label: '🧭 Menus & Navegação' },
+  { id: 'cores',           label: '🎨 Cores' },
+  { id: 'tipografia',      label: '🔤 Tipografia' },
+  { id: 'fundo',           label: '🛰️ Fundo & HUD' },
+  { id: 'layout',          label: '📐 Layout & Conteúdo' },
+  { id: 'rodape',          label: '🔻 Rodapé' },
+  { id: 'funcionalidades', label: '✨ Funcionalidades' },
+];
+const SETTING_TYPES = [
+  { value: 'text',          label: 'Texto' },
+  { value: 'textarea',      label: 'Área de texto' },
+  { value: 'number',        label: 'Número' },
+  { value: 'range',         label: 'Slider' },
+  { value: 'toggle',        label: 'Interruptor' },
+  { value: 'color',         label: 'Cor' },
+  { value: 'select',        label: 'Seleção' },
+  { value: 'media_image',   label: 'Imagem' },
+  { value: 'media_video',   label: 'Vídeo' },
+  { value: 'media_gallery', label: 'Galeria' },
+];
+const SETTING_SOURCES = [
+  { value: 'layout',      label: 'layout_config' },
+  { value: 'color_light', label: 'cor (claro)' },
+  { value: 'color_dark',  label: 'cor (escuro)' },
+  { value: 'font',        label: 'fonte' },
+  { value: 'capability',  label: 'capacidade' },
+];
+const settingsCount = computed(() => form.theme_settings.length);
+
+function settingsInGroup(groupId) {
+  return form.theme_settings.filter(s => (s.group || 'geral') === groupId);
+}
+function addSetting(groupId) {
+  form.theme_settings.push({ key: '', label: '', type: 'text', group: groupId, default: '', source: 'layout', hint: '' });
+}
+function removeSetting(field) {
+  const i = form.theme_settings.indexOf(field);
+  if (i > -1) form.theme_settings.splice(i, 1);
+}
+function optionsToText(opts) {
+  if (!opts || typeof opts !== 'object') return '';
+  return Object.entries(opts).map(([v, l]) => `${v} = ${l}`).join('\n');
+}
+function textToOptions(txt) {
+  const out = {};
+  (txt || '').split('\n').forEach(line => {
+    const i = line.indexOf('=');
+    if (i > -1) { const v = line.slice(0, i).trim(); const l = line.slice(i + 1).trim(); if (v) out[v] = l; }
+    else if (line.trim()) { out[line.trim()] = line.trim(); }
+  });
+  return out;
+}
+
+const recommending = ref(false);
+async function resetRecommendedSettings() {
+  if (!confirm('Repor todas as definições para os valores recomendados? As alterações não guardadas neste separador serão substituídas.')) return;
+  recommending.value = true;
+  feedback.success = ''; feedback.error = '';
+  const csrf = document.querySelector('meta[name="csrf-token"]')?.content ?? '';
+  try {
+    const res  = await fetch(`/themes/${props.theme.uuid}/settings/recommend`, {
+      method: 'POST', headers: { 'X-CSRF-TOKEN': csrf, 'Accept': 'application/json' },
+    });
+    const data = await res.json();
+    if (data.success) {
+      form.theme_settings = data.theme_settings;
+      feedback.success = `Definições recomendadas repostas (${data.count} campos).`;
+    } else {
+      feedback.error = 'Não foi possível repor as definições.';
+    }
+  } catch (e) { feedback.error = e.message; }
+  finally { recommending.value = false; }
 }
 
 // ── Sections — biblioteca de blocos ──────────────────────────────
