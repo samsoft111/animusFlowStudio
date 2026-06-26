@@ -45,6 +45,8 @@ final class ThemeSettingsRecommender
             self::f(['key' => 'header_sticky', 'label' => 'Cabeçalho fixo (sticky)', 'type' => 'toggle', 'group' => 'cabecalho', 'default' => $lc['header_sticky'] ?? true]),
             self::f(['key' => 'header_cta_text', 'label' => 'Botão CTA — texto', 'type' => 'text', 'group' => 'cabecalho', 'default' => $lc['header_cta_text'] ?? '', 'hint' => 'Vazio = sem botão.']),
             self::f(['key' => 'header_cta_url', 'label' => 'Botão CTA — URL', 'type' => 'text', 'group' => 'cabecalho', 'default' => $lc['header_cta_url'] ?? '#']),
+            self::f(['key' => 'navbar_color', 'label' => 'Barra de menus — cor', 'type' => 'color', 'group' => 'cabecalho', 'default' => $lc['navbar_color'] ?? '#1E293B']),
+            self::f(['key' => 'navbar_opacity', 'label' => 'Barra de menus — opacidade (%)', 'type' => 'range', 'group' => 'cabecalho', 'default' => $lc['navbar_opacity'] ?? 72, 'min' => 0, 'max' => 100, 'step' => 5, 'hint' => 'Mais alto = barra mais sólida/visível.']),
 
             // ── Menus & Navegação ────────────────────────────────────────
             self::f(['key' => 'menu_layout', 'label' => 'Estilo do menu', 'type' => 'select', 'group' => 'menus', 'default' => $lc['menu_layout'] ?? 'circular',
@@ -79,6 +81,7 @@ final class ThemeSettingsRecommender
             self::f(['key' => 'hud_bg_single_photo', 'label' => 'Foto de fundo', 'type' => 'media_image', 'group' => 'fundo', 'default' => $lc['hud_bg_single_photo'] ?? '/images/aerospace-hero.svg', 'hint' => 'Usada quando o tipo = Foto única.']),
             self::f(['key' => 'hud_bg_gallery', 'label' => 'Galeria de fundo', 'type' => 'media_gallery', 'group' => 'fundo', 'default' => $lc['hud_bg_gallery'] ?? [], 'hint' => 'Slideshow quando o tipo = Galeria.']),
             self::f(['key' => 'hud_overlay_enabled', 'label' => 'Overlay escuro por cima', 'type' => 'toggle', 'group' => 'fundo', 'default' => $lc['hud_overlay_enabled'] ?? true]),
+            self::f(['key' => 'hero_bg_color', 'label' => 'Cor do fundo (base)', 'type' => 'color', 'group' => 'fundo', 'default' => $lc['hero_bg_color'] ?? '#0F1A2E', 'hint' => 'Fundo visível quando o screensaver esmaece ou no modo sem vídeo/foto.']),
 
             // Brilho do vídeo (estado inicial, antes do hover)
             self::f(['key' => 'screensaver_scrim', 'label' => 'Escurecimento do vídeo (%)', 'type' => 'range', 'group' => 'fundo', 'default' => $lc['screensaver_scrim'] ?? 10, 'min' => 0, 'max' => 100, 'step' => 5, 'hint' => 'Mais alto = vídeo mais escuro antes do hover.']),
