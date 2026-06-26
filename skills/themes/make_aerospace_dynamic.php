@@ -196,7 +196,7 @@ $sections['hero'] = <<<'HTML'
       $showNormalMenu = ($effectiveMenuLayout === 'normal');
       $showCircularMenu = ($effectiveMenuLayout === 'circular');
     @endphp
-    <header class="normal-navbar pos-{{ $effectiveMenuPosition }} @if(!$showNormalMenu) hidden-navbar @endif @if(!$isHome && $menuLayoutCfg === 'circular') portal-active @endif">
+    <header class="normal-navbar pos-{{ $effectiveMenuPosition }} @if($theme->layout_config['header_sticky'] ?? true) is-sticky @endif @if(!$showNormalMenu) hidden-navbar @endif @if(!$isHome && $menuLayoutCfg === 'circular') portal-active @endif">
       <button class="hamburger-menu-btn" onclick="toggleMobileMenu(event)" aria-label="Abrir menu de navegação" aria-expanded="false">
         <span></span>
         <span></span>
@@ -907,16 +907,97 @@ $css = str_replace(
     $css
 );
 
-// Aumentar o espaço abaixo da barra de menus nas subpáginas (+50px → 74px total)
+// Aumentar o espaço abaixo da barra de menus nas subpáginas (+50px → 66px total)
 $css = str_replace(
     '.aerospace-hero.hero-internal .hero-text-area { margin-top: var(--menu-space-bottom, 24px); }',
-    '.aerospace-hero.hero-internal .hero-text-area { margin-top: 74px; }',
+    '.aerospace-hero.hero-internal .hero-text-area { margin-top: 66px; }',
     $css
 );
 
+// Adicionar estilos sticky e de layout se em falta
+if (!str_contains($css, '/* ── Barra de Menu Fixa (Sticky) ao fazer Scroll ── */')) {
+    $css .= "\n\n/* ── Barra de Menu Fixa (Sticky) ao fazer Scroll ── */\n" .
+        "@keyframes navbarSlideIn {\n" .
+        "  from { transform: translate(-50%, -100%); opacity: 0; }\n" .
+        "  to { transform: translate(-50%, 0); opacity: 1; }\n" .
+        "}\n\n" .
+        ".normal-navbar.is-sticky.scrolled.pos-horizontal-left,\n" .
+        ".normal-navbar.is-sticky.scrolled.pos-horizontal-right {\n" .
+        "  position: fixed !important;\n" .
+        "  top: 1rem !important;\n" .
+        "  left: 50% !important;\n" .
+        "  transform: translateX(-50%) !important;\n" .
+        "  z-index: 100 !important;\n" .
+        "  width: calc(100% - 2rem) !important;\n" .
+        "  box-shadow: 0 10px 30px rgba(0,0,0,0.5), 0 0 20px rgba(var(--color-accent-rgb, 6, 182, 212), 0.15) !important;\n" .
+        "  animation: navbarSlideIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards !important;\n" .
+        "}\n\n" .
+        "@media (max-width: 640px) {\n" .
+        "  .normal-navbar.is-sticky.scrolled.pos-horizontal-left,\n" .
+        "  .normal-navbar.is-sticky.scrolled.pos-horizontal-right {\n" .
+        "    top: 0.5rem !important;\n" .
+        "    width: calc(100% - 1rem) !important;\n" .
+        "  }\n" .
+        "}\n";
+}
+
+if (!str_contains($css, '/* ── Definições de Layout Dinâmico AnimusFlow ── */')) {
+    $css .= "\n\n/* ── Definições de Layout Dinâmico AnimusFlow ── */\n" .
+        "/* ── Espaçamento Dinâmico de Secções ── */\n" .
+        "section:not(.aerospace-hero) {\n" .
+        "  padding-top: var(--section-padding-y, 5rem) !important;\n" .
+        "  padding-bottom: var(--section-padding-y, 5rem) !important;\n" .
+        "}\n\n" .
+        "/* ── Largura Máxima Dinâmica do Conteúdo ── */\n" .
+        "section:not(.aerospace-hero) > div[class*=\"max-w-\"],\n" .
+        "footer > div[class*=\"max-w-\"] {\n" .
+        "  max-width: var(--layout-max-width, 1120px) !important;\n" .
+        "}\n";
+}
+
 $theme->custom_css = $css;
 
+// Sincronizar JS
+$js = $theme->custom_js;
+$oldBlock = "  const portalNavbar = document.querySelector('.normal-navbar.portal-active');\n" .
+"  if (portalNavbar) {\n" .
+"    // Trigger portal entry body animation (CSS handles the rest)\n" .
+"    requestAnimationFrame(() => {\n" .
+"      document.body.classList.add('portal-entry');\n" .
+"    });\n" .
+"  }";
+
+$newBlock = "  const portalNavbar = document.querySelector('.normal-navbar.portal-active');\n" .
+"  if (portalNavbar) {\n" .
+"    // Trigger portal entry body animation (CSS handles the rest)\n" .
+"    requestAnimationFrame(() => {\n" .
+"      document.body.classList.add('portal-entry');\n" .
+"      setTimeout(() => {\n" .
+"        document.body.classList.remove('portal-entry');\n" .
+"      }, 600);\n" .
+"    });\n" .
+"  }";
+
+if (str_contains($js, $oldBlock)) {
+    $js = str_replace($oldBlock, $newBlock, $js);
+}
+
+if (!str_contains($js, '/* ── Sticky Header on Scroll ── */')) {
+    $js .= "\n\n/* ── Sticky Header on Scroll ── */\n" .
+        "window.addEventListener('scroll', function() {\n" .
+        "  const navbar = document.querySelector('.normal-navbar.is-sticky');\n" .
+        "  if (navbar) {\n" .
+        "    if (window.scrollY > 50) {\n" .
+        "      navbar.classList.add('scrolled');\n" .
+        "    } else {\n" .
+        "      navbar.classList.remove('scrolled');\n" .
+        "    }\n" .
+        "  }\n" .
+        "});\n";
+}
+
+$theme->custom_js = $js;
 $theme->save();
 
-echo "✅ Theme sections updated successfully in database.\n";
+echo "✅ Theme sections and custom CSS/JS updated successfully in database.\n";
 exit(0);

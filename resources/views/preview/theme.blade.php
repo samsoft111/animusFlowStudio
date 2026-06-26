@@ -177,8 +177,26 @@
             {{ $var }}: {{ $value }};
             @endforeach
 
+            {{-- Companions -rgb para usos com alpha: rgba(var(--x-rgb), 0.15) --}}
+            @foreach($light as $var => $value)
+            @php $hx = ltrim(trim((string) $value), '#'); @endphp
+            @if(preg_match('/^[0-9a-fA-F]{6}$/', $hx))
+            {{ $var }}-rgb: {{ hexdec(substr($hx, 0, 2)) }}, {{ hexdec(substr($hx, 2, 2)) }}, {{ hexdec(substr($hx, 4, 2)) }};
+            @endif
+            @endforeach
+
             --font-heading: {{ $heading ?: 'system-ui' }};
             --font-body:    {{ $body    ?: 'system-ui' }};
+
+            {{-- Layout & Content variables --}}
+            @php
+                $maxWidthRaw = $theme->layout_config['max_width'] ?? '1120';
+                $maxWidth = ($maxWidthRaw === 'full') ? '100%' : ($maxWidthRaw . 'px');
+                $spacingRaw = $theme->layout_config['spacing'] ?? 'normal';
+                $paddingY = ($spacingRaw === 'compact') ? '2.5rem' : (($spacingRaw === 'spacious') ? '7.5rem' : '5rem');
+            @endphp
+            --layout-max-width: {{ $maxWidth }};
+            --section-padding-y: {{ $paddingY }};
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -193,6 +211,90 @@
         h1, h2, h3, h4 {
             font-family: var(--font-heading), system-ui, sans-serif;
             line-height: 1.2;
+        }
+
+        /* ── Estilos de Layout Dinâmico AnimusFlow ── */
+        .layout-boxed {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: var(--color-background);
+            box-shadow: 0 0 60px rgba(0,0,0,0.5);
+            border-left: 1px solid var(--color-border);
+            border-right: 1px solid var(--color-border);
+            position: relative;
+        }
+
+        .layout-with-sidebar {
+            display: flex;
+            min-height: 100vh;
+        }
+        .layout-with-sidebar.pos-sidebar-left {
+            flex-direction: row;
+        }
+        .layout-with-sidebar.pos-sidebar-right {
+            flex-direction: row-reverse;
+        }
+        .layout-sidebar {
+            width: 260px;
+            flex-shrink: 0;
+            background: var(--color-card);
+            border-right: 1px solid var(--color-border);
+            padding: 2rem 1.5rem;
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+            z-index: 99;
+        }
+        .layout-with-sidebar.pos-sidebar-right .layout-sidebar {
+            border-right: none;
+            border-left: 1px solid var(--color-border);
+        }
+        .layout-main {
+            flex: 1;
+            min-width: 0;
+        }
+        .sidebar-widget h4 {
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--color-accent, var(--color-primary));
+            margin-bottom: 0.75rem;
+            font-family: var(--font-heading), monospace;
+        }
+        .sidebar-widget ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+        .sidebar-widget a {
+            color: var(--color-muted-foreground);
+            text-decoration: none;
+            font-size: 0.875rem;
+            font-weight: 500;
+            transition: color 0.2s;
+        }
+        .sidebar-widget a:hover {
+            color: var(--color-foreground);
+        }
+        .sidebar-widget p {
+            color: var(--color-muted-foreground);
+            font-size: 0.8rem;
+            margin: 0.25rem 0;
+        }
+
+        @media (max-width: 768px) {
+            .layout-with-sidebar {
+                flex-direction: column !important;
+            }
+            .layout-sidebar {
+                width: 100% !important;
+                border-right: none !important;
+                border-left: none !important;
+                border-bottom: 1px solid var(--color-border) !important;
+            }
         }
 
         /* ── Preview banner ── */
@@ -456,7 +558,29 @@
         <a href="javascript:window.close()" style="color:inherit;text-decoration:underline;">Close</a>
     </div>
 
-    <div class="preview-content">
+    @php
+        $layoutType = $theme->layout_config['layout_type'] ?? 'full-width';
+    @endphp
+    <div class="preview-content @if($layoutType === 'boxed') layout-boxed @elseif(str_contains($layoutType, 'sidebar')) layout-with-sidebar pos-{{ $layoutType }} @endif">
+        @if(str_contains($layoutType, 'sidebar'))
+            <aside class="layout-sidebar">
+                <div class="sidebar-widget">
+                    <h4>Navegação</h4>
+                    <ul>
+                        @foreach($theme->layout_config['nav_links'] ?? [] as $link)
+                            <li><a href="{{ $link['url'] }}">{{ $link['label'] }}</a></li>
+                        @endforeach
+                    </ul>
+                </div>
+                <div class="sidebar-widget">
+                    <h4>Telemetria</h4>
+                    <p>Status: Operacional</p>
+                    <p>Conexão: Segura</p>
+                    <p>Sede: Luanda, AO</p>
+                </div>
+            </aside>
+            <main class="layout-main">
+        @endif
 
         {{-- Hero --}}
         @if(in_array('hero', $allowedSections))
@@ -768,6 +892,9 @@
             @endif
         @endforeach
 
+        @if(str_contains($layoutType, 'sidebar'))
+            </main>
+        @endif
     </div>
 
     <!-- ── CSS Token Editor Overlay ── -->

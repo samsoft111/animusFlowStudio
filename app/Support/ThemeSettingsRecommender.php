@@ -69,6 +69,22 @@ final class ThemeSettingsRecommender
             self::f(['key' => '--color-accent', 'label' => 'Destaque (escuro)', 'type' => 'color', 'group' => 'cores', 'source' => 'color_dark', 'default' => $cd['--color-accent'] ?? '#22D3EE']),
             self::f(['key' => '--color-background', 'label' => 'Fundo (escuro)', 'type' => 'color', 'group' => 'cores', 'source' => 'color_dark', 'default' => $cd['--color-background'] ?? '#030712']),
             self::f(['key' => '--color-foreground', 'label' => 'Texto (escuro)', 'type' => 'color', 'group' => 'cores', 'source' => 'color_dark', 'default' => $cd['--color-foreground'] ?? '#F9FAFB']),
+            // Paleta completa — claro
+            self::f(['key' => '--color-secondary', 'label' => 'Secundária (claro)', 'type' => 'color', 'group' => 'cores', 'source' => 'color_light', 'default' => $cl['--color-secondary'] ?? '#0F172A']),
+            self::f(['key' => '--color-muted', 'label' => 'Suave/Muted (claro)', 'type' => 'color', 'group' => 'cores', 'source' => 'color_light', 'default' => $cl['--color-muted'] ?? '#1E293B']),
+            self::f(['key' => '--color-muted-foreground', 'label' => 'Texto suave (claro)', 'type' => 'color', 'group' => 'cores', 'source' => 'color_light', 'default' => $cl['--color-muted-foreground'] ?? '#94A3B8']),
+            self::f(['key' => '--color-primary-foreground', 'label' => 'Texto sobre primária (claro)', 'type' => 'color', 'group' => 'cores', 'source' => 'color_light', 'default' => $cl['--color-primary-foreground'] ?? '#FFFFFF']),
+            self::f(['key' => '--color-success', 'label' => 'Sucesso (claro)', 'type' => 'color', 'group' => 'cores', 'source' => 'color_light', 'default' => $cl['--color-success'] ?? '#10B981']),
+            self::f(['key' => '--color-warning', 'label' => 'Aviso (claro)', 'type' => 'color', 'group' => 'cores', 'source' => 'color_light', 'default' => $cl['--color-warning'] ?? '#F59E0B']),
+            self::f(['key' => '--color-destructive', 'label' => 'Erro (claro)', 'type' => 'color', 'group' => 'cores', 'source' => 'color_light', 'default' => $cl['--color-destructive'] ?? '#EF4444']),
+            // Paleta completa — escuro
+            self::f(['key' => '--color-secondary', 'label' => 'Secundária (escuro)', 'type' => 'color', 'group' => 'cores', 'source' => 'color_dark', 'default' => $cd['--color-secondary'] ?? '#030712']),
+            self::f(['key' => '--color-muted', 'label' => 'Suave/Muted (escuro)', 'type' => 'color', 'group' => 'cores', 'source' => 'color_dark', 'default' => $cd['--color-muted'] ?? '#0F172A']),
+            self::f(['key' => '--color-muted-foreground', 'label' => 'Texto suave (escuro)', 'type' => 'color', 'group' => 'cores', 'source' => 'color_dark', 'default' => $cd['--color-muted-foreground'] ?? '#94A3B8']),
+            self::f(['key' => '--color-primary-foreground', 'label' => 'Texto sobre primária (escuro)', 'type' => 'color', 'group' => 'cores', 'source' => 'color_dark', 'default' => $cd['--color-primary-foreground'] ?? '#FFFFFF']),
+            self::f(['key' => '--color-success', 'label' => 'Sucesso (escuro)', 'type' => 'color', 'group' => 'cores', 'source' => 'color_dark', 'default' => $cd['--color-success'] ?? '#34D399']),
+            self::f(['key' => '--color-warning', 'label' => 'Aviso (escuro)', 'type' => 'color', 'group' => 'cores', 'source' => 'color_dark', 'default' => $cd['--color-warning'] ?? '#FBBF24']),
+            self::f(['key' => '--color-destructive', 'label' => 'Erro (escuro)', 'type' => 'color', 'group' => 'cores', 'source' => 'color_dark', 'default' => $cd['--color-destructive'] ?? '#F87171']),
 
             // ── Tipografia ───────────────────────────────────────────────
             self::f(['key' => 'heading', 'label' => 'Fonte dos títulos', 'type' => 'select', 'group' => 'tipografia', 'source' => 'font', 'default' => $fonts['heading'] ?? 'Outfit', 'options' => self::FONT_OPTIONS]),
