@@ -15,6 +15,12 @@ description: >
 >
 > **Lê sempre esse ficheiro antes de qualquer trabalho no AnimusFlow ou AnimusFlowStudio.**
 
+> [!NOTE]
+> **Organização dos skills (Sistema A vs B):** este ficheiro é **Sistema A — Dev** (espelho do canónico).
+> O **Sistema B — Geração** (prompts para o Chat IA) vive em `skills/themes/` e `skills/plugins/` (e
+> `animusFlow/skills/sites/`). Fluxo: **criar tema/plugin no Studio → instalar no AnimusFlow → criar site.**
+> Detalhes: `animusFlow/skills/README.md` e `animusFlowStudio/skills/README.md`.
+
 ## Resumo rápido — AnimusFlowStudio
 
 **Path:** `C:\Users\samso\AntigravityWorkspace\animusFlowStudio`  
@@ -84,7 +90,7 @@ private const LAYOUT_MAP = [
 
 ### Convenções do bloco `json_updates` de um tema
 - HTML/CSS/JS dentro dos valores de string: **escapar sempre as aspas como `\"`**. Aspas cruas (`class="..."`) quebram o JSON — mesmo com o parser tolerante a string fica truncada no 1.º `"`. Ao gerar secções novas, produzir os valores com `json_encode`/`json.dumps` (escape garantido).
-- Chaves do bloco: `label`, `description`, `version`, `status` (`draft` → só promover depois de validar no preview), `colors.{light,dark}`, `fonts`, `layout_config`, `capabilities`, `sections`, `custom_css`, `custom_js`.
+- Chaves do bloco: `label`, `description`, `version`, `status` (`draft` → só promover depois de validar no preview), `colors.{light,dark}`, `fonts`, `layout_config`, `capabilities`, `sections`, `custom_css`, `custom_js`, **`settings`** (schema "Definições do Tema" — opções que o criador configura no CMS; exportado no `theme.json` e no `.afprompt`; ver `references/theme-development.md` §1a).
 - HUD com `hud_bg_type:"video"`: o `<video>` do screensaver não tem `poster` — dar **fallback CSS** no `.screensaver-container` (gradiente animado, ex.: `@keyframes` de nebulosa) para degradar quando o `.mp4`/imagem faltar. Os assets referenciados (`/videos/...`, `/images/...`) têm de existir no destino.
 
 ---
