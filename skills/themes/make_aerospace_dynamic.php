@@ -202,7 +202,37 @@ $sections['hero'] = <<<'HTML'
         <span></span>
         <span></span>
       </button>
-      <div class="logo-area">AEROSPACE</div>
+      <div class="logo-area">
+        @php
+          $logoType = $theme->layout_config['logo_type'] ?? 'both';
+          $logoHeight = ($theme->layout_config['logo_height'] ?? 36) . 'px';
+          $logoTextSize = ($theme->layout_config['logo_text_size'] ?? 20) . 'px';
+          $logoTextWeight = $theme->layout_config['logo_text_weight'] ?? 'bold';
+          $siteName = $site_name ?? 'AeroSpace';
+          $homepageUrl = $site_homepage_url ?? '/';
+        @endphp
+
+        @if($logoType === 'image' || $logoType === 'both')
+          <a href="{{ $homepageUrl }}" class="logo-img-link">
+            <img src="{{ $theme->layout_config['logo_image_light'] ?? '/images/aerospace-logo.svg' }}" 
+                 alt="{{ $siteName }}" 
+                 style="height: {{ $logoHeight }};"
+                 class="logo-light" />
+            @if(!empty($theme->layout_config['logo_image_dark']))
+              <img src="{{ $theme->layout_config['logo_image_dark'] }}" 
+                   alt="{{ $siteName }}" 
+                   style="height: {{ $logoHeight }};"
+                   class="logo-dark hidden" />
+            @endif
+          </a>
+        @endif
+
+        @if($logoType === 'text' || $logoType === 'both')
+          <a href="{{ $homepageUrl }}" class="logo-text-link" style="font-size: {{ $logoTextSize }}; font-weight: {{ $logoTextWeight }};">
+            {{ $siteName }}
+          </a>
+        @endif
+      </div>
       <nav class="horizontal-links">
         <ul>
           @foreach($nav_links ?? [] as $link)
@@ -955,7 +985,37 @@ if (!str_contains($css, '/* ── Definições de Layout Dinâmico AnimusFlow �
         "}\n";
 }
 
+if (!str_contains($css, '/* ── Estilos de Logótipo Dinâmico ── */')) {
+    $css .= "\n\n/* ── Estilos de Logótipo Dinâmico ── */\n" .
+        ".logo-area {\n" .
+        "  display: flex !important;\n" .
+        "  align-items: center !important;\n" .
+        "  gap: 0.75rem !important;\n" .
+        "}\n" .
+        ".logo-img-link {\n" .
+        "  display: flex !important;\n" .
+        "  align-items: center !important;\n" .
+        "}\n" .
+        ".logo-img-link img {\n" .
+        "  width: auto !important;\n" .
+        "  max-width: 100% !important;\n" .
+        "  display: block !important;\n" .
+        "}\n" .
+        ".logo-text-link {\n" .
+        "  color: var(--color-foreground, #ffffff) !important;\n" .
+        "  text-decoration: none !important;\n" .
+        "  font-family: var(--font-heading), monospace !important;\n" .
+        "  letter-spacing: 0.05em !important;\n" .
+        "  text-transform: uppercase !important;\n" .
+        "  transition: opacity 0.2s !important;\n" .
+        "}\n" .
+        ".logo-text-link:hover {\n" .
+        "  opacity: 0.85 !important;\n" .
+        "}\n";
+}
+
 $theme->custom_css = $css;
+
 
 // Sincronizar JS
 $js = $theme->custom_js;

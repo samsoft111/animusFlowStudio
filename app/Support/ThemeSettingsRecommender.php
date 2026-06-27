@@ -38,6 +38,16 @@ final class ThemeSettingsRecommender
             // ── Geral ────────────────────────────────────────────────────
             self::f(['key' => 'show_dark_toggle', 'label' => 'Mostrar alternância claro/escuro', 'type' => 'toggle', 'group' => 'geral', 'default' => $lc['show_dark_toggle'] ?? true, 'hint' => 'Botão de tema claro/escuro no cabeçalho.']),
             self::f(['key' => 'back_to_top', 'label' => 'Botão "voltar ao topo"', 'type' => 'toggle', 'group' => 'geral', 'default' => $lc['back_to_top'] ?? true]),
+            self::f(['key' => 'logo_type', 'label' => 'Tipo de logótipo', 'type' => 'select', 'group' => 'geral', 'default' => $lc['logo_type'] ?? 'both',
+                'options' => ['text' => 'Apenas Texto', 'image' => 'Apenas Imagem', 'both' => 'Imagem e Texto']]),
+            self::f(['key' => 'logo_image_light', 'label' => 'Logótipo — imagem (Modo Claro)', 'type' => 'media_image', 'group' => 'geral', 'default' => $lc['logo_image_light'] ?? '/images/aerospace-logo.svg']),
+            self::f(['key' => 'logo_image_dark', 'label' => 'Logótipo — imagem (Modo Escuro)', 'type' => 'media_image', 'group' => 'geral', 'default' => $lc['logo_image_dark'] ?? '']),
+            self::f(['key' => 'logo_height', 'label' => 'Logótipo — altura (px)', 'type' => 'range', 'group' => 'geral', 'default' => $lc['logo_height'] ?? 36, 'min' => 20, 'max' => 100, 'step' => 2]),
+            self::f(['key' => 'logo_text_size', 'label' => 'Logótipo — tamanho do texto (px)', 'type' => 'range', 'group' => 'geral', 'default' => $lc['logo_text_size'] ?? 20, 'min' => 14, 'max' => 36, 'step' => 1]),
+            self::f(['key' => 'logo_text_weight', 'label' => 'Logótipo — espessura do texto', 'type' => 'select', 'group' => 'geral', 'default' => $lc['logo_text_weight'] ?? 'bold',
+                'options' => ['normal' => 'Regular', 'medium' => 'Médio', 'semibold' => 'Semi-negrito', 'bold' => 'Negrito', 'extrabold' => 'Extra-negrito']]),
+            self::f(['key' => 'favicon_image', 'label' => 'Favicon do site', 'type' => 'media_image', 'group' => 'geral', 'default' => $lc['favicon_image'] ?? '/favicon.ico']),
+
 
             // ── Cabeçalho ────────────────────────────────────────────────
             self::f(['key' => 'header_type', 'label' => 'Estilo do cabeçalho', 'type' => 'select', 'group' => 'cabecalho', 'default' => $lc['header_type'] ?? 'glass',
