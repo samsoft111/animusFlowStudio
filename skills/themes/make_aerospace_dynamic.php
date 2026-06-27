@@ -23,8 +23,11 @@ $sections['cta'] = <<<'HTML'
   $heading = $c['heading'] ?? 'Pronto para Lançar a Missão?';
   $text = $c['text'] ?? $c['subheading'] ?? 'Solicite o estudo de viabilidade da sua operação de tráfego aéreo. Entraremos em contacto para detalhar o plano de voo.';
   $btnText = $c['button_text'] ?? 'Submeter Plano de Missão';
+  
+  $secBg = $c['bg_color'] ?? $settings['bg_color'] ?? $c['custom_bg_color'] ?? null;
+  $secText = $c['text_color'] ?? $settings['text_color'] ?? null;
 @endphp
-<section id="contacto" class="py-20 bg-gradient-to-br from-[#0F172A] to-[#070C18] border-t border-white/5 relative">
+<section id="contacto" class="py-20 bg-gradient-to-br from-[#0F172A] to-[#070C18] border-t border-white/5 relative" style="@if($secBg) background: {{ $secBg }} !important; @endif @if($secText) color: {{ $secText }} !important; @endif">
   <div class="max-w-4xl mx-auto px-6 text-center">
     <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 text-xs font-semibold uppercase tracking-wider mb-6">
       ⚡ Pronto para Operar
@@ -81,8 +84,11 @@ $sections['map'] = <<<'HTML'
   $address = $c['address'] ?? ($theme->layout_config['contact_address_hq'] ?? 'Miramar, Luanda, Angola');
   $lat = $theme->layout_config['footer_lat'] ?? '-8.8124';
   $lon = $theme->layout_config['footer_lon'] ?? '13.2306';
+  
+  $secBg = $c['bg_color'] ?? $settings['bg_color'] ?? $c['custom_bg_color'] ?? null;
+  $secText = $c['text_color'] ?? $settings['text_color'] ?? null;
 @endphp
-<section class="py-16 bg-[#030712] relative">
+<section class="py-16 bg-[#030712] relative" style="@if($secBg) background: {{ $secBg }} !important; @endif @if($secText) color: {{ $secText }} !important; @endif">
   <div class="max-w-5xl mx-auto px-6">
     <div class="text-center mb-10">
       <span class="inline-flex items-center gap-2 text-[11px] font-mono uppercase tracking-[0.25em] text-[#06B6D4] mb-3">
@@ -514,8 +520,11 @@ $sections['team'] = <<<'HTML'
     ['name' => 'Cmdt. João Lopes', 'role' => 'Director de Operações', 'bio' => '20 anos de experiência militar em operações aéreas. Certificado ANAC/CAA.'],
     ['name' => 'Dra. Ana Fernandes', 'role' => 'Directora Comercial', 'bio' => 'MBA pela Nova SBE. Especialista em parcerias estratégicas em mercados emergentes.']
   ];
+  
+  $secBg = $c['bg_color'] ?? $settings['bg_color'] ?? $c['custom_bg_color'] ?? null;
+  $secText = $c['text_color'] ?? $settings['text_color'] ?? null;
 @endphp
-<section class="py-24 bg-gradient-to-b from-[#030712] to-[#070C18] relative overflow-hidden">
+<section class="py-24 bg-gradient-to-b from-[#030712] to-[#070C18] relative overflow-hidden" style="@if($secBg) background: {{ $secBg }} !important; @endif @if($secText) color: {{ $secText }} !important; @endif">
   <div class="absolute inset-0 opacity-[0.03]" style="background-image:radial-gradient(#06B6D4 1px,transparent 1px);background-size:32px 32px"></div>
   <div class="max-w-6xl mx-auto px-6 relative z-10">
     <div class="text-center mb-16">
@@ -554,9 +563,12 @@ $sections['text'] = <<<'HTML'
 @php
   $c = $content ?? [];
   $heading = $c['heading'] ?? 'Missão Orbital, Impacto Terrestre';
-  $body = $c['body'] ?? 'A AeroSpace nasceu em Luanda em 2019, quando um grupo de engenheiros aeronáuticos e especialistas em inteligência artificial uniram forças com uma missão clara: levar a tecnologia aeroespacial ao serviço do desenvolvimento de Angola e de África.';
+  $body = $c['body'] ?? 'A AeroSpace nasceu em Luanda em 2019, quando um grupo de engenheiros aeronáuticos e especialistas in inteligência artificial uniram forças com uma missão clara: levar a tecnologia aeroespacial ao serviço do desenvolvimento de Angola e de África.';
+  
+  $secBg = $c['bg_color'] ?? $settings['bg_color'] ?? $c['custom_bg_color'] ?? null;
+  $secText = $c['text_color'] ?? $settings['text_color'] ?? null;
 @endphp
-<section class="py-20 bg-[#070C18] relative">
+<section class="py-20 bg-[#070C18] relative" style="@if($secBg) background: {{ $secBg }} !important; @endif @if($secText) color: {{ $secText }} !important; @endif">
   <div class="max-w-4xl mx-auto px-6">
     <div class="border-l-2 border-[#06B6D4]/30 pl-8">
       <span class="inline-flex items-center gap-2 text-[11px] font-mono uppercase tracking-[0.25em] text-[#06B6D4] mb-6">
@@ -588,8 +600,11 @@ $sections['about'] = <<<'HTML'
     'Carga util ate 40kg com estabilizacao giroscopica',
     'Rastreio orbital com precisao sub-metrica'
   ];
+  
+  $secBg = $c['bg_color'] ?? $settings['bg_color'] ?? $c['custom_bg_color'] ?? null;
+  $secText = $c['text_color'] ?? $settings['text_color'] ?? null;
 @endphp
-<section id="sobre" class="py-24 bg-[#030712] relative overflow-hidden">
+<section id="sobre" class="py-24 bg-[#030712] relative overflow-hidden" style="@if($secBg) background: {{ $secBg }} !important; @endif @if($secText) color: {{ $secText }} !important; @endif">
   <div class="absolute inset-0 opacity-[0.04]" style="background-image:radial-gradient(#06B6D4 1px,transparent 1px);background-size:28px 28px"></div>
   <div class="max-w-6xl mx-auto px-6 relative z-10">
     <div class="grid md:grid-cols-2 gap-14 items-center">
@@ -645,8 +660,11 @@ $sections['stats'] = <<<'HTML'
     ['icon' => '🚁', 'value' => '48', 'label' => 'Drones na Frota'],
     ['icon' => '🌍', 'value' => '24/7', 'label' => 'Monitorizacao Orbital']
   ];
+  
+  $secBg = $c['bg_color'] ?? $settings['bg_color'] ?? $c['custom_bg_color'] ?? null;
+  $secText = $c['text_color'] ?? $settings['text_color'] ?? null;
 @endphp
-<section class="py-20 bg-gradient-to-b from-[#070C18] to-[#030712] border-y border-white/5 relative">
+<section class="py-20 bg-gradient-to-b from-[#070C18] to-[#030712] border-y border-white/5 relative" style="@if($secBg) background: {{ $secBg }} !important; @endif @if($secText) color: {{ $secText }} !important; @endif">
   <div class="max-w-6xl mx-auto px-6">
     @if(!empty($c['heading']))
       <div class="text-center mb-10">
@@ -681,8 +699,11 @@ $sections['steps'] = <<<'HTML'
     ['number' => '03', 'title' => 'Execução Autónoma', 'text' => 'Lançamento da missão com monitorização em tempo real pelo nosso centro de controlo em Luanda.'],
     ['number' => '04', 'title' => 'Relatório Técnico', 'text' => 'Entrega de relatório completo com telemetria, imagens, métricas e dados de qualidade da missão.']
   ];
+  
+  $secBg = $c['bg_color'] ?? $settings['bg_color'] ?? $c['custom_bg_color'] ?? null;
+  $secText = $c['text_color'] ?? $settings['text_color'] ?? null;
 @endphp
-<section class="py-24 bg-[#070C18] relative overflow-hidden">
+<section class="py-24 bg-[#070C18] relative overflow-hidden" style="@if($secBg) background: {{ $secBg }} !important; @endif @if($secText) color: {{ $secText }} !important; @endif">
   <div class="max-w-4xl mx-auto px-6">
     <div class="text-center mb-16">
       <span class="inline-flex items-center gap-2 text-[11px] font-mono uppercase tracking-[0.25em] text-[#06B6D4] mb-4">
@@ -732,8 +753,11 @@ $sections['contact'] = <<<'HTML'
 
   $hgr1 = $theme->layout_config['contact_address_hangar'] ?? 'Aeroporto Internacional 4 de Fevereiro';
   $hgr2 = $theme->layout_config['contact_address_hangar_sub'] ?? 'Zona Técnica Norte — Hangar AX, Luanda';
+  
+  $secBg = $c['bg_color'] ?? $settings['bg_color'] ?? $c['custom_bg_color'] ?? null;
+  $secText = $c['text_color'] ?? $settings['text_color'] ?? null;
 @endphp
-<section class="py-24 bg-[#070C18] relative overflow-hidden">
+<section class="py-24 bg-[#070C18] relative overflow-hidden" style="@if($secBg) background: {{ $secBg }} !important; @endif @if($secText) color: {{ $secText }} !important; @endif">
   <div class="absolute inset-0 opacity-[0.03]" style="background-image:radial-gradient(#06B6D4 1px,transparent 1px);background-size:28px 28px"></div>
   <div class="max-w-6xl mx-auto px-6 relative z-10">
     <div class="text-center mb-16">
@@ -834,8 +858,11 @@ $sections['gallery'] = <<<'HTML'
     ['src' => 'https://images.unsplash.com/photo-1518623489648-a173ef7824f3?w=800&q=80', 'alt' => 'Aterragem de precisão', 'caption' => 'Aterragem em zona remota — Uíge, 2024'],
     ['src' => 'https://images.unsplash.com/photo-1601618440254-abf3e87f87e8?w=800&q=80', 'alt' => 'Frota em hangar', 'caption' => 'Hangar Central — Luanda, 2025']
   ];
+  
+  $secBg = $c['bg_color'] ?? $settings['bg_color'] ?? $c['custom_bg_color'] ?? null;
+  $secText = $c['text_color'] ?? $settings['text_color'] ?? null;
 @endphp
-<section class="py-12 bg-[#030712] relative overflow-hidden">
+<section class="py-12 bg-[#030712] relative overflow-hidden" style="@if($secBg) background: {{ $secBg }} !important; @endif @if($secText) color: {{ $secText }} !important; @endif">
   <div class="max-w-6xl mx-auto px-6">
     <h3 class="text-sm font-mono uppercase tracking-wider text-[#06B6D4] mb-6 flex items-center gap-3">
       <span class="w-8 h-px bg-[#06B6D4]/40"></span> {{ $heading }}
@@ -867,8 +894,11 @@ $sections['features'] = <<<'HTML'
     ['icon' => '👁️', 'title' => 'Vigilância e Reconhecimento', 'text' => 'Patrulhamento aéreo ativo com drones de alta altitude com visores térmicos e telemetria por radar laser em tempo real.']
   ];
   $gridCols = count($items) > 3 ? 'md:grid-cols-2 lg:grid-cols-4' : 'md:grid-cols-3';
+  
+  $secBg = $c['bg_color'] ?? $settings['bg_color'] ?? $c['custom_bg_color'] ?? null;
+  $secText = $c['text_color'] ?? $settings['text_color'] ?? null;
 @endphp
-<section id="servicos" class="py-24 bg-[#070C18] relative overflow-hidden">
+<section id="servicos" class="py-24 bg-[#070C18] relative overflow-hidden" style="@if($secBg) background: {{ $secBg }} !important; @endif @if($secText) color: {{ $secText }} !important; @endif">
   <div class="max-w-6xl mx-auto px-6">
     <div class="text-center mb-16">
       <h2 class="text-4xl font-bold tracking-tight text-white font-heading">{{ $heading }}</h2>
@@ -944,8 +974,11 @@ $sections['testimonials'] = <<<'HTML'
     ['quote' => 'A cartografia orbital reduziu em 40% o tempo de planeamento das nossas obras. Tecnologia sem igual no mercado africano.', 'name' => 'Eng.ª Sofia Mendes', 'role' => 'Engenheira Chefe', 'company' => 'Construções INGA'],
     ['quote' => 'Monitorização em tempo real, equipa disponível 24/7 e tecnologia de ponta. Recomendo a AeroSpace sem reservas para missões críticas.', 'name' => 'Maj. António Silva', 'role' => 'Coordenador de Segurança', 'company' => 'Ministério do Interior']
   ];
+  
+  $secBg = $c['bg_color'] ?? $settings['bg_color'] ?? $c['custom_bg_color'] ?? null;
+  $secText = $c['text_color'] ?? $settings['text_color'] ?? null;
 @endphp
-<section class="py-24 bg-[#030712] relative overflow-hidden">
+<section class="py-24 bg-[#030712] relative overflow-hidden" style="@if($secBg) background: {{ $secBg }} !important; @endif @if($secText) color: {{ $secText }} !important; @endif">
   <div class="absolute inset-0 opacity-[0.03]" style="background-image:radial-gradient(#06B6D4 1px,transparent 1px);background-size:24px 24px"></div>
   <div class="max-w-6xl mx-auto px-6 relative z-10">
     <div class="text-center mb-16">
