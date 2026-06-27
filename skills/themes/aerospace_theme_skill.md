@@ -75,13 +75,6 @@ Variáveis CSS emitidas pelo hero e o que controlam:
 | `info_card_{title,subtitle,hint}_text` | — (Blade `{{ }}`) | textos do card | AEROSPACE / Operações & Logística Aérea / Passe o cursor… |
 | `info_card_{title,subtitle,hint}_size` (px) | `style` inline | tamanho de cada texto | 20 / 12 / 10 |
 | `info_card_{title,subtitle,hint}_color` | `style` inline | cor de cada texto | #FFFFFF / #06B6D4 / #94A3B8 |
-| `circular_menu_hub_text` / `_desc` | — (Blade `{{ }}`) | texto / descrição do Hub central | HOME / Central Hub |
-| `circular_menu_hub_color` | `--hub-color` / `rgb` | cor / glow do Hub central | #06B6D4 |
-| `circular_menu_bg` | `--sat-bg` | cor de fundo global dos satélites | #0F172A |
-| `circular_menu_text_color` | `--sat-text-color` | cor do título dos satélites | #FFFFFF |
-| `circular_menu_desc_color` | `--sat-desc-color` | cor da descrição dos satélites | #94A3B8 |
-| `circular_menu_font_size` / `_weight` | `--sat-font-size` / `rgb` | tamanho e peso de fonte dos satélites | 13px / bold |
-| `circular_menu_satX_{icon,desc,color}` | `--sat-color` / `rgb` | ícone, descrição e cor individual do satélite X (1 a 4) | Configurações individuais |
 
 ## layout_config (campos-chave)
 
@@ -97,9 +90,6 @@ chat_popup_enabled: true · chat_popup_mode: "form" · chat_voice_commands: true
 contact_show_map: true · contact_map_iframe: "<embed Google Maps>" · contact_show_newsletter: true
 menu_space_top: 24 · menu_space_bottom: 24      // menu_space_top = altura do menu circular
 nav_links: [ Home /, Sobre /sobre, Serviços /servicos, Galeria /galeria, Contactos /contactos ]
-circular_menu_hub_text · circular_menu_hub_desc · circular_menu_hub_color
-circular_menu_bg · circular_menu_text_color · circular_menu_desc_color · circular_menu_font_size · circular_menu_font_weight
-circular_menu_sat1_icon · circular_menu_sat1_desc · circular_menu_sat1_color (até sat4)
 + (configuráveis acima): screensaver_scrim/blur/video_opacity · info_card_top · info_card_*_text/size/color
   · navbar_color · navbar_opacity · hero_bg_color · hero_internal_padding_top (subpáginas)
 ```
@@ -111,14 +101,27 @@ circular_menu_sat1_icon · circular_menu_sat1_desc · circular_menu_sat1_color (
 
 ## sections (Blade) — dirigidas por conteúdo + por página
 
-Gera as **13** secções como HTML/Blade. Lêem `$theme->layout_config[...]` e são **dirigidas por conteúdo**: cada secção começa com `@php $c = $content ?? []; … @endphp` e usa `{{ $c['heading'] ?? 'fallback' }}` (+ `$settings`), para mostrar o conteúdo real da página no CMS, com fallback para texto demo.
-* **Fundo Customizado por Bloco:** Todas as 11 secções de conteúdo suportam as chaves `$c['bg_color']` / `$settings['bg_color']` / `$c['custom_bg_color']` e `$c['text_color']` / `$settings['text_color']` no editor do CMS para permitir substituir as cores de fundo ou gradientes padrão por secção de forma 100% independente.
+Gera as **13** secções como HTML/Blade. Lêem `$theme->layout_config[...]` e — importante — são
+**dirigidas por conteúdo**: cada secção começa com `@php $c = $content ?? []; … @endphp` e usa
+`{{ $c['heading'] ?? 'fallback' }}` (+ `$settings`), para mostrar o conteúdo real da página no CMS, com
+fallback para texto demo. (12 secções são dinâmicas; o `footer` é global/estático.)
 
 `hero` · `about` · `features` · `stats` · `steps` · `gallery` · `testimonials` · `team` ·
 `contact` · `map` · `cta` · `text` · `footer`
 
 A `gallery` usa o carrossel 3D (`gallery_layout`); o `hero` é o screensaver (acima); o `contact`
 mostra o mapa (`contact_map_iframe`) e newsletter conforme as flags.
+
+### ⭐ Fundos de Secção Personalizáveis por Bloco
+
+**Todas as 11 secções de conteúdo** (exceto `hero` e `footer`) suportam fundos e cor de texto
+independentes por bloco de página. Para usar, basta definir no conteúdo do bloco no CMS:
+
+- `bg_color` — Cor de fundo CSS (ex: `#1a0a2e`, `rgba(10,5,30,0.95)`, `linear-gradient(...)`)
+- `text_color` — Cor de texto principal (ex: `#ffffff`, `#f3f4f6`)
+
+A secção aplica `style="background: {{ $secBg }} !important; color: {{ $secText }} !important;"`.
+As restantes secções da página **não são afectadas** — o override é isolado por bloco.
 
 ### Home vs Subpáginas
 - **Home** (`/`): hero com o screensaver interativo a cobrir o ecrã.
@@ -131,12 +134,102 @@ mostra o mapa (`contact_map_iframe`) e newsletter conforme as flags.
   `skills/themes/aerospace-demo-content.json` (fallback `sampleData`). Rotas `/sobre … /contactos` →
   `ThemeController::previewPage` (tema via sessão).
 
+## 🎯 Menu Orbital Dinâmico — Personalização Completa
+
+O menu circular orbital (`.circular-menu-wrapper`) é 100% customizável pelo CMS via `theme_settings`
+(grupo `menus`). As variáveis são injetadas como propriedades CSS inline e lidas pelo `custom_css`.
+
+### Hub Central (nó Home)
+| Chave `layout_config` | Controla |
+|---|---|
+| `circular_menu_hub_text` | Texto principal do hub (default: `HOME`) |
+| `circular_menu_hub_desc` | Subtítulo do hub (default: `Central Hub`) |
+| `circular_menu_hub_color` | Cor de glow/brilho do hub — hex → `--hub-color` + `--hub-color-rgb` |
+
+### Satélites Globais (afeta todos os 4 nós)
+| Chave `layout_config` | var CSS | Controla |
+|---|---|---|
+| `circular_menu_bg` | `--sat-bg` | Cor de fundo dos cartões satélite |
+| `circular_menu_text_color` | `--sat-text-color` | Cor dos títulos nos satélites |
+| `circular_menu_desc_color` | `--sat-desc-color` | Cor das descrições nos satélites |
+| `circular_menu_font_size` (px) | `--sat-font-size` | Tamanho de fonte dos títulos |
+| `circular_menu_font_weight` | `--sat-font-weight` | Peso da fonte (400/500/600/700/800) |
+
+### Satélites Individuais (sat 1 a 4)
+Para cada satélite `X` (1–4):
+| Chave `layout_config` | Controla |
+|---|---|
+| `circular_menu_satX_icon` | Emoji/ícone exibido no nó (`🛸`, `🖼️`, `📡`, `🌐`) |
+| `circular_menu_satX_desc` | Texto descritivo abaixo do título do link |
+| `circular_menu_satX_color` | Cor de destaque/glow individual → `--sat-color` + `--sat-color-rgb` |
+
+Os títulos e URLs dos satélites continuam a ser lidos de `nav_links` (CMS de navegação); os ícones,
+descrições e cores individuais ficam em `layout_config`.
+
+## 🖼️ Logótipo & Favicon — Configurações
+
+| Chave `layout_config` | Controla |
+|---|---|
+| `logo_type` | `text`, `image` ou `both` |
+| `logo_text` | Texto do logótipo (default: nome do site) |
+| `logo_font_size` (px) | Tamanho do texto do logótipo |
+| `logo_image` | URL da imagem do logótipo (modo claro) |
+| `logo_image_dark` | URL da imagem do logótipo (modo escuro) |
+| `logo_image_height` (px) | Altura máxima da imagem do logótipo |
+| `favicon_url` | URL do favicon personalizado |
+
+## 🦶 Rodapé — Configurações Dinâmicas
+
+| Chave `layout_config` | Controla |
+|---|---|
+| `footer_logo_type` | Tipo de logótipo no rodapé (herda do cabeçalho por defeito) |
+| `footer_description` | Texto descritivo abaixo do logótipo do rodapé |
+| `footer_location` | Localização da sede (exibida no HUD + mapa) |
+| `footer_lat` / `footer_lon` | Coordenadas GPS (formatadas automaticamente em °′″) |
+| `footer_alt` | Altitude operacional (HUD cockpit) |
+| `footer_copyright` | Texto de copyright personalizado |
+| `footer_status_text` | Texto de status do sistema cockpit com indicador pulsante |
+| `contact_email` | E-mail comercial |
+| `contact_phone` | Telefone comercial |
+| `contact_hours` | Horário operacional |
+| `contact_address_hq` / `contact_address_sub` | Morada da sede |
+| `contact_address_hangar` / `contact_address_hangar_sub` | Morada do hangar |
+
+## 📐 Layout Dinâmico
+
+| Chave `layout_config` | var CSS / comportamento |
+|---|---|
+| `layout_type` | `full-width`, `boxed`, `sidebar` — controla `body` class e container |
+| `max_width` (px) | `--layout-max-width` — largura máxima dos containers internos |
+| `section_spacing` | `--section-padding-y` — padding vertical de cada secção |
+| `header_sticky` | Activa `.is-sticky` no `.normal-navbar` (efeito slide-in ao scroll) |
+| `normal_menu_position` | `pos-horizontal-left/right` ou `pos-vertical-left/right/center` |
+
+## 📡 HUD Telemetria Cockpit
+
+Métricas do painel HUD (visíveis no hero quando `telemetry_enabled: true`):
+
+| Chave `layout_config` | Métrica HUD |
+|---|---|
+| `hud_telemetry_alt` | ALT (altitude de cruzeiro) |
+| `hud_telemetry_spd` | SPD (velocidade) |
+| `hud_telemetry_bat` | BAT (bateria %) |
+| `hud_telemetry_althold` | ALT-HOLD status |
+| `hud_telemetry_gps` | GPS lock status |
+| `hud_telemetry_navlock` | NAV-LOCK status |
+
 ## custom_css / custom_js
 
 Implementa os comportamentos de marca: **preloader de consola de boot**, **grelha 3D interativa de
 perspetiva**, **menu orbital com sonar**, **widgets de cockpit arrastáveis**, **comandos por voz**, o
 **screensaver interativo** (hover/foco/táctil) e os efeitos de hover. O `custom_css` deve ler as
 `var(--…)` da tabela de definições acima. (Referência completa já resolvida: `aerospace_theme_snapshot.md`.)
+
+Blocos gerados automaticamente por `make_aerospace_dynamic.php` e adicionados ao `custom_css`:
+- `/* ── Barra de Menu Fixa (Sticky) ao fazer Scroll ── */`
+- `/* ── Definições de Layout Dinâmico AnimusFlow ── */`
+- `/* ── Estilos de Logótipo Dinâmico ── */`
+- `/* ── Customizações Dinâmicas do Menu Circular ── */`
 
 ## Acabamento e fluxo de manutenção
 
