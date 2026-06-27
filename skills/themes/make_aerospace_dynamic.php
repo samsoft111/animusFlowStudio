@@ -497,19 +497,19 @@ $sections['hero'] = <<<'HTML'
     <div class="chat-popup-body">
       <div class="space-y-4 text-left font-mono text-[10px] text-slate-400">
         <div class="flex justify-between border-b border-white/5 pb-1">
-          <span>SAT-LINK STATUS:</span> <span class="text-[#06b6d4]">CONNECTED (100%)</span>
+          <span>SAT-LINK STATUS:</span> <span class="text-[#06b6d4]">{{ $theme->layout_config['hud_telemetry_navlock'] ?? 'CONNECTED (100%)' }}</span>
         </div>
         <div class="flex justify-between border-b border-white/5 pb-1">
-          <span>DRONES OPERACIONAIS:</span> <span class="text-emerald-400">07 ONLINE</span>
+          <span>DRONES OPERACIONAIS:</span> <span class="text-emerald-400">{{ $theme->layout_config['hud_telemetry_drones_count'] ?? '07 ONLINE' }}</span>
         </div>
         <div class="flex justify-between border-b border-white/5 pb-1">
-          <span>VELOCIDADE DO VENTO:</span> <span id="telemetry-wind">14 km/h</span>
+          <span>VELOCIDADE DO VENTO:</span> <span id="telemetry-wind">{{ $theme->layout_config['hud_telemetry_spd'] ?? '14 km/h' }}</span>
         </div>
         <div class="flex justify-between border-b border-white/5 pb-1">
-          <span>ALTITUDE MÉDIA:</span> <span>120m</span>
+          <span>ALTITUDE MÉDIA:</span> <span>{{ $theme->layout_config['hud_telemetry_alt'] ?? '120m' }}</span>
         </div>
         <div class="flex justify-between">
-          <span>SINAL GPS:</span> <span class="text-emerald-400">EXCELENTE</span>
+          <span>SINAL GPS:</span> <span class="text-emerald-400">{{ $theme->layout_config['hud_telemetry_gps'] ?? 'EXCELENTE' }}</span>
         </div>
         <div class="mt-4 pt-2 border-t border-white/10 text-center">
           <button class="px-2 py-1 rounded bg-[#06b6d4]/10 border border-[#06b6d4]/30 text-[#06b6d4] text-[9px] hover:bg-[#06b6d4]/20 transition" onclick="triggerPingSound()">Sonar Ping Manual</button>
@@ -560,11 +560,17 @@ $sections['team'] = <<<'HTML'
           $initials = substr($initials, 0, 2);
         @endphp
         <div class="bg-[#070C18] border border-white/8 rounded-2xl p-6 text-center group hover:border-[#06B6D4]/30 transition-all duration-300">
-          <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-[#2563EB] to-[#06B6D4] flex items-center justify-center text-white font-bold text-xl mx-auto mb-4 group-hover:scale-105 transition-transform duration-300">{{ $initials }}</div>
+          @if(!empty($item['image']) || !empty($item['photo']))
+            <img src="{{ $item['image'] ?? $item['photo'] }}" alt="{{ $item['name'] }}" class="w-16 h-16 rounded-2xl object-cover mx-auto mb-4 group-hover:scale-105 transition-transform duration-300 border border-white/10" />
+          @else
+            <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-[#2563EB] to-[#06B6D4] flex items-center justify-center text-white font-bold text-xl mx-auto mb-4 group-hover:scale-105 transition-transform duration-300">{{ $initials }}</div>
+          @endif
           <div class="text-white font-semibold font-heading">{{ $item['name'] }}</div>
           <div class="text-[#06B6D4] text-xs font-mono uppercase tracking-wider mt-1 mb-3">{{ $item['role'] }}</div>
           <p class="text-slate-500 text-xs leading-relaxed">{{ $item['bio'] ?? $item['text'] ?? '' }}</p>
-          <a href="#" class="inline-flex items-center gap-1 mt-4 text-[10px] text-slate-600 hover:text-[#06B6D4] transition-colors font-mono uppercase tracking-wider">LinkedIn ↗</a>
+          @if(!empty($item['linkedin']) || !empty($item['url']))
+            <a href="{{ $item['linkedin'] ?? $item['url'] }}" target="_blank" class="inline-flex items-center gap-1 mt-4 text-[10px] text-slate-600 hover:text-[#06B6D4] transition-colors font-mono uppercase tracking-wider">LinkedIn ↗</a>
+          @endif
         </div>
       @endforeach
     </div>
@@ -643,19 +649,29 @@ $sections['about'] = <<<'HTML'
             <span class="font-mono text-[10px] uppercase tracking-widest text-slate-500">Status do Sistema</span>
             <span class="font-mono text-[10px] text-emerald-400">&#9679; OPERACIONAL</span>
           </div>
+          @php
+            $metrics = $c['metrics'] ?? $c['status_bars'] ?? [
+              ['label' => 'Integridade da Frota', 'value' => '98%'],
+              ['label' => 'Cobertura Orbital', 'value' => '91%'],
+              ['label' => 'Eficiência Energética', 'value' => '87%']
+            ];
+          @endphp
           <div class="space-y-5">
-            <div>
-              <div class="flex justify-between text-xs text-slate-400 mb-1"><span>Integridade da Frota</span><span class="text-[#06B6D4]">98%</span></div>
-              <div class="h-1.5 rounded-full bg-white/5 overflow-hidden"><div class="h-full bg-gradient-to-r from-[#2563EB] to-[#06B6D4]" style="width:98%"></div></div>
-            </div>
-            <div>
-              <div class="flex justify-between text-xs text-slate-400 mb-1"><span>Cobertura Orbital</span><span class="text-[#06B6D4]">91%</span></div>
-              <div class="h-1.5 rounded-full bg-white/5 overflow-hidden"><div class="h-full bg-gradient-to-r from-[#2563EB] to-[#06B6D4]" style="width:91%"></div></div>
-            </div>
-            <div>
-              <div class="flex justify-between text-xs text-slate-400 mb-1"><span>Eficiencia Energetica</span><span class="text-[#06B6D4]">87%</span></div>
-              <div class="h-1.5 rounded-full bg-white/5 overflow-hidden"><div class="h-full bg-gradient-to-r from-[#2563EB] to-[#06B6D4]" style="width:87%"></div></div>
-            </div>
+            @foreach($metrics as $m)
+              @php
+                $valStr = $m['value'] ?? '100%';
+                $valInt = (int)preg_replace('/[^0-9]/', '', $valStr);
+              @endphp
+              <div>
+                <div class="flex justify-between text-xs text-slate-400 mb-1">
+                  <span>{{ $m['label'] }}</span>
+                  <span class="text-[#06B6D4]">{{ $valStr }}</span>
+                </div>
+                <div class="h-1.5 rounded-full bg-white/5 overflow-hidden">
+                  <div class="h-full bg-gradient-to-r from-[#2563EB] to-[#06B6D4]" style="width: {{ $valInt }}%"></div>
+                </div>
+              </div>
+            @endforeach
           </div>
         </div>
       </div>
@@ -944,40 +960,54 @@ $sections['features'] = <<<'HTML'
     </div>
 
     <!-- Painel de Especificações Interativo (Drone Hotspots Showcase) -->
+    @php
+      $blueprintImg = $c['blueprint_image'] ?? null;
+      $hotspots = $c['hotspots'] ?? $c['blueprint_hotspots'] ?? [
+        ['top' => '13%', 'left' => '13%', 'title' => 'Propulsores Elétricos VTOL', 'desc' => 'Quatro propulsores elétricos independentes de alta eficácia para descolagem e aterragem vertical autónoma em qualquer terreno.'],
+        ['top' => '48%', 'left' => '48%', 'title' => 'Processador de IA & LIDAR', 'desc' => 'Núcleo de computação de bordo com sensor LIDAR de alta frequência para desvio dinâmico de obstáculos a 360º durante voos de baixa altitude.', 'active' => true],
+        ['top' => '83%', 'left' => '83%', 'title' => 'Módulo de Energia de Lítio-Enxofre', 'desc' => 'Baterias aeroespaciais avançadas com densidade de carga triplicada face ao ião de lítio convencional, garantindo autonomias de até 150 km.']
+      ];
+      $defaultActiveHs = array_values(array_filter($hotspots, fn($hs) => $hs['active'] ?? false))[0] ?? ($hotspots[0] ?? null);
+      $defaultTitle = $defaultActiveHs['title'] ?? 'Processador de IA & LIDAR';
+      $defaultDesc = $defaultActiveHs['desc'] ?? '';
+    @endphp
     <div class="drone-blueprint-showcase mt-16 border border-white/10 rounded-2xl bg-slate-900/40 p-8 backdrop-blur-md relative overflow-hidden">
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
         <div class="relative flex justify-center">
           <div class="blueprint-vector">
-            <!-- SVG Esquema de Drone -->
-            <svg class="w-64 h-64 text-cyan-500/15" viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="0.75">
-              <circle cx="50" cy="50" r="12" stroke-dasharray="2 2" />
-              <circle cx="50" cy="50" r="4" />
-              <line x1="15" y1="15" x2="85" y2="85" />
-              <line x1="15" y1="85" x2="85" y2="15" />
-              <!-- Rotors -->
-              <circle cx="15" cy="15" r="8" />
-              <circle cx="85" cy="15" r="8" />
-              <circle cx="15" cy="85" r="8" />
-              <circle cx="85" cy="85" r="8" />
-              <!-- Wings -->
-              <path d="M25,50 L75,50 M50,25 L50,75" stroke-width="0.5" />
-            </svg>
+            @if(!empty($blueprintImg))
+              <img src="{{ $blueprintImg }}" alt="Blueprint Inspecção" class="w-64 h-64 object-contain opacity-40" />
+            @else
+              <!-- SVG Esquema de Drone -->
+              <svg class="w-64 h-64 text-cyan-500/15" viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="0.75">
+                <circle cx="50" cy="50" r="12" stroke-dasharray="2 2" />
+                <circle cx="50" cy="50" r="4" />
+                <line x1="15" y1="15" x2="85" y2="85" />
+                <line x1="15" y1="85" x2="85" y2="15" />
+                <!-- Rotors -->
+                <circle cx="15" cy="15" r="8" />
+                <circle cx="85" cy="15" r="8" />
+                <circle cx="15" cy="85" r="8" />
+                <circle cx="85" cy="85" r="8" />
+                <!-- Wings -->
+                <path d="M25,50 L75,50 M50,25 L50,75" stroke-width="0.5" />
+              </svg>
+            @endif
             <!-- Interactive Hotspot Dots -->
-            <button class="hotspot-dot" style="top: 13%; left: 13%;" data-title="Propulsores Elétricos VTOL" data-desc="Quatro propulsores elétricos independentes de alta eficácia para descolagem e aterragem vertical autónoma em qualquer terreno.">
-              <span class="ping-wave"></span>
-            </button>
-            <button class="hotspot-dot active-hotspot" style="top: 48%; left: 48%;" data-title="Processador de IA & LIDAR" data-desc="Núcleo de computação de bordo com sensor LIDAR de alta frequência para desvio dinâmico de obstáculos a 360º durante voos de baixa altitude.">
-              <span class="ping-wave"></span>
-            </button>
-            <button class="hotspot-dot" style="top: 83%; left: 83%;" data-title="Módulo de Energia de Lítio-Enxofre" data-desc="Baterias aeroespaciais avançadas com densidade de carga triplicada face ao ião de lítio convencional, garantindo autonomias de até 150 km.">
-              <span class="ping-wave"></span>
-            </button>
+            @foreach($hotspots as $hs)
+              <button class="hotspot-dot @if($hs['active'] ?? false) active-hotspot @endif" 
+                      style="top: {{ $hs['top'] }}; left: {{ $hs['left'] }};" 
+                      data-title="{{ $hs['title'] }}" 
+                      data-desc="{{ $hs['desc'] }}">
+                <span class="ping-wave"></span>
+              </button>
+            @endforeach
           </div>
         </div>
         <div class="blueprint-info text-left">
           <div class="inline-block px-3 py-1 rounded bg-cyan-500/10 border border-cyan-500/20 text-[#06b6d4] text-[10px] uppercase font-bold tracking-widest mb-3">Inspecção de Hardware</div>
-          <h3 class="text-2xl font-bold text-white mb-2 font-heading" id="blueprint-item-title">Processador de IA & LIDAR</h3>
-          <p class="text-slate-400 text-sm leading-relaxed" id="blueprint-item-desc">Núcleo de computação de bordo com sensor LIDAR de alta frequência para desvio dinâmico de obstáculos a 360º durante voos de baixa altitude.</p>
+          <h3 class="text-2xl font-bold text-white mb-2 font-heading" id="blueprint-item-title">{{ $defaultTitle }}</h3>
+          <p class="text-slate-400 text-sm leading-relaxed" id="blueprint-item-desc">{{ $defaultDesc }}</p>
         </div>
       </div>
     </div>
@@ -1019,7 +1049,14 @@ $sections['testimonials'] = <<<'HTML'
         @endphp
         <div class="bg-[#070C18] border border-white/8 rounded-2xl p-8 relative group hover:border-[#06B6D4]/30 transition-all duration-300">
           <div class="absolute top-6 right-6 text-[#06B6D4]/20 text-5xl font-serif">"</div>
-          <div class="flex gap-1 mb-4 text-[#06B6D4]">★★★★★</div>
+          @php
+            $stars = (int)($item['rating'] ?? $item['stars'] ?? 5);
+          @endphp
+          <div class="flex gap-1 mb-4 text-[#06B6D4]">
+            @for($i = 0; $i < 5; $i++)
+              <span class="{{ $i < $stars ? 'text-[#06B6D4]' : 'text-slate-700/60' }}">★</span>
+            @endfor
+          </div>
           <p class="text-slate-300 text-sm leading-relaxed mb-6 italic">"{{ $item['quote'] }}"</p>
           <div class="flex items-center gap-3">
             <div class="w-10 h-10 rounded-full bg-gradient-to-br from-[#2563EB] to-[#06B6D4] flex items-center justify-center text-white font-bold text-sm">{{ $initials }}</div>
@@ -1117,6 +1154,25 @@ $sections['footer'] = <<<'HTML'
     </div>
     <div class="pt-8 border-t border-white/5 flex flex-col md:flex-row items-center justify-between gap-4">
       <p class="font-mono text-[11px] text-slate-600">{!! $copyrightText !!}</p>
+      @php
+        $socials = [
+          'linkedin'  => ['url' => $theme->layout_config['social_linkedin'] ?? '', 'icon' => '🛰️ LinkedIn'],
+          'x'         => ['url' => $theme->layout_config['social_x'] ?? '', 'icon' => '🛸 X'],
+          'facebook'  => ['url' => $theme->layout_config['social_facebook'] ?? '', 'icon' => '📡 Facebook'],
+          'instagram' => ['url' => $theme->layout_config['social_instagram'] ?? '', 'icon' => '👁️ Instagram'],
+          'youtube'   => ['url' => $theme->layout_config['social_youtube'] ?? '', 'icon' => '📽️ YouTube'],
+        ];
+        $activeSocials = array_filter($socials, fn($s) => !empty($s['url']));
+      @endphp
+      @if(count($activeSocials) > 0)
+        <div class="flex gap-4 items-center">
+          @foreach($activeSocials as $name => $s)
+            <a href="{{ $s['url'] }}" target="_blank" class="font-mono text-[10px] text-slate-500 hover:text-[#06b6d4] transition flex items-center gap-1">
+              {{ $s['icon'] }}
+            </a>
+          @endforeach
+        </div>
+      @endif
       <p class="font-mono text-[11px] text-slate-600">LAT {{ $footerLat }} &middot; LON {{ $footerLon }} &middot; ALT {{ $footerAlt }}</p>
     </div>
   </div>

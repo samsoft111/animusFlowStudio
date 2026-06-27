@@ -160,6 +160,7 @@ final class ThemeSettingsRecommender
             self::f(['key' => 'hud_telemetry_althold', 'label' => 'HUD — status do altímetro', 'type' => 'text', 'group' => 'fundo', 'default' => $lc['hud_telemetry_althold'] ?? 'ON']),
             self::f(['key' => 'hud_telemetry_gps', 'label' => 'HUD — sinal GPS', 'type' => 'text', 'group' => 'fundo', 'default' => $lc['hud_telemetry_gps'] ?? 'LOCK']),
             self::f(['key' => 'hud_telemetry_navlock', 'label' => 'HUD — status de navegação', 'type' => 'text', 'group' => 'fundo', 'default' => $lc['hud_telemetry_navlock'] ?? 'OK']),
+            self::f(['key' => 'hud_telemetry_drones_count', 'label' => 'HUD — drones operacionais', 'type' => 'text', 'group' => 'fundo', 'default' => $lc['hud_telemetry_drones_count'] ?? '07 ONLINE']),
 
             // ── Layout & Conteúdo ────────────────────────────────────────
             self::f(['key' => 'layout_type', 'label' => 'Tipo de layout', 'type' => 'select', 'group' => 'layout', 'default' => $lc['layout_type'] ?? 'full-width',
@@ -196,6 +197,11 @@ final class ThemeSettingsRecommender
             self::f(['key' => 'contact_address_sub', 'label' => 'Sede — Linha 2', 'type' => 'text', 'group' => 'rodape', 'default' => $lc['contact_address_sub'] ?? 'Miramar, Luanda, Angola']),
             self::f(['key' => 'contact_address_hangar', 'label' => 'Hangar — Linha 1', 'type' => 'text', 'group' => 'rodape', 'default' => $lc['contact_address_hangar'] ?? 'Aeroporto Internacional 4 de Fevereiro']),
             self::f(['key' => 'contact_address_hangar_sub', 'label' => 'Hangar — Linha 2', 'type' => 'text', 'group' => 'rodape', 'default' => $lc['contact_address_hangar_sub'] ?? 'Zona Técnica Norte — Hangar AX, Luanda']),
+            self::f(['key' => 'social_linkedin', 'label' => 'Rede Social — LinkedIn (URL)', 'type' => 'text', 'group' => 'rodape', 'default' => $lc['social_linkedin'] ?? 'https://linkedin.com/company/aerospace']),
+            self::f(['key' => 'social_x', 'label' => 'Rede Social — X / Twitter (URL)', 'type' => 'text', 'group' => 'rodape', 'default' => $lc['social_x'] ?? 'https://x.com/aerospace']),
+            self::f(['key' => 'social_facebook', 'label' => 'Rede Social — Facebook (URL)', 'type' => 'text', 'group' => 'rodape', 'default' => $lc['social_facebook'] ?? '']),
+            self::f(['key' => 'social_instagram', 'label' => 'Rede Social — Instagram (URL)', 'type' => 'text', 'group' => 'rodape', 'default' => $lc['social_instagram'] ?? '']),
+            self::f(['key' => 'social_youtube', 'label' => 'Rede Social — YouTube (URL)', 'type' => 'text', 'group' => 'rodape', 'default' => $lc['social_youtube'] ?? '']),
 
             // ── Formulários — Configurações ──────────────────────────────
             self::f(['key' => 'contact_mailto', 'label' => 'Formulário — e-mail de destino', 'type' => 'text', 'group' => 'formularios', 'default' => $lc['contact_mailto'] ?? 'ops@aerospace.ao', 'hint' => 'E-mail para onde os formulários enviam (fallback mailto: quando AJAX falha).']),
