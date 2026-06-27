@@ -126,6 +126,14 @@ final class ThemeSettingsRecommender
             self::f(['key' => 'info_card_hint_size', 'label' => 'Card — dica (tamanho px)', 'type' => 'range', 'group' => 'fundo', 'default' => $lc['info_card_hint_size'] ?? 10, 'min' => 8, 'max' => 24, 'step' => 1]),
             self::f(['key' => 'info_card_hint_color', 'label' => 'Card — dica (cor)', 'type' => 'color', 'group' => 'fundo', 'default' => $lc['info_card_hint_color'] ?? '#94A3B8']),
 
+            // Telemetria HUD
+            self::f(['key' => 'hud_telemetry_alt', 'label' => 'HUD — altitude padrão', 'type' => 'text', 'group' => 'fundo', 'default' => $lc['hud_telemetry_alt'] ?? '124m']),
+            self::f(['key' => 'hud_telemetry_spd', 'label' => 'HUD — velocidade padrão', 'type' => 'text', 'group' => 'fundo', 'default' => $lc['hud_telemetry_spd'] ?? '42km/h']),
+            self::f(['key' => 'hud_telemetry_bat', 'label' => 'HUD — bateria padrão', 'type' => 'text', 'group' => 'fundo', 'default' => $lc['hud_telemetry_bat'] ?? '88%']),
+            self::f(['key' => 'hud_telemetry_althold', 'label' => 'HUD — status do altímetro', 'type' => 'text', 'group' => 'fundo', 'default' => $lc['hud_telemetry_althold'] ?? 'ON']),
+            self::f(['key' => 'hud_telemetry_gps', 'label' => 'HUD — sinal GPS', 'type' => 'text', 'group' => 'fundo', 'default' => $lc['hud_telemetry_gps'] ?? 'LOCK']),
+            self::f(['key' => 'hud_telemetry_navlock', 'label' => 'HUD — status de navegação', 'type' => 'text', 'group' => 'fundo', 'default' => $lc['hud_telemetry_navlock'] ?? 'OK']),
+
             // ── Layout & Conteúdo ────────────────────────────────────────
             self::f(['key' => 'layout_type', 'label' => 'Tipo de layout', 'type' => 'select', 'group' => 'layout', 'default' => $lc['layout_type'] ?? 'full-width',
                 'options' => ['full-width' => 'Largura total', 'boxed' => 'Em caixa', 'sidebar-left' => 'Sidebar esquerda', 'sidebar-right' => 'Sidebar direita']]),
@@ -152,6 +160,15 @@ final class ThemeSettingsRecommender
             self::f(['key' => 'footer_lon', 'label' => 'Rodapé — longitude', 'type' => 'text', 'group' => 'rodape', 'default' => $lc['footer_lon'] ?? '13.2306']),
             self::f(['key' => 'footer_alt', 'label' => 'Rodapé — altitude', 'type' => 'text', 'group' => 'rodape', 'default' => $lc['footer_alt'] ?? '0m']),
             self::f(['key' => 'footer_status_text', 'label' => 'Rodapé — status do cockpit', 'type' => 'text', 'group' => 'rodape', 'default' => $lc['footer_status_text'] ?? 'Sistema Operacional']),
+
+            // Contactos adicionais do Rodapé / Site
+            self::f(['key' => 'contact_email', 'label' => 'E-mail comercial', 'type' => 'text', 'group' => 'rodape', 'default' => $lc['contact_email'] ?? 'comercial@aerospace.ao']),
+            self::f(['key' => 'contact_phone', 'label' => 'Telefone comercial', 'type' => 'text', 'group' => 'rodape', 'default' => $lc['contact_phone'] ?? '+244 923 456 780']),
+            self::f(['key' => 'contact_hours', 'label' => 'Horário de atendimento', 'type' => 'text', 'group' => 'rodape', 'default' => $lc['contact_hours'] ?? 'Seg–Sex · 08h00–18h00 (WAT)']),
+            self::f(['key' => 'contact_address_hq', 'label' => 'Sede — Linha 1', 'type' => 'text', 'group' => 'rodape', 'default' => $lc['contact_address_hq'] ?? 'Rua Rainha Ginga, Edifício AeroSpace Tower']),
+            self::f(['key' => 'contact_address_sub', 'label' => 'Sede — Linha 2', 'type' => 'text', 'group' => 'rodape', 'default' => $lc['contact_address_sub'] ?? 'Miramar, Luanda, Angola']),
+            self::f(['key' => 'contact_address_hangar', 'label' => 'Hangar — Linha 1', 'type' => 'text', 'group' => 'rodape', 'default' => $lc['contact_address_hangar'] ?? 'Aeroporto Internacional 4 de Fevereiro']),
+            self::f(['key' => 'contact_address_hangar_sub', 'label' => 'Hangar — Linha 2', 'type' => 'text', 'group' => 'rodape', 'default' => $lc['contact_address_hangar_sub'] ?? 'Zona Técnica Norte — Hangar AX, Luanda']),
 
 
             // ── Funcionalidades ──────────────────────────────────────────

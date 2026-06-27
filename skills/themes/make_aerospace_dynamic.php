@@ -75,9 +75,12 @@ HTML;
 $sections['map'] = <<<'HTML'
 @php
   $c = $content ?? [];
-  $heading = $c['heading'] ?? 'Sede — Luanda, Angola';
-  $embedUrl = $c['embed_url'] ?? 'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d15760.84157778939!2d13.23005872895697!3d-8.813958742512686!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x1a51f3c83786adbf%3A0x6b772c676bb7db4b!2sLuanda!5e0!3m2!1spt-PT!2sao!4v1700000000000!5m2!1spt-PT!2sao';
-  $address = $c['address'] ?? 'Miramar, Luanda, Angola';
+  $siteName = $site_name ?? 'AeroSpace';
+  $heading = $c['heading'] ?? ('Sede — ' . ($theme->layout_config['footer_location'] ?? 'Luanda, Angola'));
+  $embedUrl = $c['embed_url'] ?? $theme->layout_config['contact_map_iframe'] ?? 'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d15760.84157778939!2d13.23005872895697!3d-8.813958742512686!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x1a51f3c83786adbf%3A0x6b772c676bb7db4b!2sLuanda!5e0!3m2!1spt-PT!2sao!4v1700000000000!5m2!1spt-PT!2sao';
+  $address = $c['address'] ?? ($theme->layout_config['contact_address_hq'] ?? 'Miramar, Luanda, Angola');
+  $lat = $theme->layout_config['footer_lat'] ?? '-8.8124';
+  $lon = $theme->layout_config['footer_lon'] ?? '13.2306';
 @endphp
 <section class="py-16 bg-[#030712] relative">
   <div class="max-w-5xl mx-auto px-6">
@@ -93,12 +96,12 @@ $sections['map'] = <<<'HTML'
         width="100%" height="380"
         style="border:0; filter: invert(90%) hue-rotate(180deg) brightness(0.85) contrast(1.1); opacity:0.9;"
         allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"
-        title="Localização AeroSpace — Luanda, Angola">
+        title="Localização {{ $siteName }} — {{ $theme->layout_config['footer_location'] ?? 'Luanda, Angola' }}">
       </iframe>
       <div class="absolute bottom-4 left-4 bg-[#030712]/90 backdrop-blur border border-[#06B6D4]/20 rounded-xl px-4 py-3">
-        <div class="text-white font-semibold text-sm font-heading">AeroSpace HQ</div>
+        <div class="text-white font-semibold text-sm font-heading">{{ $siteName }} HQ</div>
         <div class="text-slate-400 text-xs mt-0.5">{{ $address }}</div>
-        <div class="text-[#06B6D4] text-[10px] font-mono mt-1">LAT -8.8124 · LON 13.2306</div>
+        <div class="text-[#06B6D4] text-[10px] font-mono mt-1">LAT {{ $lat }} · LON {{ $lon }}</div>
       </div>
     </div>
   </div>
@@ -124,6 +127,17 @@ $sections['hero'] = <<<'HTML'
     $navOpacity = max(0, min(100, (int)($theme->layout_config['navbar_opacity'] ?? 72))) / 100;
     $navbarBg = "rgba({$navR}, {$navG}, {$navB}, {$navOpacity})";
     $heroBg = $theme->layout_config['hero_bg_color'] ?? '#0F1A2E';
+
+    $hudLat = $theme->layout_config['footer_lat'] ?? '08°50\'S';
+    $hudLon = $theme->layout_config['footer_lon'] ?? '13°14\'E';
+    if (is_numeric($hudLat)) {
+        $hudLatVal = floatval($hudLat);
+        $hudLat = sprintf("%02d°%02d'%s", abs((int)$hudLatVal), abs((int)(round(($hudLatVal - (int)$hudLatVal) * 60))), $hudLatVal >= 0 ? 'N' : 'S');
+    }
+    if (is_numeric($hudLon)) {
+        $hudLonVal = floatval($hudLon);
+        $hudLon = sprintf("%02d°%02d'%s", abs((int)$hudLonVal), abs((int)(round(($hudLonVal - (int)$hudLonVal) * 60))), $hudLonVal >= 0 ? 'E' : 'W');
+    }
 @endphp
 <section class="aerospace-hero group {{ !$isHome ? 'hero-internal hero-revealed' : '' }}" style="--menu-space-top: {{ (int)($theme->layout_config['menu_space_top'] ?? 24) }}px; --menu-space-bottom: {{ (int)($theme->layout_config['menu_space_bottom'] ?? 24) }}px; --scrim-opacity: {{ (int)($theme->layout_config['screensaver_scrim'] ?? 10) / 100 }}; --scrim-blur: {{ (int)($theme->layout_config['screensaver_blur'] ?? 0) }}px; --video-opacity: {{ (int)($theme->layout_config['screensaver_video_opacity'] ?? 100) / 100 }}; --info-card-top: {{ (int)($theme->layout_config['info_card_top'] ?? 36) }}%; --circular-menu-y: {{ (int)($theme->layout_config['menu_space_top'] ?? 24) - 84 }}px; --navbar-bg: {{ $navbarBg }}; --hero-bg: {{ $heroBg }}; --subpage-padding-top: {{ (int)($theme->layout_config['hero_internal_padding_top'] ?? 50) }}px;">
   <!-- Preloader de Consola de Boot -->
@@ -134,7 +148,7 @@ $sections['hero'] = <<<'HTML'
           <span class="terminal-dot red"></span>
           <span class="terminal-dot yellow"></span>
           <span class="terminal-dot green"></span>
-          <span class="terminal-title">AEROSPACE COCKPIT INIT v1.0.0</span>
+          <span class="terminal-title">{{ strtoupper($siteName ?? 'AEROSPACE') }} COCKPIT INIT v1.0.0</span>
         </div>
         <div class="terminal-body" id="preloader-terminal-log"></div>
       </div>
@@ -162,8 +176,18 @@ $sections['hero'] = <<<'HTML'
       <div class="hud-overlay-dashboard">
         <div class="hud-crosshair"></div>
         <div class="hud-horizon-line"></div>
-        <div class="hud-telemetry-left">ALT: 124m<br>SPD: 42km/h<br>BAT: 88%<br>ALT-HOLD: ON</div>
-        <div class="hud-telemetry-right">LAT: 08°50'S<br>LNG: 13°14'E<br>GPS: LOCK<br>NAV-LOCK: OK</div>
+        <div class="hud-telemetry-left">
+          ALT: {{ $theme->layout_config['hud_telemetry_alt'] ?? '124m' }}<br>
+          SPD: {{ $theme->layout_config['hud_telemetry_spd'] ?? '42km/h' }}<br>
+          BAT: {{ $theme->layout_config['hud_telemetry_bat'] ?? '88%' }}<br>
+          ALT-HOLD: {{ $theme->layout_config['hud_telemetry_althold'] ?? 'ON' }}
+        </div>
+        <div class="hud-telemetry-right">
+          LAT: {{ $hudLat }}<br>
+          LNG: {{ $hudLon }}<br>
+          GPS: {{ $theme->layout_config['hud_telemetry_gps'] ?? 'LOCK' }}<br>
+          NAV-LOCK: {{ $theme->layout_config['hud_telemetry_navlock'] ?? 'OK' }}
+        </div>
       </div>
     @endif
 
@@ -279,51 +303,33 @@ $sections['hero'] = <<<'HTML'
 
       <!-- Satellite Orbiting Nodes -->
       <div class="satellite-orbits">
-
-        <!-- Node 1: Serviços (Top) -->
-        <div class="sat-node-container sat-1 group/sat">
-          <a href="/servicos" class="sat-node portal-link" onmouseenter="playHoverChirp()" data-portal-href="/servicos">
-            <div class="sat-icon">🛸</div>
-            <div class="sat-text">
-              <span class="sat-title">Serviços</span>
-              <span class="sat-desc">Operações Aéreas</span>
-            </div>
-          </a>
-        </div>
-
-        <!-- Node 2: Galeria (Right) -->
-        <div class="sat-node-container sat-2 group/sat">
-          <a href="/galeria" class="sat-node portal-link" onmouseenter="playHoverChirp()" data-portal-href="/galeria">
-            <div class="sat-icon">🖼️</div>
-            <div class="sat-text">
-              <span class="sat-title">Galeria</span>
-              <span class="sat-desc">Missões & Media</span>
-            </div>
-          </a>
-        </div>
-
-        <!-- Node 3: Contactos (Bottom) -->
-        <div class="sat-node-container sat-3 group/sat">
-          <a href="/contactos" class="sat-node portal-link" onmouseenter="playHoverChirp()" data-portal-href="/contactos">
-            <div class="sat-icon">📡</div>
-            <div class="sat-text">
-              <span class="sat-title">Contactos</span>
-              <span class="sat-desc">Centro de Controlo</span>
-            </div>
-          </a>
-        </div>
-
-        <!-- Node 4: Sobre (Left) -->
-        <div class="sat-node-container sat-4 group/sat">
-          <a href="/sobre" class="sat-node portal-link" onmouseenter="playHoverChirp()" data-portal-href="/sobre">
-            <div class="sat-icon">🌐</div>
-            <div class="sat-text">
-              <span class="sat-title">Sobre</span>
-              <span class="sat-desc">Missão & Equipa</span>
-            </div>
-          </a>
-        </div>
-
+        @php
+          $defaultSats = [
+            ['label' => 'Serviços', 'url' => '/servicos', 'icon' => '🛸', 'desc' => 'Operações Aéreas'],
+            ['label' => 'Galeria',  'url' => '/galeria',  'icon' => '🖼️', 'desc' => 'Missões & Media'],
+            ['label' => 'Contactos','url' => '/contactos','icon' => '📡', 'desc' => 'Centro de Controlo'],
+            ['label' => 'Sobre',    'url' => '/sobre',    'icon' => '🌐', 'desc' => 'Missão & Equipa']
+          ];
+          $menuLinks = $nav_links ?? [];
+        @endphp
+        @for($i = 0; $i < 4; $i++)
+          @php
+            $link = $menuLinks[$i] ?? null;
+            $title = $link['label'] ?? $defaultSats[$i]['label'];
+            $url = $link['url'] ?? $defaultSats[$i]['url'];
+            $icon = $defaultSats[$i]['icon'];
+            $desc = $defaultSats[$i]['desc'];
+          @endphp
+          <div class="sat-node-container sat-{{ $i + 1 }} group/sat">
+            <a href="{{ $url }}" class="sat-node portal-link" onmouseenter="playHoverChirp()" data-portal-href="{{ $url }}">
+              <div class="sat-icon">{{ $icon }}</div>
+              <div class="sat-text">
+                <span class="sat-title">{{ $title }}</span>
+                <span class="sat-desc">{{ $desc }}</span>
+              </div>
+            </a>
+          </div>
+        @endfor
       </div>
     </div>
 
@@ -668,6 +674,22 @@ $sections['contact'] = <<<'HTML'
   $heading = $c['heading'] ?? 'Iniciar a Sua Missão';
   $subtext = $c['subtext'] ?? 'A nossa equipa está disponível 24/7. Respondemos em menos de 2 horas em dias úteis.';
   $btnText = $c['button_text'] ?? 'SUBMETER PEDIDO DE MISSÃO';
+
+  $cEmail = $theme->layout_config['contact_email'] ?? 'comercial@aerospace.ao';
+  $cPhone = $theme->layout_config['contact_phone'] ?? '+244 923 456 780';
+  $cHours = $theme->layout_config['contact_hours'] ?? 'Seg–Sex · 08h00–18h00 (WAT)';
+
+  $domainParts = explode('@', $cEmail);
+  $domain = isset($domainParts[1]) ? $domainParts[1] : 'aerospace.ao';
+  $opsEmail = 'ops@' . $domain;
+  $opsPhone = (strlen($cPhone) > 5) ? (substr($cPhone, 0, -1) . '9') : '+244 923 456 789';
+
+  $loc = $theme->layout_config['footer_location'] ?? 'Luanda';
+  $hq1 = $theme->layout_config['contact_address_hq'] ?? 'Rua Rainha Ginga, Edifício AeroSpace Tower';
+  $hq2 = $theme->layout_config['contact_address_sub'] ?? 'Miramar, Luanda, Angola';
+
+  $hgr1 = $theme->layout_config['contact_address_hangar'] ?? 'Aeroporto Internacional 4 de Fevereiro';
+  $hgr2 = $theme->layout_config['contact_address_hangar_sub'] ?? 'Zona Técnica Norte — Hangar AX, Luanda';
 @endphp
 <section class="py-24 bg-[#070C18] relative overflow-hidden">
   <div class="absolute inset-0 opacity-[0.03]" style="background-image:radial-gradient(#06B6D4 1px,transparent 1px);background-size:28px 28px"></div>
@@ -687,7 +709,7 @@ $sections['contact'] = <<<'HTML'
           <div class="text-2xl flex-shrink-0 mt-1">📡</div>
           <div>
             <div class="text-white font-semibold font-heading mb-1">Canal Operacional</div>
-            <div class="text-slate-400 text-sm">ops@aerospace.ao · +244 923 456 789</div>
+            <div class="text-slate-400 text-sm">{{ $opsEmail }} · {{ $opsPhone }}</div>
             <div class="text-[#06B6D4] text-xs font-mono mt-1">Disponível 24/7 for emergencies</div>
           </div>
         </div>
@@ -695,24 +717,24 @@ $sections['contact'] = <<<'HTML'
           <div class="text-2xl flex-shrink-0 mt-1">💼</div>
           <div>
             <div class="text-white font-semibold font-heading mb-1">Propostas Comerciais</div>
-            <div class="text-slate-400 text-sm">comercial@aerospace.ao · +244 923 456 780</div>
-            <div class="text-[#06B6D4] text-xs font-mono mt-1">Seg–Sex · 08h00–18h00 (WAT)</div>
+            <div class="text-slate-400 text-sm">{{ $cEmail }} · {{ $cPhone }}</div>
+            <div class="text-[#06B6D4] text-xs font-mono mt-1">{{ $cHours }}</div>
           </div>
         </div>
         <div class="bg-[#0A0F1E] border border-white/8 rounded-2xl p-6 flex items-start gap-4 hover:border-[#06B6D4]/25 transition-all duration-300">
           <div class="text-2xl flex-shrink-0 mt-1">📍</div>
           <div>
-            <div class="text-white font-semibold font-heading mb-1">Sede — Luanda</div>
-            <div class="text-slate-400 text-sm">Rua Rainha Ginga, Edifício AeroSpace Tower</div>
-            <div class="text-slate-400 text-sm">Miramar, Luanda, Angola</div>
+            <div class="text-white font-semibold font-heading mb-1">Sede — {{ $loc }}</div>
+            <div class="text-slate-400 text-sm">{{ $hq1 }}</div>
+            <div class="text-slate-400 text-sm">{{ $hq2 }}</div>
           </div>
         </div>
         <div class="bg-[#0A0F1E] border border-white/8 rounded-2xl p-6 flex items-start gap-4 hover:border-[#06B6D4]/25 transition-all duration-300">
           <div class="text-2xl flex-shrink-0 mt-1">✈️</div>
           <div>
             <div class="text-white font-semibold font-heading mb-1">Hangar & Testes</div>
-            <div class="text-slate-400 text-sm">Aeroporto Internacional 4 de Fevereiro</div>
-            <div class="text-slate-400 text-sm">Zona Técnica Norte — Hangar AX, Luanda</div>
+            <div class="text-slate-400 text-sm">{{ $hgr1 }}</div>
+            <div class="text-slate-400 text-sm">{{ $hgr2 }}</div>
           </div>
         </div>
       </div>
