@@ -75,6 +75,13 @@ Variáveis CSS emitidas pelo hero e o que controlam:
 | `info_card_{title,subtitle,hint}_text` | — (Blade `{{ }}`) | textos do card | AEROSPACE / Operações & Logística Aérea / Passe o cursor… |
 | `info_card_{title,subtitle,hint}_size` (px) | `style` inline | tamanho de cada texto | 20 / 12 / 10 |
 | `info_card_{title,subtitle,hint}_color` | `style` inline | cor de cada texto | #FFFFFF / #06B6D4 / #94A3B8 |
+| `circular_menu_hub_text` / `_desc` | — (Blade `{{ }}`) | texto / descrição do Hub central | HOME / Central Hub |
+| `circular_menu_hub_color` | `--hub-color` / `rgb` | cor / glow do Hub central | #06B6D4 |
+| `circular_menu_bg` | `--sat-bg` | cor de fundo global dos satélites | #0F172A |
+| `circular_menu_text_color` | `--sat-text-color` | cor do título dos satélites | #FFFFFF |
+| `circular_menu_desc_color` | `--sat-desc-color` | cor da descrição dos satélites | #94A3B8 |
+| `circular_menu_font_size` / `_weight` | `--sat-font-size` / `rgb` | tamanho e peso de fonte dos satélites | 13px / bold |
+| `circular_menu_satX_{icon,desc,color}` | `--sat-color` / `rgb` | ícone, descrição e cor individual do satélite X (1 a 4) | Configurações individuais |
 
 ## layout_config (campos-chave)
 
@@ -90,6 +97,9 @@ chat_popup_enabled: true · chat_popup_mode: "form" · chat_voice_commands: true
 contact_show_map: true · contact_map_iframe: "<embed Google Maps>" · contact_show_newsletter: true
 menu_space_top: 24 · menu_space_bottom: 24      // menu_space_top = altura do menu circular
 nav_links: [ Home /, Sobre /sobre, Serviços /servicos, Galeria /galeria, Contactos /contactos ]
+circular_menu_hub_text · circular_menu_hub_desc · circular_menu_hub_color
+circular_menu_bg · circular_menu_text_color · circular_menu_desc_color · circular_menu_font_size · circular_menu_font_weight
+circular_menu_sat1_icon · circular_menu_sat1_desc · circular_menu_sat1_color (até sat4)
 + (configuráveis acima): screensaver_scrim/blur/video_opacity · info_card_top · info_card_*_text/size/color
   · navbar_color · navbar_opacity · hero_bg_color · hero_internal_padding_top (subpáginas)
 ```
@@ -101,10 +111,8 @@ nav_links: [ Home /, Sobre /sobre, Serviços /servicos, Galeria /galeria, Contac
 
 ## sections (Blade) — dirigidas por conteúdo + por página
 
-Gera as **13** secções como HTML/Blade. Lêem `$theme->layout_config[...]` e — importante — são
-**dirigidas por conteúdo**: cada secção começa com `@php $c = $content ?? []; … @endphp` e usa
-`{{ $c['heading'] ?? 'fallback' }}` (+ `$settings`), para mostrar o conteúdo real da página no CMS, com
-fallback para texto demo. (12 secções são dinâmicas; o `footer` é global/estático.)
+Gera as **13** secções como HTML/Blade. Lêem `$theme->layout_config[...]` e são **dirigidas por conteúdo**: cada secção começa com `@php $c = $content ?? []; … @endphp` e usa `{{ $c['heading'] ?? 'fallback' }}` (+ `$settings`), para mostrar o conteúdo real da página no CMS, com fallback para texto demo.
+* **Fundo Customizado por Bloco:** Todas as 11 secções de conteúdo suportam as chaves `$c['bg_color']` / `$settings['bg_color']` / `$c['custom_bg_color']` e `$c['text_color']` / `$settings['text_color']` no editor do CMS para permitir substituir as cores de fundo ou gradientes padrão por secção de forma 100% independente.
 
 `hero` · `about` · `features` · `stats` · `steps` · `gallery` · `testimonials` · `team` ·
 `contact` · `map` · `cta` · `text` · `footer`
