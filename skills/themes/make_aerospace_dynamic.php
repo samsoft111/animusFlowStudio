@@ -904,17 +904,70 @@ $sections['gallery'] = <<<'HTML'
     <h3 class="text-sm font-mono uppercase tracking-wider text-[#06B6D4] mb-6 flex items-center gap-3">
       <span class="w-8 h-px bg-[#06B6D4]/40"></span> {{ $heading }}
     </h3>
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-      @foreach($images as $img)
-        <div class="group relative overflow-hidden rounded-xl border border-white/8 aspect-video bg-[#070C18] hover:border-[#06B6D4]/30 transition-all duration-300">
-          <img src="{{ $img['src'] }}" alt="{{ $img['alt'] ?? '' }}"
-               class="w-full h-full object-cover opacity-80 group-hover:opacity-100 group-hover:scale-105 transition-all duration-500">
-          <div class="absolute inset-0 bg-gradient-to-t from-[#030712]/90 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-4">
-            <p class="text-white text-xs font-mono">{{ $img['caption'] ?? '' }}</p>
+    @php
+      $layout = $theme->layout_config['gallery_layout'] ?? '3d-carousel';
+      $autoRotate = ($theme->layout_config['gallery_auto_rotate'] ?? true) ? 'true' : 'false';
+      $tilt = ($theme->layout_config['gallery_tilt_enabled'] ?? true) ? 'true' : 'false';
+    @endphp
+
+    @if($layout === '3d-carousel')
+      <!-- 3D CAROUSEL LAYOUT -->
+      <div class="relative py-10">
+        <div class="gallery-3d-viewport">
+          <div class="gallery-3d-scene" data-auto-rotate="{{ $autoRotate }}" data-tilt="{{ $tilt }}">
+            @foreach($images as $index => $img)
+              <div class="gallery-3d-item group/item" data-index="{{ $index }}">
+                <img src="{{ $img['src'] }}" alt="{{ $img['alt'] ?? '' }}" />
+                <div class="item-caption opacity-0 group-hover/item:opacity-100 transition-opacity duration-300">
+                  <p class="font-bold text-white mb-0.5">{{ $img['alt'] ?? '' }}</p>
+                  <p class="text-slate-400 text-[10px]">{{ $img['caption'] ?? '' }}</p>
+                </div>
+              </div>
+            @endforeach
+          </div>
+          
+          <!-- Navegação -->
+          <div class="gallery-3d-nav">
+            <button class="gallery-3d-btn" onclick="rotate3DGallery('prev')" aria-label="Anterior">❮</button>
+            <button class="gallery-3d-btn" onclick="rotate3DGallery('next')" aria-label="Seguinte">❯</button>
           </div>
         </div>
-      @endforeach
-    </div>
+        
+        <!-- Pontos Indicadores -->
+        <div class="gallery-3d-dots"></div>
+      </div>
+    @elseif($layout === 'masonry')
+      <!-- MASONRY LAYOUT -->
+      <div class="gallery-masonry">
+        @foreach($images as $img)
+          <div class="gallery-masonry-item group relative overflow-hidden aspect-auto">
+            <img src="{{ $img['src'] }}" alt="{{ $img['alt'] ?? '' }}" class="w-full object-cover opacity-85 group-hover:opacity-100 group-hover:scale-[1.02] transition-all duration-300">
+            <div class="absolute inset-0 bg-gradient-to-t from-[#030712]/95 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-4">
+              <div>
+                <p class="text-white text-xs font-mono font-bold">{{ $img['alt'] ?? '' }}</p>
+                <p class="text-slate-400 text-[10px] font-mono mt-0.5">{{ $img['caption'] ?? '' }}</p>
+              </div>
+            </div>
+          </div>
+        @endforeach
+      </div>
+    @else
+      <!-- GRID LAYOUT (Default fallback) -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        @foreach($images as $img)
+          <div class="group relative overflow-hidden rounded-xl border border-white/8 aspect-video bg-[#070C18] hover:border-[#06B6D4]/30 transition-all duration-300">
+            <img src="{{ $img['src'] }}" alt="{{ $img['alt'] ?? '' }}"
+                 class="w-full h-full object-cover opacity-80 group-hover:opacity-100 group-hover:scale-105 transition-all duration-500">
+            <div class="absolute inset-0 bg-gradient-to-t from-[#030712]/90 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-4">
+              <div>
+                <p class="text-white text-xs font-mono font-bold">{{ $img['alt'] ?? '' }}</p>
+                <p class="text-slate-400 text-[10px] font-mono mt-0.5">{{ $img['caption'] ?? '' }}</p>
+              </div>
+            </div>
+          </div>
+        @endforeach
+      </div>
+    @endif
   </div>
 </section>
 HTML;
@@ -1333,6 +1386,137 @@ if (!str_contains($css, '/* ── Customizações Dinâmicas do Menu Circular �
         "}\n";
 }
 
+if (!str_contains($css, '/* ── Galeria 3D Premium Carousel ── */')) {
+    $css .= "\n\n/* ── Galeria 3D Premium Carousel ── */\n" .
+        ".gallery-3d-viewport {\n" .
+        "  perspective: 1000px;\n" .
+        "  width: 100%;\n" .
+        "  height: 380px;\n" .
+        "  position: relative;\n" .
+        "  overflow: hidden;\n" .
+        "  display: flex;\n" .
+        "  align-items: center;\n" .
+        "  justify-content: center;\n" .
+        "}\n" .
+        ".gallery-3d-scene {\n" .
+        "  width: 280px;\n" .
+        "  height: 180px;\n" .
+        "  position: relative;\n" .
+        "  transform-style: preserve-3d;\n" .
+        "  transition: transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);\n" .
+        "}\n" .
+        ".gallery-3d-item {\n" .
+        "  position: absolute;\n" .
+        "  width: 100%;\n" .
+        "  height: 100%;\n" .
+        "  left: 0;\n" .
+        "  top: 0;\n" .
+        "  border-radius: 12px;\n" .
+        "  overflow: hidden;\n" .
+        "  border: 1px solid rgba(255,255,255,0.08);\n" .
+        "  background: #070c18;\n" .
+        "  box-shadow: 0 15px 35px rgba(0,0,0,0.5);\n" .
+        "  backface-visibility: hidden;\n" .
+        "  transition: opacity 0.5s, filter 0.5s, transform 0.8s;\n" .
+        "  cursor: pointer;\n" .
+        "}\n" .
+        ".gallery-3d-item img {\n" .
+        "  width: 100%;\n" .
+        "  height: 100%;\n" .
+        "  object-fit: cover;\n" .
+        "  opacity: 0.75;\n" .
+        "  transition: opacity 0.3s;\n" .
+        "}\n" .
+        ".gallery-3d-item:hover img {\n" .
+        "  opacity: 1;\n" .
+        "}\n" .
+        ".gallery-3d-item .item-caption {\n" .
+        "  position: absolute;\n" .
+        "  bottom: 0;\n" .
+        "  left: 0;\n" .
+        "  right: 0;\n" .
+        "  background: linear-gradient(to top, rgba(3,7,18,0.9) 0%, rgba(3,7,18,0) 100%);\n" .
+        "  padding: 12px;\n" .
+        "  color: #fff;\n" .
+        "  text-align: left;\n" .
+        "}\n" .
+        ".gallery-3d-nav {\n" .
+        "  position: absolute;\n" .
+        "  top: 50%;\n" .
+        "  width: 100%;\n" .
+        "  display: flex;\n" .
+        "  justify-content: space-between;\n" .
+        "  transform: translateY(-50%);\n" .
+        "  padding: 0 15px;\n" .
+        "  pointer-events: none;\n" .
+        "  z-index: 10;\n" .
+        "}\n" .
+        ".gallery-3d-btn {\n" .
+        "  width: 40px;\n" .
+        "  height: 40px;\n" .
+        "  border-radius: 50%;\n" .
+        "  background: rgba(7, 12, 24, 0.75);\n" .
+        "  border: 1px solid rgba(255,255,255,0.08);\n" .
+        "  color: #fff;\n" .
+        "  display: flex;\n" .
+        "  align-items: center;\n" .
+        "  justify-content: center;\n" .
+        "  cursor: pointer;\n" .
+        "  pointer-events: auto;\n" .
+        "  transition: all 0.3s;\n" .
+        "  backdrop-filter: blur(4px);\n" .
+        "}\n" .
+        ".gallery-3d-btn:hover {\n" .
+        "  background: var(--color-accent, #06b6d4);\n" .
+        "  border-color: var(--color-accent, #06b6d4);\n" .
+        "  box-shadow: 0 0 12px rgba(var(--color-accent-rgb, 6, 182, 212), 0.4);\n" .
+        "}\n" .
+        ".gallery-3d-dots {\n" .
+        "  display: flex;\n" .
+        "  justify-content: center;\n" .
+        "  gap: 8px;\n" .
+        "  margin-top: 15px;\n" .
+        "}\n" .
+        ".gallery-3d-dot {\n" .
+        "  width: 7px;\n" .
+        "  height: 7px;\n" .
+        "  border-radius: 50%;\n" .
+        "  background: rgba(255,255,255,0.2);\n" .
+        "  cursor: pointer;\n" .
+        "  transition: all 0.3s;\n" .
+        "}\n" .
+        ".gallery-3d-dot.active {\n" .
+        "  background: var(--color-accent, #06b6d4);\n" .
+        "  width: 20px;\n" .
+        "  border-radius: 3px;\n" .
+        "}\n" .
+        "/* Masonry Gallery Layout */\n" .
+        ".gallery-masonry {\n" .
+        "  column-count: 3;\n" .
+        "  column-gap: 16px;\n" .
+        "}\n" .
+        "@media (max-width: 768px) {\n" .
+        "  .gallery-masonry { column-count: 2; }\n" .
+        "}\n" .
+        "@media (max-width: 480px) {\n" .
+        "  .gallery-masonry { column-count: 1; }\n" .
+        "}\n" .
+        ".gallery-masonry-item {\n" .
+        "  display: inline-block;\n" .
+        "  width: 100%;\n" .
+        "  margin-bottom: 16px;\n" .
+        "  border-radius: 12px;\n" .
+        "  overflow: hidden;\n" .
+        "  border: 1px solid rgba(255,255,255,0.08);\n" .
+        "  background: #070c18;\n" .
+        "  transition: all 0.3s;\n" .
+        "}\n" .
+        ".gallery-masonry-item:hover {\n" .
+        "  border-color: rgba(var(--color-accent-rgb, 6, 182, 212), 0.3);\n" .
+        "  transform: translateY(-4px);\n" .
+        "}\n";
+}
+
 $theme->custom_css = $css;
 
 
@@ -1557,6 +1741,111 @@ if (!str_contains($js, '/* ── Support Form Handler ── */')) {
         "  try { playClickChirp(); } catch(_) {}\n" .
         "  return false;\n" .
         "};\n";
+}
+
+// ── 3D Gallery Carousel Slider ───────────────────────────────────────────────
+if (!str_contains($js, '/* ── 3D Gallery Carousel Slider ── */')) {
+    $js .= "\n\n/* ── 3D Gallery Carousel Slider ── */\n" .
+        "window.initAerospace3DGallery = function() {\n" .
+        "  const scene = document.querySelector('.gallery-3d-scene');\n" .
+        "  const items = document.querySelectorAll('.gallery-3d-item');\n" .
+        "  const dotsContainer = document.querySelector('.gallery-3d-dots');\n" .
+        "  if (!scene || items.length === 0) return;\n\n" .
+        "  let currentIndex = 0;\n" .
+        "  const count = items.length;\n" .
+        "  const itemWidth = 280; // Matches CSS width\n" .
+        "  const angleStep = 360 / count;\n" .
+        "  const radius = Math.round((itemWidth / 2) / Math.tan(Math.PI / count));\n\n" .
+        "  if (dotsContainer) {\n" .
+        "    dotsContainer.innerHTML = '';\n" .
+        "    for (let i = 0; i < count; i++) {\n" .
+        "      const dot = document.createElement('span');\n" .
+        "      dot.className = 'gallery-3d-dot' + (i === 0 ? ' active' : '');\n" .
+        "      dot.addEventListener('click', () => {\n" .
+        "        currentIndex = i;\n" .
+        "        updateCarousel();\n" .
+        "        resetAutoRotate();\n" .
+        "      });\n" .
+        "      dotsContainer.appendChild(dot);\n" .
+        "    }\n" .
+        "  }\n\n" .
+        "  function updateCarousel() {\n" .
+        "    scene.style.transform = 'translateZ(-' + radius + 'px) rotateY(' + (-currentIndex * angleStep) + 'deg)';\n\n" .
+        "    const dots = document.querySelectorAll('.gallery-3d-dot');\n" .
+        "    dots.forEach((dot, idx) => {\n" .
+        "      if (idx === currentIndex) dot.classList.add('active');\n" .
+        "      else dot.classList.remove('active');\n" .
+        "    });\n\n" .
+        "    items.forEach((item, idx) => {\n" .
+        "      const angle = idx * angleStep;\n" .
+        "      item.style.transform = 'rotateY(' + angle + 'deg) translateZ(' + radius + 'px)';\n\n" .
+        "      let diff = Math.abs(idx - currentIndex);\n" .
+        "      if (diff > count / 2) diff = count - diff;\n\n" .
+        "      if (idx === currentIndex) {\n" .
+        "        item.style.opacity = '1';\n" .
+        "        item.style.filter = 'none';\n" .
+        "        item.style.zIndex = '2';\n" .
+        "      } else {\n" .
+        "        item.style.opacity = diff > 1 ? '0.3' : '0.6';\n" .
+        "        item.style.filter = 'blur(1px) grayscale(45%)';\n" .
+        "        item.style.zIndex = '1';\n" .
+        "      }\n" .
+        "    });\n" .
+        "  }\n\n" .
+        "  updateCarousel();\n\n" .
+        "  window.rotate3DGallery = function(direction) {\n" .
+        "    if (direction === 'next') currentIndex = (currentIndex + 1) % count;\n" .
+        "    else currentIndex = (currentIndex - 1 + count) % count;\n" .
+        "    updateCarousel();\n" .
+        "    try { playClickChirp(); } catch(_) {}\n" .
+        "    resetAutoRotate();\n" .
+        "  };\n\n" .
+        "  const autoRotateEnabled = scene.getAttribute('data-auto-rotate') === 'true';\n" .
+        "  let rotateInterval;\n\n" .
+        "  function startAutoRotate() {\n" .
+        "    if (autoRotateEnabled) {\n" .
+        "      rotateInterval = setInterval(() => {\n" .
+        "        currentIndex = (currentIndex + 1) % count;\n" .
+        "        updateCarousel();\n" .
+        "      }, 5000);\n" .
+        "    }\n" .
+        "  }\n\n" .
+        "  function resetAutoRotate() {\n" .
+        "    if (rotateInterval) {\n" .
+        "      clearInterval(rotateInterval);\n" .
+        "      startAutoRotate();\n" .
+        "    }\n" .
+        "  }\n\n" .
+        "  startAutoRotate();\n\n" .
+        "  const tiltEnabled = scene.getAttribute('data-tilt') === 'true';\n" .
+        "  if (tiltEnabled) {\n" .
+        "    items.forEach(item => {\n" .
+        "      item.addEventListener('mousemove', (e) => {\n" .
+        "        const itemIndex = parseInt(item.getAttribute('data-index') || '0');\n" .
+        "        if (itemIndex !== currentIndex) return;\n" .
+        "        const rect = item.getBoundingClientRect();\n" .
+        "        const x = e.clientX - rect.left;\n" .
+        "        const y = e.clientY - rect.top;\n" .
+        "        const xc = rect.width / 2;\n" .
+        "        const yc = rect.height / 2;\n" .
+        "        const angleX = (yc - y) / 10;\n" .
+        "        const angleY = (x - xc) / 10;\n" .
+        "        const baseAngle = itemIndex * angleStep;\n" .
+        "        item.style.transform = 'rotateY(' + baseAngle + 'deg) translateZ(' + radius + 'px) rotateX(' + angleX + 'deg) rotateY(' + angleY + 'deg)';\n" .
+        "      });\n" .
+        "      item.addEventListener('mouseleave', () => {\n" .
+        "        const itemIndex = parseInt(item.getAttribute('data-index') || '0');\n" .
+        "        const baseAngle = itemIndex * angleStep;\n" .
+        "        item.style.transform = 'rotateY(' + baseAngle + 'deg) translateZ(' + radius + 'px)';\n" .
+        "      });\n" .
+        "    });\n" .
+        "  }\n" .
+        "};\n\n" .
+        "if (document.readyState === 'loading') {\n" .
+        "  document.addEventListener('DOMContentLoaded', () => window.initAerospace3DGallery());\n" .
+        "} else {\n" .
+        "  window.initAerospace3DGallery();\n" .
+        "}\n";
 }
 
 $theme->custom_js = $js;
