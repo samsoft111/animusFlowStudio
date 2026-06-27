@@ -70,6 +70,33 @@ final class ThemeSettingsRecommender
             self::f(['key' => 'menu_space_top', 'label' => 'Espaço acima da barra (px)', 'type' => 'range', 'group' => 'menus', 'default' => $lc['menu_space_top'] ?? 24, 'min' => 0, 'max' => 160, 'step' => 4]),
             self::f(['key' => 'menu_space_bottom', 'label' => 'Espaço abaixo da barra (px)', 'type' => 'range', 'group' => 'menus', 'default' => $lc['menu_space_bottom'] ?? 24, 'min' => 0, 'max' => 160, 'step' => 4]),
 
+            // Customizações do Menu Orbital
+            self::f(['key' => 'circular_menu_hub_text', 'label' => 'Menu Orbital — texto do hub central', 'type' => 'text', 'group' => 'menus', 'default' => $lc['circular_menu_hub_text'] ?? 'HOME']),
+            self::f(['key' => 'circular_menu_hub_desc', 'label' => 'Menu Orbital — subtítulo do hub central', 'type' => 'text', 'group' => 'menus', 'default' => $lc['circular_menu_hub_desc'] ?? 'Central Hub']),
+            self::f(['key' => 'circular_menu_hub_color', 'label' => 'Menu Orbital — cor do hub central', 'type' => 'color', 'group' => 'menus', 'default' => $lc['circular_menu_hub_color'] ?? '#06B6D4']),
+            self::f(['key' => 'circular_menu_bg', 'label' => 'Menu Orbital — cor de fundo dos satélites', 'type' => 'color', 'group' => 'menus', 'default' => $lc['circular_menu_bg'] ?? '#0F172A']),
+            self::f(['key' => 'circular_menu_text_color', 'label' => 'Menu Orbital — cor do título dos satélites', 'type' => 'color', 'group' => 'menus', 'default' => $lc['circular_menu_text_color'] ?? '#FFFFFF']),
+            self::f(['key' => 'circular_menu_desc_color', 'label' => 'Menu Orbital — cor da descrição dos satélites', 'type' => 'color', 'group' => 'menus', 'default' => $lc['circular_menu_desc_color'] ?? '#94A3B8']),
+            self::f(['key' => 'circular_menu_font_size', 'label' => 'Menu Orbital — tamanho de fonte (px)', 'type' => 'range', 'group' => 'menus', 'default' => $lc['circular_menu_font_size'] ?? 13, 'min' => 10, 'max' => 18, 'step' => 1]),
+            self::f(['key' => 'circular_menu_font_weight', 'label' => 'Menu Orbital — peso da fonte', 'type' => 'select', 'group' => 'menus', 'default' => $lc['circular_menu_font_weight'] ?? 'bold',
+                'options' => ['normal' => 'Regular', 'medium' => 'Médio', 'semibold' => 'Semi-negrito', 'bold' => 'Negrito', 'extrabold' => 'Extra-negrito']]),
+
+            self::f(['key' => 'circular_menu_sat1_icon', 'label' => 'Menu Orbital — Satélite 1 (ícone)', 'type' => 'text', 'group' => 'menus', 'default' => $lc['circular_menu_sat1_icon'] ?? '🛸']),
+            self::f(['key' => 'circular_menu_sat1_desc', 'label' => 'Menu Orbital — Satélite 1 (descrição)', 'type' => 'text', 'group' => 'menus', 'default' => $lc['circular_menu_sat1_desc'] ?? 'Operações Aéreas']),
+            self::f(['key' => 'circular_menu_sat1_color', 'label' => 'Menu Orbital — Satélite 1 (cor)', 'type' => 'color', 'group' => 'menus', 'default' => $lc['circular_menu_sat1_color'] ?? '#06B6D4']),
+
+            self::f(['key' => 'circular_menu_sat2_icon', 'label' => 'Menu Orbital — Satélite 2 (ícone)', 'type' => 'text', 'group' => 'menus', 'default' => $lc['circular_menu_sat2_icon'] ?? '🖼️']),
+            self::f(['key' => 'circular_menu_sat2_desc', 'label' => 'Menu Orbital — Satélite 2 (descrição)', 'type' => 'text', 'group' => 'menus', 'default' => $lc['circular_menu_sat2_desc'] ?? 'Missões & Media']),
+            self::f(['key' => 'circular_menu_sat2_color', 'label' => 'Menu Orbital — Satélite 2 (cor)', 'type' => 'color', 'group' => 'menus', 'default' => $lc['circular_menu_sat2_color'] ?? '#06B6D4']),
+
+            self::f(['key' => 'circular_menu_sat3_icon', 'label' => 'Menu Orbital — Satélite 3 (ícone)', 'type' => 'text', 'group' => 'menus', 'default' => $lc['circular_menu_sat3_icon'] ?? '📡']),
+            self::f(['key' => 'circular_menu_sat3_desc', 'label' => 'Menu Orbital — Satélite 3 (descrição)', 'type' => 'text', 'group' => 'menus', 'default' => $lc['circular_menu_sat3_desc'] ?? 'Centro de Controlo']),
+            self::f(['key' => 'circular_menu_sat3_color', 'label' => 'Menu Orbital — Satélite 3 (cor)', 'type' => 'color', 'group' => 'menus', 'default' => $lc['circular_menu_sat3_color'] ?? '#06B6D4']),
+
+            self::f(['key' => 'circular_menu_sat4_icon', 'label' => 'Menu Orbital — Satélite 4 (ícone)', 'type' => 'text', 'group' => 'menus', 'default' => $lc['circular_menu_sat4_icon'] ?? '🌐']),
+            self::f(['key' => 'circular_menu_sat4_desc', 'label' => 'Menu Orbital — Satélite 4 (descrição)', 'type' => 'text', 'group' => 'menus', 'default' => $lc['circular_menu_sat4_desc'] ?? 'Missão & Equipa']),
+            self::f(['key' => 'circular_menu_sat4_color', 'label' => 'Menu Orbital — Satélite 4 (cor)', 'type' => 'color', 'group' => 'menus', 'default' => $lc['circular_menu_sat4_color'] ?? '#06B6D4']),
+
             // ── Cores ────────────────────────────────────────────────────
             self::f(['key' => '--color-primary', 'label' => 'Primária (claro)', 'type' => 'color', 'group' => 'cores', 'source' => 'color_light', 'default' => $cl['--color-primary'] ?? '#2563EB']),
             self::f(['key' => '--color-accent', 'label' => 'Destaque (claro)', 'type' => 'color', 'group' => 'cores', 'source' => 'color_light', 'default' => $cl['--color-accent'] ?? '#06B6D4']),

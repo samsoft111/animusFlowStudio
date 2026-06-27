@@ -290,14 +290,44 @@ $sections['hero'] = <<<'HTML'
 
     
     <!-- Circular Navigation (HOME centro + 4 Satélites) -->
-    <div class="circular-menu-wrapper @if(!$showCircularMenu) hidden-menu @endif">
+    @php
+      $hubTitle = $theme->layout_config['circular_menu_hub_text'] ?? 'HOME';
+      $hubDesc = $theme->layout_config['circular_menu_hub_desc'] ?? 'Central Hub';
+      $hubColor = $theme->layout_config['circular_menu_hub_color'] ?? '#06B6D4';
+
+      $hubR = 6; $hubG = 182; $hubB = 212;
+      $hubHex = ltrim($hubColor, '#');
+      if (preg_match('/^[0-9a-fA-F]{6}$/', $hubHex)) {
+          $hubR = hexdec(substr($hubHex, 0, 2));
+          $hubG = hexdec(substr($hubHex, 2, 2));
+          $hubB = hexdec(substr($hubHex, 4, 2));
+      }
+
+      $satBg = $theme->layout_config['circular_menu_bg'] ?? 'rgba(15, 23, 42, 0.85)';
+      $satTextColor = $theme->layout_config['circular_menu_text_color'] ?? '#FFFFFF';
+      $satDescColor = $theme->layout_config['circular_menu_desc_color'] ?? '#94A3B8';
+      $satFontSize = ($theme->layout_config['circular_menu_font_size'] ?? 13) . 'px';
+
+      $satWeightVal = $theme->layout_config['circular_menu_font_weight'] ?? 'bold';
+      $weightMap = ['normal' => '400', 'medium' => '500', 'semibold' => '600', 'bold' => '700', 'extrabold' => '800'];
+      $satFontWeight = $weightMap[$satWeightVal] ?? '700';
+    @endphp
+    <div class="circular-menu-wrapper @if(!$showCircularMenu) hidden-menu @endif" style="
+      --hub-color: {{ $hubColor }};
+      --hub-color-rgb: {{ $hubR }}, {{ $hubG }}, {{ $hubB }};
+      --sat-bg: {{ $satBg }};
+      --sat-text-color: {{ $satTextColor }};
+      --sat-desc-color: {{ $satDescColor }};
+      --sat-font-size: {{ $satFontSize }};
+      --sat-font-weight: {{ $satFontWeight }};
+    ">
       <div class="radar-circles"></div>
       <div class="radial-grid"></div>
 
       <!-- Central Hub (Home) -->
       <a href="/" class="menu-hub-node" onmouseenter="playHoverChirp()" onclick="playClickChirp()">
-        <span class="node-title">HOME</span>
-        <span class="node-desc">Central Hub</span>
+        <span class="node-title">{{ $hubTitle }}</span>
+        <span class="node-desc">{{ $hubDesc }}</span>
         <div class="hub-glow"></div>
       </a>
 
@@ -317,10 +347,22 @@ $sections['hero'] = <<<'HTML'
             $link = $menuLinks[$i] ?? null;
             $title = $link['label'] ?? $defaultSats[$i]['label'];
             $url = $link['url'] ?? $defaultSats[$i]['url'];
-            $icon = $defaultSats[$i]['icon'];
-            $desc = $defaultSats[$i]['desc'];
+            $icon = $theme->layout_config['circular_menu_sat' . ($i + 1) . '_icon'] ?? $defaultSats[$i]['icon'];
+            $desc = $theme->layout_config['circular_menu_sat' . ($i + 1) . '_desc'] ?? $defaultSats[$i]['desc'];
+            $color = $theme->layout_config['circular_menu_sat' . ($i + 1) . '_color'] ?? '#06B6D4';
+
+            $satR = 6; $satG = 182; $satB = 212;
+            $hexColor = ltrim($color, '#');
+            if (preg_match('/^[0-9a-fA-F]{6}$/', $hexColor)) {
+                $satR = hexdec(substr($hexColor, 0, 2));
+                $satG = hexdec(substr($hexColor, 2, 2));
+                $satB = hexdec(substr($hexColor, 4, 2));
+            }
           @endphp
-          <div class="sat-node-container sat-{{ $i + 1 }} group/sat">
+          <div class="sat-node-container sat-{{ $i + 1 }} group/sat" style="
+            --sat-color: {{ $color }};
+            --sat-color-rgb: {{ $satR }}, {{ $satG }}, {{ $satB }};
+          ">
             <a href="{{ $url }}" class="sat-node portal-link" onmouseenter="playHoverChirp()" data-portal-href="{{ $url }}">
               <div class="sat-icon">{{ $icon }}</div>
               <div class="sat-text">
@@ -1121,6 +1163,63 @@ if (!str_contains($css, '/* ── Estilos de Logótipo Dinâmico ── */')) {
         "}\n" .
         ".logo-text-link:hover {\n" .
         "  opacity: 0.85 !important;\n" .
+        "}\n";
+}
+
+if (!str_contains($css, '/* ── Customizações Dinâmicas do Menu Circular ── */')) {
+    $css .= "\n\n/* ── Customizações Dinâmicas do Menu Circular ── */\n" .
+        ".menu-hub-node {\n" .
+        "  border-color: var(--hub-color, var(--color-accent, #06B6D4)) !important;\n" .
+        "  box-shadow: 0 0 0 8px rgba(var(--hub-color-rgb, var(--color-accent-rgb, 6, 182, 212)), 0.08),\n" .
+        "              0 0 0 20px rgba(var(--hub-color-rgb, var(--color-accent-rgb, 6, 182, 212)), 0.04),\n" .
+        "              0 0 50px rgba(var(--hub-color-rgb, var(--color-accent-rgb, 6, 182, 212)), 0.4),\n" .
+        "              inset 0 0 30px rgba(var(--hub-color-rgb, var(--color-accent-rgb, 6, 182, 212)), 0.15) !important;\n" .
+        "}\n" .
+        ".menu-hub-node:hover {\n" .
+        "  box-shadow: 0 0 0 10px rgba(var(--hub-color-rgb, var(--color-accent-rgb, 6, 182, 212)), 0.12),\n" .
+        "              0 0 0 24px rgba(var(--hub-color-rgb, var(--color-accent-rgb, 6, 182, 212)), 0.06),\n" .
+        "              0 0 70px rgba(var(--hub-color-rgb, var(--color-accent-rgb, 6, 182, 212)), 0.6),\n" .
+        "              inset 0 0 40px rgba(var(--hub-color-rgb, var(--color-accent-rgb, 6, 182, 212)), 0.25) !important;\n" .
+        "}\n" .
+        ".hub-glow {\n" .
+        "  border-color: rgba(var(--hub-color-rgb, var(--color-accent-rgb, 6, 182, 212)), 0.3) !important;\n" .
+        "}\n" .
+        ".hub-glow::after {\n" .
+        "  border-color: rgba(var(--hub-color-rgb, var(--color-accent-rgb, 6, 182, 212)), 0.1) !important;\n" .
+        "}\n" .
+        ".radar-circles {\n" .
+        "  border-color: rgba(var(--hub-color-rgb, var(--color-accent-rgb, 6, 182, 212)), 0.18) !important;\n" .
+        "}\n" .
+        ".radar-circles::after {\n" .
+        "  background: conic-gradient(from 0deg, rgba(var(--hub-color-rgb, var(--color-accent-rgb, 6, 182, 212)), 0.18) 0%, transparent 50%) !important;\n" .
+        "}\n" .
+        ".radar-circles::before {\n" .
+        "  border-color: rgba(var(--hub-color-rgb, var(--color-accent-rgb, 6, 182, 212)), 0.05) !important;\n" .
+        "}\n" .
+        ".radial-grid {\n" .
+        "  border-color: rgba(var(--hub-color-rgb, var(--color-accent-rgb, 6, 182, 212)), 0.06) !important;\n" .
+        "}\n" .
+        ".sat-node {\n" .
+        "  background: var(--sat-bg, rgba(15, 23, 42, 0.85)) !important;\n" .
+        "}\n" .
+        ".sat-icon {\n" .
+        "  background: rgba(var(--sat-color-rgb, var(--color-accent-rgb, 6, 182, 212)), 0.1) !important;\n" .
+        "  border-color: rgba(var(--sat-color-rgb, var(--color-accent-rgb, 6, 182, 212)), 0.2) !important;\n" .
+        "}\n" .
+        ".sat-title {\n" .
+        "  color: var(--sat-text-color, var(--color-primary-foreground, #FFFFFF)) !important;\n" .
+        "  font-size: var(--sat-font-size, 0.8rem) !important;\n" .
+        "  font-weight: var(--sat-font-weight, 700) !important;\n" .
+        "}\n" .
+        ".sat-desc {\n" .
+        "  color: var(--sat-desc-color, var(--color-muted-foreground, #94A3B8)) !important;\n" .
+        "}\n" .
+        ".sat-node-container:hover .sat-node {\n" .
+        "  border-color: var(--sat-color, var(--color-accent, #06B6D4)) !important;\n" .
+        "  box-shadow: 0 15px 30px rgba(var(--sat-color-rgb, var(--color-accent-rgb, 6, 182, 212)), 0.25) !important;\n" .
+        "}\n" .
+        ".sat-node-container:hover .sat-icon {\n" .
+        "  background: var(--sat-color, var(--color-accent, #06B6D4)) !important;\n" .
         "}\n";
 }
 
