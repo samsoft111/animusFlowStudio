@@ -17,6 +17,10 @@ Route::middleware('guest')->group(function () {
 
 Route::post('/logout', [LoginController::class, 'logout'])->name('logout')->middleware('auth');
 
+/* ── Theme form endpoints (preview mode — no auth required, CSRF protected) ── */
+Route::post('/contacto/enviar',      [ThemeController::class, 'handleContactForm'])->name('themes.contact.form');
+Route::post('/newsletter/subscrever', [ThemeController::class, 'handleNewsletterForm'])->name('themes.newsletter.form');
+
 /* ── Theme preview (auth required: o preview compila Blade das secções server-side) ── */
 Route::get('/preview/theme/{uuid}', [ThemeController::class, 'preview'])->name('themes.preview')->middleware('auth');
 Route::get('/sobre', [ThemeController::class, 'previewPage'])->name('themes.preview.sobre')->middleware('auth');

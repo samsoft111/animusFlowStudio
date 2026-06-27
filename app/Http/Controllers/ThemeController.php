@@ -973,6 +973,67 @@ class ThemeController extends Controller
     }
 
     // ──────────────────────────────────────────────
+    //  Theme Form Endpoints (preview simulation)
+    // ──────────────────────────────────────────────
+
+    /**
+     * Handle the CTA / Contact form submission in preview mode.
+     * In production (AnimusFlow), this route is replaced by the site's
+     * own contact controller. Here we simulate a successful send and
+     * return JSON so the frontend handler can show inline feedback.
+     */
+    public function handleContactForm(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'nome'     => 'required|string|min:2|max:255',
+            'email'    => 'required|email|max:255',
+            'mensagem' => 'required|string|min:10|max:5000',
+        ], [
+            'nome.required'     => 'Por favor, introduza o nome da empresa ou entidade.',
+            'nome.min'          => 'O nome deve ter pelo menos 2 caracteres.',
+            'email.required'    => 'Por favor, introduza um e-mail de contacto válido.',
+            'email.email'       => 'O endereço de e-mail introduzido não é válido.',
+            'mensagem.required' => 'Por favor, descreva a sua missão.',
+            'mensagem.min'      => 'A descrição da missão deve ter pelo menos 10 caracteres.',
+        ]);
+
+        // In preview mode we log the submission and return success.
+        \Log::info('AeroSpace theme contact form (preview)', [
+            'nome'    => $validated['nome'],
+            'email'   => $validated['email'],
+            'preview' => true,
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => '✅ Missão submetida com sucesso! A nossa equipa de operações entrará em contacto em breve.',
+        ]);
+    }
+
+    /**
+     * Handle the newsletter subscription form in preview mode.
+     */
+    public function handleNewsletterForm(Request $request): JsonResponse
+    {
+        $request->validate([
+            'email' => 'required|email|max:255',
+        ], [
+            'email.required' => 'Por favor, introduza o seu endereço de e-mail.',
+            'email.email'    => 'O endereço de e-mail introduzido não é válido.',
+        ]);
+
+        \Log::info('AeroSpace newsletter subscription (preview)', [
+            'email'   => $request->input('email'),
+            'preview' => true,
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => '📡 Subscrição efectuada! Receberá o próximo boletim operacional em breve.',
+        ]);
+    }
+
+    // ──────────────────────────────────────────────
     //  Export ZIP
     // ──────────────────────────────────────────────
 

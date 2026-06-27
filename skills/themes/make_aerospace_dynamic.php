@@ -64,10 +64,13 @@ $sections['cta'] = <<<'HTML'
       <div class="contact-newsletter-container mt-16 pt-12 border-t border-white/5">
         <h3 class="text-xl font-bold text-white mb-2 font-heading">Subscrever Boletim Operacional</h3>
         <p class="text-slate-400 text-xs mb-6 max-w-md mx-auto">Receba novidades sobre espaço aéreo, legislação de drones e atualizações de investigação tecnológica.</p>
-        <form class="flex flex-col sm:flex-row gap-2 max-w-md mx-auto" onsubmit="event.preventDefault(); alert('Subscrição efectuada com sucesso.');">
-          <input type="email" placeholder="Introduza o seu email..." class="contact-input sm:flex-1" required>
-          <button type="submit" class="contact-btn sm:w-auto px-6">Subscrever</button>
+        <form id="aerospace-newsletter-form" class="flex flex-col sm:flex-row gap-2 max-w-md mx-auto" novalidate onsubmit="handleNewsletterSubmit(event)">
+          @csrf
+          <label for="newsletter-email" class="sr-only">Endereço de e-mail</label>
+          <input type="email" id="newsletter-email" name="email" placeholder="Introduza o seu email..." class="contact-input sm:flex-1" required>
+          <button type="submit" id="newsletter-submit-btn" class="contact-btn sm:w-auto px-6">Subscrever</button>
         </form>
+        <div id="newsletter-feedback" class="hidden text-xs mt-3 py-1"></div>
       </div>
     @endif
   </div>
@@ -809,20 +812,21 @@ $sections['contact'] = <<<'HTML'
       <div class="bg-[#0A0F1E] border border-white/8 rounded-2xl p-8">
         <h3 class="text-white font-bold font-heading text-xl mb-2">Enviar Mensagem</h3>
         <p class="text-slate-500 text-sm mb-6">Descreva a sua necessidade e um especialista entrará em contacto.</p>
-        <form class="space-y-4" onsubmit="event.preventDefault(); alert('{{ $c['success_message'] ?? 'Mensagem enviada com sucesso! A nossa equipa responderá em menos de 2 horas.' }}');">
+        <form id="aerospace-contact-detail-form" class="space-y-4" novalidate onsubmit="handleAerospaceDetailFormSubmit(event)">
+          @csrf
           <div>
-            <label class="block text-xs font-mono uppercase tracking-wider text-slate-400 mb-1.5">Nome / Empresa</label>
-            <input type="text" placeholder="Ex: Grupo Logística Angola" required
+            <label for="detail-name" class="block text-xs font-mono uppercase tracking-wider text-slate-400 mb-1.5">Nome / Empresa</label>
+            <input type="text" id="detail-name" name="nome" placeholder="Ex: Grupo Logística Angola" required
                    class="w-full bg-[#070C18] border border-white/10 rounded-xl px-4 py-3 text-white text-sm placeholder-slate-600 focus:outline-none focus:border-[#06B6D4]/50 transition-colors">
           </div>
           <div>
-            <label class="block text-xs font-mono uppercase tracking-wider text-slate-400 mb-1.5">E-mail</label>
-            <input type="email" placeholder="missao@empresa.ao" required
+            <label for="detail-email" class="block text-xs font-mono uppercase tracking-wider text-slate-400 mb-1.5">E-mail</label>
+            <input type="email" id="detail-email" name="email" placeholder="missao@empresa.ao" required
                    class="w-full bg-[#070C18] border border-white/10 rounded-xl px-4 py-3 text-white text-sm placeholder-slate-600 focus:outline-none focus:border-[#06B6D4]/50 transition-colors">
           </div>
           <div>
-            <label class="block text-xs font-mono uppercase tracking-wider text-slate-400 mb-1.5">Serviço de Interesse</label>
-            <select class="w-full bg-[#070C18] border border-white/10 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-[#06B6D4]/50 transition-colors">
+            <label for="detail-service" class="block text-xs font-mono uppercase tracking-wider text-slate-400 mb-1.5">Serviço de Interesse</label>
+            <select id="detail-service" name="servico" class="w-full bg-[#070C18] border border-white/10 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-[#06B6D4]/50 transition-colors">
               <option>Transporte Autónomo de Carga</option>
               <option>Cartografia &amp; Fotogrametria</option>
               <option>Vigilância &amp; Patrulhamento</option>
@@ -832,11 +836,12 @@ $sections['contact'] = <<<'HTML'
             </select>
           </div>
           <div>
-            <label class="block text-xs font-mono uppercase tracking-wider text-slate-400 mb-1.5">Descrição da Missão</label>
-            <textarea rows="4" placeholder="Descreva a sua necessidade operacional..." required
+            <label for="detail-message" class="block text-xs font-mono uppercase tracking-wider text-slate-400 mb-1.5">Descrição da Missão</label>
+            <textarea id="detail-message" name="mensagem" rows="4" placeholder="Descreva a sua necessidade operacional..." required
                       class="w-full bg-[#070C18] border border-white/10 rounded-xl px-4 py-3 text-white text-sm placeholder-slate-600 focus:outline-none focus:border-[#06B6D4]/50 transition-colors resize-none"></textarea>
           </div>
-          <button type="submit"
+          <div id="detail-form-feedback" class="hidden text-xs py-2 rounded-lg px-3"></div>
+          <button type="submit" id="detail-submit-btn"
                   class="w-full bg-gradient-to-r from-[#2563EB] to-[#06B6D4] text-white font-bold py-3 rounded-xl hover:opacity-90 transition-opacity font-heading tracking-wider text-sm">
             {{ strtoupper($btnText) }} ➔
           </button>
@@ -1296,6 +1301,146 @@ if (!str_contains($js, '/* ── Sticky Header on Scroll ── */')) {
         "    }\n" .
         "  }\n" .
         "});\n";
+}
+
+// ── Contact Detail Form Handler ──────────────────────────────────────────────
+if (!str_contains($js, '/* ── Contact Detail Form Handler ── */')) {
+    $js .= "\n\n/* ── Contact Detail Form Handler ── */\n" .
+        "window.handleAerospaceDetailFormSubmit = function(e) {\n" .
+        "  e.preventDefault();\n" .
+        "  const form = document.getElementById('aerospace-contact-detail-form');\n" .
+        "  const feedback = document.getElementById('detail-form-feedback');\n" .
+        "  const submitBtn = document.getElementById('detail-submit-btn');\n" .
+        "  if (!form || !feedback || !submitBtn) return;\n\n" .
+        "  const nome = form.querySelector('#detail-name')?.value.trim();\n" .
+        "  const email = form.querySelector('#detail-email')?.value.trim();\n" .
+        "  const mensagem = form.querySelector('#detail-message')?.value.trim();\n" .
+        "  const servico = form.querySelector('#detail-service')?.value || '';\n\n" .
+        "  const showFb = (msg, type) => {\n" .
+        "    if (!feedback) return;\n" .
+        "    feedback.textContent = msg;\n" .
+        "    feedback.className = 'text-xs py-2 rounded-lg px-3 ' +\n" .
+        "      (type === 'error' ? 'bg-red-500/10 text-red-400' :\n" .
+        "       type === 'success' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-cyan-500/10 text-cyan-400');\n" .
+        "    feedback.classList.remove('hidden');\n" .
+        "    if (type !== 'error') setTimeout(() => feedback.classList.add('hidden'), 7000);\n" .
+        "  };\n\n" .
+        "  if (!nome || nome.length < 2) { showFb('Por favor, introduza o nome da empresa ou entidade.', 'error'); return; }\n" .
+        "  const emailRe = /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/;\n" .
+        "  if (!email || !emailRe.test(email)) { showFb('Por favor, introduza um e-mail válido.', 'error'); return; }\n" .
+        "  if (!mensagem || mensagem.length < 10) { showFb('Descreva a sua necessidade com pelo menos 10 caracteres.', 'error'); return; }\n\n" .
+        "  submitBtn.disabled = true;\n" .
+        "  const originalText = submitBtn.textContent;\n" .
+        "  submitBtn.textContent = 'A enviar...';\n\n" .
+        "  const csrfToken = form.querySelector('input[name=\"_token\"]')?.value || '';\n\n" .
+        "  fetch('/contacto/enviar', {\n" .
+        "    method: 'POST',\n" .
+        "    headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' },\n" .
+        "    body: JSON.stringify({ nome, email, mensagem, servico })\n" .
+        "  })\n" .
+        "  .then(r => { if (!r.ok) throw new Error('Network error'); return r.json(); })\n" .
+        "  .then(data => {\n" .
+        "    showFb(data.message || '✅ Mensagem enviada com sucesso!', 'success');\n" .
+        "    form.reset();\n" .
+        "    submitBtn.disabled = false;\n" .
+        "    submitBtn.textContent = originalText;\n" .
+        "    try { playClickChirp(); } catch(_) {}\n" .
+        "  })\n" .
+        "  .catch(() => {\n" .
+        "    const subject = encodeURIComponent('Pedido de Informação — ' + nome);\n" .
+        "    const body = encodeURIComponent('Nome: ' + nome + '\\nE-mail: ' + email + '\\nServiço: ' + servico + '\\n\\nMensagem:\\n' + mensagem);\n" .
+        "    window.location.href = 'mailto:ops@aerospace.io?subject=' + subject + '&body=' + body;\n" .
+        "    showFb('📨 O seu e-mail padrão foi aberto. Aguardamos a sua mensagem!', 'info');\n" .
+        "    submitBtn.disabled = false;\n" .
+        "    submitBtn.textContent = originalText;\n" .
+        "  });\n" .
+        "};\n";
+}
+
+// ── Newsletter Form Handler ──────────────────────────────────────────────────
+if (!str_contains($js, '/* ── Newsletter Form Handler ── */')) {
+    $js .= "\n\n/* ── Newsletter Form Handler ── */\n" .
+        "window.handleNewsletterSubmit = function(e) {\n" .
+        "  e.preventDefault();\n" .
+        "  const form = document.getElementById('aerospace-newsletter-form');\n" .
+        "  const emailInput = document.getElementById('newsletter-email');\n" .
+        "  const feedback = document.getElementById('newsletter-feedback');\n" .
+        "  const btn = document.getElementById('newsletter-submit-btn');\n" .
+        "  if (!form || !emailInput || !feedback || !btn) return;\n\n" .
+        "  const email = emailInput.value.trim();\n" .
+        "  const emailRe = /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/;\n" .
+        "  if (!email || !emailRe.test(email)) {\n" .
+        "    feedback.textContent = 'Por favor, introduza um e-mail válido.';\n" .
+        "    feedback.className = 'text-xs mt-3 py-1 text-red-400';\n" .
+        "    feedback.classList.remove('hidden');\n" .
+        "    return;\n" .
+        "  }\n\n" .
+        "  btn.disabled = true;\n" .
+        "  btn.textContent = 'A subscrever...';\n\n" .
+        "  const csrfToken = form.querySelector('input[name=\"_token\"]')?.value || '';\n\n" .
+        "  fetch('/newsletter/subscrever', {\n" .
+        "    method: 'POST',\n" .
+        "    headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' },\n" .
+        "    body: JSON.stringify({ email })\n" .
+        "  })\n" .
+        "  .then(r => { if (!r.ok) throw new Error('Network error'); return r.json(); })\n" .
+        "  .then(data => {\n" .
+        "    feedback.textContent = data.message || '📡 Subscrição efectuada com sucesso!';\n" .
+        "    feedback.className = 'text-xs mt-3 py-1 text-emerald-400';\n" .
+        "    feedback.classList.remove('hidden');\n" .
+        "    form.reset();\n" .
+        "    btn.disabled = false;\n" .
+        "    btn.textContent = 'Subscrever';\n" .
+        "    try { playClickChirp(); } catch(_) {}\n" .
+        "  })\n" .
+        "  .catch(() => {\n" .
+        "    feedback.textContent = '📨 Subscrição registada. Entraremos em contacto brevemente.';\n" .
+        "    feedback.className = 'text-xs mt-3 py-1 text-cyan-400';\n" .
+        "    feedback.classList.remove('hidden');\n" .
+        "    btn.disabled = false;\n" .
+        "    btn.textContent = 'Subscrever';\n" .
+        "  });\n" .
+        "};\n";
+}
+
+// ── Support Form Handler (Chat Popup modo form) ──────────────────────────────
+if (!str_contains($js, '/* ── Support Form Handler ── */')) {
+    // Replace the old minified one-liner if present
+    $oldSupportHandler = "function handleSupportFormSubmit(e){ if(e) e.preventDefault(); try{ if(typeof playClickChirp==='function') playClickChirp(); }catch(_){ } var f=e&&e.target; var body=f?f.closest('.chat-popup-body'):null; if(body){ body.innerHTML='<div class=\\\"msg system\\\" style=\\\"text-align:center;padding:24px 12px;\\\">✓ Mensagem enviada. A nossa equipa entrará em contacto.</div>'; } return false; }";
+    if (str_contains($js, $oldSupportHandler)) {
+        $js = str_replace($oldSupportHandler, '', $js);
+    }
+
+    $js .= "\n\n/* ── Support Form Handler ── */\n" .
+        "window.handleSupportFormSubmit = function(e) {\n" .
+        "  if (e) e.preventDefault();\n" .
+        "  const form = e && e.target;\n" .
+        "  if (!form) return false;\n\n" .
+        "  const nome = form.querySelector('input[name=\"nome\"]')?.value.trim();\n" .
+        "  const email = form.querySelector('input[name=\"email\"]')?.value.trim();\n" .
+        "  const mensagem = form.querySelector('textarea[name=\"mensagem\"]')?.value.trim();\n\n" .
+        "  if (!nome || !email || !mensagem) {\n" .
+        "    const errDiv = form.querySelector('.chat-support-error') || document.createElement('div');\n" .
+        "    errDiv.className = 'chat-support-error msg system';\n" .
+        "    errDiv.style.color = '#f87171';\n" .
+        "    errDiv.style.fontSize = '0.75rem';\n" .
+        "    errDiv.textContent = '⚠️ Por favor, preencha todos os campos.';\n" .
+        "    if (!form.querySelector('.chat-support-error')) form.appendChild(errDiv);\n" .
+        "    return false;\n" .
+        "  }\n\n" .
+        "  const body = form.closest('.chat-popup-body');\n" .
+        "  const csrfToken = form.querySelector('input[name=\"_token\"]')?.value || '';\n\n" .
+        "  if (body) {\n" .
+        "    body.innerHTML = '<div class=\"msg system\" style=\"text-align:center;padding:32px 16px;\"><div style=\"font-size:2rem;margin-bottom:8px;\">✅</div><div style=\"color:#34d399;font-weight:600;margin-bottom:4px;\">Mensagem enviada!</div><div style=\"color:#94a3b8;font-size:0.75rem;\">A nossa equipa entrará em contacto em breve.</div></div>';\n" .
+        "  }\n\n" .
+        "  fetch('/contacto/enviar', {\n" .
+        "    method: 'POST',\n" .
+        "    headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' },\n" .
+        "    body: JSON.stringify({ nome, email, mensagem })\n" .
+        "  }).catch(() => {});\n\n" .
+        "  try { playClickChirp(); } catch(_) {}\n" .
+        "  return false;\n" .
+        "};\n";
 }
 
 $theme->custom_js = $js;
