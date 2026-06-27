@@ -197,6 +197,23 @@ final class ThemeSettingsRecommender
             self::f(['key' => 'contact_address_hangar', 'label' => 'Hangar — Linha 1', 'type' => 'text', 'group' => 'rodape', 'default' => $lc['contact_address_hangar'] ?? 'Aeroporto Internacional 4 de Fevereiro']),
             self::f(['key' => 'contact_address_hangar_sub', 'label' => 'Hangar — Linha 2', 'type' => 'text', 'group' => 'rodape', 'default' => $lc['contact_address_hangar_sub'] ?? 'Zona Técnica Norte — Hangar AX, Luanda']),
 
+            // ── Formulários — Configurações ──────────────────────────────
+            self::f(['key' => 'contact_mailto', 'label' => 'Formulário — e-mail de destino', 'type' => 'text', 'group' => 'formularios', 'default' => $lc['contact_mailto'] ?? 'ops@aerospace.ao', 'hint' => 'E-mail para onde os formulários enviam (fallback mailto: quando AJAX falha).']),
+            self::f(['key' => 'contact_form_success_message', 'label' => 'Formulário CTA — mensagem de sucesso', 'type' => 'text', 'group' => 'formularios', 'default' => $lc['contact_form_success_message'] ?? '✅ Missão submetida com sucesso! A nossa equipa de operações entrará em contacto em breve.', 'hint' => 'Texto mostrado após submissão bem-sucedida do formulário.']),
+            self::f(['key' => 'contact_form_btn_text', 'label' => 'Formulário CTA — texto do botão', 'type' => 'text', 'group' => 'formularios', 'default' => $lc['contact_form_btn_text'] ?? 'Submeter Plano de Missão']),
+            self::f(['key' => 'contact_form_placeholder_name', 'label' => 'Formulário — placeholder Nome', 'type' => 'text', 'group' => 'formularios', 'default' => $lc['contact_form_placeholder_name'] ?? 'Nome da Empresa / Entidade']),
+            self::f(['key' => 'contact_form_placeholder_email', 'label' => 'Formulário — placeholder E-mail', 'type' => 'text', 'group' => 'formularios', 'default' => $lc['contact_form_placeholder_email'] ?? 'E-mail de Contacto']),
+            self::f(['key' => 'contact_form_placeholder_message', 'label' => 'Formulário — placeholder Mensagem', 'type' => 'textarea', 'group' => 'formularios', 'default' => $lc['contact_form_placeholder_message'] ?? 'Descreva a sua missão (ex: rota de transporte de 100km)']),
+
+            // Newsletter
+            self::f(['key' => 'newsletter_title', 'label' => 'Newsletter — título', 'type' => 'text', 'group' => 'formularios', 'default' => $lc['newsletter_title'] ?? 'Subscrever Boletim Operacional']),
+            self::f(['key' => 'newsletter_description', 'label' => 'Newsletter — descrição', 'type' => 'textarea', 'group' => 'formularios', 'default' => $lc['newsletter_description'] ?? 'Receba novidades sobre espaço aéreo, legislação de drones e atualizações de investigação tecnológica.']),
+            self::f(['key' => 'newsletter_btn_text', 'label' => 'Newsletter — texto do botão', 'type' => 'text', 'group' => 'formularios', 'default' => $lc['newsletter_btn_text'] ?? 'Subscrever']),
+            self::f(['key' => 'newsletter_success_message', 'label' => 'Newsletter — mensagem de sucesso', 'type' => 'text', 'group' => 'formularios', 'default' => $lc['newsletter_success_message'] ?? '📡 Subscrição efectuada! Receberá o próximo boletim operacional em breve.']),
+
+            // Serviços (dropdown do formulário de contacto detalhado)
+            self::f(['key' => 'contact_services_list', 'label' => 'Formulário Contacto — lista de serviços', 'type' => 'textarea', 'group' => 'formularios', 'default' => $lc['contact_services_list'] ?? "Transporte Autónomo de Carga\nCartografia & Fotogrametria\nVigilância & Patrulhamento\nInspecção Industrial\nLogística de Emergência\nAgricultura de Precisão", 'hint' => 'Um serviço por linha. São as opções do dropdown no formulário de contacto detalhado.']),
+
 
             // ── Funcionalidades ──────────────────────────────────────────
             self::f(['key' => 'telemetry_enabled', 'label' => 'Painel de telemetria live', 'type' => 'toggle', 'group' => 'funcionalidades', 'default' => $lc['telemetry_enabled'] ?? false]),

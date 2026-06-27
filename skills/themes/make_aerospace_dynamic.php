@@ -22,7 +22,13 @@ $sections['cta'] = <<<'HTML'
   $c = $content ?? [];
   $heading = $c['heading'] ?? 'Pronto para Lançar a Missão?';
   $text = $c['text'] ?? $c['subheading'] ?? 'Solicite o estudo de viabilidade da sua operação de tráfego aéreo. Entraremos em contacto para detalhar o plano de voo.';
-  $btnText = $c['button_text'] ?? 'Submeter Plano de Missão';
+  $btnText = $c['button_text'] ?? $theme->layout_config['contact_form_btn_text'] ?? 'Submeter Plano de Missão';
+  
+  $phName    = $theme->layout_config['contact_form_placeholder_name']    ?? 'Nome da Empresa / Entidade';
+  $phEmail   = $theme->layout_config['contact_form_placeholder_email']   ?? 'E-mail de Contacto';
+  $phMessage = $theme->layout_config['contact_form_placeholder_message'] ?? 'Descreva a sua missão (ex: rota de transporte de 100km)';
+  $formMailto = $theme->layout_config['contact_mailto'] ?? 'ops@aerospace.ao';
+  $formSuccess = $theme->layout_config['contact_form_success_message'] ?? '✅ Missão submetida com sucesso! A nossa equipa de operações entrará em contacto em breve.';
   
   $secBg = $c['bg_color'] ?? $settings['bg_color'] ?? $c['custom_bg_color'] ?? null;
   $secText = $c['text_color'] ?? $settings['text_color'] ?? null;
@@ -34,19 +40,22 @@ $sections['cta'] = <<<'HTML'
     </div>
     <h2 class="text-3xl md:text-4xl font-bold text-white mb-6 font-heading">{{ $heading }}</h2>
     <p class="text-slate-400 max-w-xl mx-auto mb-10">{{ $text }}</p>
-    <form id="aerospace-contact-form" class="max-w-md mx-auto space-y-4" novalidate onsubmit="handleAerospaceContactSubmit(event)">
+    <form id="aerospace-contact-form" class="max-w-md mx-auto space-y-4" novalidate
+          onsubmit="handleAerospaceContactSubmit(event)"
+          data-mailto="{{ $formMailto }}"
+          data-success="{{ $formSuccess }}">
       @csrf
       <div class="text-left">
         <label for="contact-name" class="sr-only">Nome da Empresa ou Entidade</label>
-        <input type="text" id="contact-name" name="nome" placeholder="Nome da Empresa / Entidade" class="contact-input" required autocomplete="organization">
+        <input type="text" id="contact-name" name="nome" placeholder="{{ $phName }}" class="contact-input" required autocomplete="organization">
       </div>
       <div class="text-left">
         <label for="contact-email" class="sr-only">E-mail de Contacto</label>
-        <input type="email" id="contact-email" name="email" placeholder="E-mail de Contacto" class="contact-input" required autocomplete="email">
+        <input type="email" id="contact-email" name="email" placeholder="{{ $phEmail }}" class="contact-input" required autocomplete="email">
       </div>
       <div class="text-left">
         <label for="contact-message" class="sr-only">Descrição da Missão</label>
-        <textarea id="contact-message" name="mensagem" placeholder="Descreva a sua missão (ex: rota de transporte de 100km)" rows="3" class="contact-input" required></textarea>
+        <textarea id="contact-message" name="mensagem" placeholder="{{ $phMessage }}" rows="3" class="contact-input" required></textarea>
       </div>
       <div id="contact-form-feedback" class="text-xs py-2 hidden"></div>
       <button type="submit" id="contact-submit-btn" class="contact-btn w-full">{{ $btnText }}</button>
@@ -62,13 +71,15 @@ $sections['cta'] = <<<'HTML'
     <!-- Newsletter Subscription -->
     @if($theme->layout_config['contact_show_newsletter'] ?? true)
       <div class="contact-newsletter-container mt-16 pt-12 border-t border-white/5">
-        <h3 class="text-xl font-bold text-white mb-2 font-heading">Subscrever Boletim Operacional</h3>
-        <p class="text-slate-400 text-xs mb-6 max-w-md mx-auto">Receba novidades sobre espaço aéreo, legislação de drones e atualizações de investigação tecnológica.</p>
-        <form id="aerospace-newsletter-form" class="flex flex-col sm:flex-row gap-2 max-w-md mx-auto" novalidate onsubmit="handleNewsletterSubmit(event)">
+        <h3 class="text-xl font-bold text-white mb-2 font-heading">{{ $theme->layout_config['newsletter_title'] ?? 'Subscrever Boletim Operacional' }}</h3>
+        <p class="text-slate-400 text-xs mb-6 max-w-md mx-auto">{{ $theme->layout_config['newsletter_description'] ?? 'Receba novidades sobre espaço aéreo, legislação de drones e atualizações de investigação tecnológica.' }}</p>
+        <form id="aerospace-newsletter-form" class="flex flex-col sm:flex-row gap-2 max-w-md mx-auto" novalidate
+              onsubmit="handleNewsletterSubmit(event)"
+              data-success="{{ $theme->layout_config['newsletter_success_message'] ?? '📡 Subscrição efectuada! Receberá o próximo boletim operacional em breve.' }}">
           @csrf
           <label for="newsletter-email" class="sr-only">Endereço de e-mail</label>
           <input type="email" id="newsletter-email" name="email" placeholder="Introduza o seu email..." class="contact-input sm:flex-1" required>
-          <button type="submit" id="newsletter-submit-btn" class="contact-btn sm:w-auto px-6">Subscrever</button>
+          <button type="submit" id="newsletter-submit-btn" class="contact-btn sm:w-auto px-6">{{ $theme->layout_config['newsletter_btn_text'] ?? 'Subscrever' }}</button>
         </form>
         <div id="newsletter-feedback" class="hidden text-xs mt-3 py-1"></div>
       </div>
@@ -747,8 +758,14 @@ $sections['contact'] = <<<'HTML'
 
   $domainParts = explode('@', $cEmail);
   $domain = isset($domainParts[1]) ? $domainParts[1] : 'aerospace.ao';
-  $opsEmail = 'ops@' . $domain;
+  $opsEmail = $theme->layout_config['contact_mailto'] ?? ('ops@' . $domain);
   $opsPhone = (strlen($cPhone) > 5) ? (substr($cPhone, 0, -1) . '9') : '+244 923 456 789';
+
+  $formSuccess = $theme->layout_config['contact_form_success_message'] ?? '✅ Missão submetida com sucesso! A nossa equipa de operações entrará em contacto em breve.';
+
+  // Serviços do dropdown (um por linha)
+  $servicesList = $theme->layout_config['contact_services_list'] ?? "Transporte Autónomo de Carga\nCartografia & Fotogrametria\nVigilância & Patrulhamento\nInspecção Industrial\nLogística de Emergência\nAgricultura de Precisão";
+  $servicesOptions = array_filter(array_map('trim', explode("\n", $servicesList)));
 
   $loc = $theme->layout_config['footer_location'] ?? 'Luanda';
   $hq1 = $theme->layout_config['contact_address_hq'] ?? 'Rua Rainha Ginga, Edifício AeroSpace Tower';
@@ -812,42 +829,41 @@ $sections['contact'] = <<<'HTML'
       <div class="bg-[#0A0F1E] border border-white/8 rounded-2xl p-8">
         <h3 class="text-white font-bold font-heading text-xl mb-2">Enviar Mensagem</h3>
         <p class="text-slate-500 text-sm mb-6">Descreva a sua necessidade e um especialista entrará em contacto.</p>
-        <form id="aerospace-contact-detail-form" class="space-y-4" novalidate onsubmit="handleAerospaceDetailFormSubmit(event)">
+        <form id="aerospace-contact-detail-form" class="space-y-4" novalidate
+              onsubmit="handleAerospaceDetailFormSubmit(event)"
+              data-mailto="{{ $opsEmail }}"
+              data-success="{{ $formSuccess }}">
           @csrf
           <div>
             <label for="detail-name" class="block text-xs font-mono uppercase tracking-wider text-slate-400 mb-1.5">Nome / Empresa</label>
-            <input type="text" id="detail-name" name="nome" placeholder="Ex: Grupo Logística Angola" required
+            <input type="text" id="detail-name" name="nome" placeholder="{{ $theme->layout_config['contact_form_placeholder_name'] ?? 'Ex: Grupo Logística Angola' }}" required
                    class="w-full bg-[#070C18] border border-white/10 rounded-xl px-4 py-3 text-white text-sm placeholder-slate-600 focus:outline-none focus:border-[#06B6D4]/50 transition-colors">
           </div>
           <div>
             <label for="detail-email" class="block text-xs font-mono uppercase tracking-wider text-slate-400 mb-1.5">E-mail</label>
-            <input type="email" id="detail-email" name="email" placeholder="missao@empresa.ao" required
+            <input type="email" id="detail-email" name="email" placeholder="{{ $theme->layout_config['contact_form_placeholder_email'] ?? 'missao@empresa.ao' }}" required
                    class="w-full bg-[#070C18] border border-white/10 rounded-xl px-4 py-3 text-white text-sm placeholder-slate-600 focus:outline-none focus:border-[#06B6D4]/50 transition-colors">
           </div>
           <div>
             <label for="detail-service" class="block text-xs font-mono uppercase tracking-wider text-slate-400 mb-1.5">Serviço de Interesse</label>
             <select id="detail-service" name="servico" class="w-full bg-[#070C18] border border-white/10 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-[#06B6D4]/50 transition-colors">
-              <option>Transporte Autónomo de Carga</option>
-              <option>Cartografia &amp; Fotogrametria</option>
-              <option>Vigilância &amp; Patrulhamento</option>
-              <option>Inspecção Industrial</option>
-              <option>Logística de Emergência</option>
-              <option>Agricultura de Precisão</option>
+              @foreach($servicesOptions as $srv)
+                <option>{{ $srv }}</option>
+              @endforeach
             </select>
           </div>
           <div>
             <label for="detail-message" class="block text-xs font-mono uppercase tracking-wider text-slate-400 mb-1.5">Descrição da Missão</label>
-            <textarea id="detail-message" name="mensagem" rows="4" placeholder="Descreva a sua necessidade operacional..." required
+            <textarea id="detail-message" name="mensagem" rows="4" placeholder="{{ $theme->layout_config['contact_form_placeholder_message'] ?? 'Descreva a sua necessidade operacional...' }}" required
                       class="w-full bg-[#070C18] border border-white/10 rounded-xl px-4 py-3 text-white text-sm placeholder-slate-600 focus:outline-none focus:border-[#06B6D4]/50 transition-colors resize-none"></textarea>
           </div>
           <div id="detail-form-feedback" class="hidden text-xs py-2 rounded-lg px-3"></div>
           <button type="submit" id="detail-submit-btn"
                   class="w-full bg-gradient-to-r from-[#2563EB] to-[#06B6D4] text-white font-bold py-3 rounded-xl hover:opacity-90 transition-opacity font-heading tracking-wider text-sm">
-            {{ strtoupper($btnText) }} ➔
+            {{ strtoupper($btnText) }} ➤
           </button>
         </form>
       </div>
-
     </div>
   </div>
 </section>
@@ -1289,6 +1305,45 @@ if (str_contains($js, $oldBlock)) {
     $js = str_replace($oldBlock, $newBlock, $js);
 }
 
+// Tornar o handler de contacto original dinâmico com base nos data-attributes
+$js = str_replace(
+    "data.message || '✅ Missão submetida com sucesso! Entraremos em contacto brevemente.'",
+    "data.message || form.getAttribute('data-success') || '✅ Missão submetida com sucesso!'",
+    $js
+);
+$js = str_replace(
+    "window.location.href = `mailto:ops@aerospace.io?subject=\${subject}&body=\${body}`;",
+    "const destEmail = form.getAttribute('data-mailto') || 'ops@aerospace.io'; window.location.href = `mailto:\${destEmail}?subject=\${subject}&body=\${body}`;",
+    $js
+);
+$js = str_replace(
+    "submitBtn.textContent = 'Submeter Plano de Missão';",
+    "submitBtn.textContent = form.querySelector('button[type=\"submit\"]')?.textContent || 'Submeter Plano de Missão';",
+    $js
+);
+
+// Tornar o handler de contacto original dinâmico com base nos data-attributes
+$js = str_replace(
+    "data.message || '✅ Missão submetida com sucesso! Entraremos em contacto brevemente.'",
+    "data.message || form.getAttribute('data-success') || '✅ Missão submetida com sucesso!'",
+    $js
+);
+$js = str_replace(
+    "window.location.href = `mailto:ops@aerospace.io?subject=\${subject}&body=\${body}`;",
+    "const destEmail = form.getAttribute('data-mailto') || 'ops@aerospace.io'; window.location.href = `mailto:\${destEmail}?subject=\${subject}&body=\${body}`;",
+    $js
+);
+$js = str_replace(
+    "submitBtn.textContent = 'Submeter Plano de Missão';",
+    "submitBtn.textContent = form.querySelector('button[type=\"submit\"]')?.textContent || 'Submeter Plano de Missão';",
+    $js
+);
+
+// Limpar os handlers antigos do JS para forçar a re-injeção das versões melhoradas/dinâmicas
+$js = preg_replace('/\/\* ── Contact Detail Form Handler ── \*\/.*?\};\s*\n/s', '', $js);
+$js = preg_replace('/\/\* ── Newsletter Form Handler ── \*\/.*?\};\s*\n/s', '', $js);
+$js = preg_replace('/\/\* ── Support Form Handler ── \*\/.*?\};\s*\n/s', '', $js);
+
 if (!str_contains($js, '/* ── Sticky Header on Scroll ── */')) {
     $js .= "\n\n/* ── Sticky Header on Scroll ── */\n" .
         "window.addEventListener('scroll', function() {\n" .
@@ -1332,7 +1387,9 @@ if (!str_contains($js, '/* ── Contact Detail Form Handler ── */')) {
         "  submitBtn.disabled = true;\n" .
         "  const originalText = submitBtn.textContent;\n" .
         "  submitBtn.textContent = 'A enviar...';\n\n" .
-        "  const csrfToken = form.querySelector('input[name=\"_token\"]')?.value || '';\n\n" .
+        "  const csrfToken = form.querySelector('input[name=\"_token\"]')?.value || '';\n" .
+        "  const successMsg = form.getAttribute('data-success') || '✅ Mensagem enviada com sucesso!';\n" .
+        "  const destEmail = form.getAttribute('data-mailto') || 'ops@aerospace.io';\n\n" .
         "  fetch('/contacto/enviar', {\n" .
         "    method: 'POST',\n" .
         "    headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' },\n" .
@@ -1340,7 +1397,7 @@ if (!str_contains($js, '/* ── Contact Detail Form Handler ── */')) {
         "  })\n" .
         "  .then(r => { if (!r.ok) throw new Error('Network error'); return r.json(); })\n" .
         "  .then(data => {\n" .
-        "    showFb(data.message || '✅ Mensagem enviada com sucesso!', 'success');\n" .
+        "    showFb(data.message || successMsg, 'success');\n" .
         "    form.reset();\n" .
         "    submitBtn.disabled = false;\n" .
         "    submitBtn.textContent = originalText;\n" .
@@ -1349,7 +1406,7 @@ if (!str_contains($js, '/* ── Contact Detail Form Handler ── */')) {
         "  .catch(() => {\n" .
         "    const subject = encodeURIComponent('Pedido de Informação — ' + nome);\n" .
         "    const body = encodeURIComponent('Nome: ' + nome + '\\nE-mail: ' + email + '\\nServiço: ' + servico + '\\n\\nMensagem:\\n' + mensagem);\n" .
-        "    window.location.href = 'mailto:ops@aerospace.io?subject=' + subject + '&body=' + body;\n" .
+        "    window.location.href = 'mailto:' + destEmail + '?subject=' + subject + '&body=' + body;\n" .
         "    showFb('📨 O seu e-mail padrão foi aberto. Aguardamos a sua mensagem!', 'info');\n" .
         "    submitBtn.disabled = false;\n" .
         "    submitBtn.textContent = originalText;\n" .
@@ -1376,8 +1433,10 @@ if (!str_contains($js, '/* ── Newsletter Form Handler ── */')) {
         "    return;\n" .
         "  }\n\n" .
         "  btn.disabled = true;\n" .
+        "  const originalText = btn.textContent;\n" .
         "  btn.textContent = 'A subscrever...';\n\n" .
-        "  const csrfToken = form.querySelector('input[name=\"_token\"]')?.value || '';\n\n" .
+        "  const csrfToken = form.querySelector('input[name=\"_token\"]')?.value || '';\n" .
+        "  const successMsg = form.getAttribute('data-success') || '📡 Subscrição efectuada com sucesso!';\n\n" .
         "  fetch('/newsletter/subscrever', {\n" .
         "    method: 'POST',\n" .
         "    headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' },\n" .
@@ -1385,12 +1444,12 @@ if (!str_contains($js, '/* ── Newsletter Form Handler ── */')) {
         "  })\n" .
         "  .then(r => { if (!r.ok) throw new Error('Network error'); return r.json(); })\n" .
         "  .then(data => {\n" .
-        "    feedback.textContent = data.message || '📡 Subscrição efectuada com sucesso!';\n" .
+        "    feedback.textContent = data.message || successMsg;\n" .
         "    feedback.className = 'text-xs mt-3 py-1 text-emerald-400';\n" .
         "    feedback.classList.remove('hidden');\n" .
         "    form.reset();\n" .
         "    btn.disabled = false;\n" .
-        "    btn.textContent = 'Subscrever';\n" .
+        "    btn.textContent = originalText;\n" .
         "    try { playClickChirp(); } catch(_) {}\n" .
         "  })\n" .
         "  .catch(() => {\n" .
@@ -1398,7 +1457,7 @@ if (!str_contains($js, '/* ── Newsletter Form Handler ── */')) {
         "    feedback.className = 'text-xs mt-3 py-1 text-cyan-400';\n" .
         "    feedback.classList.remove('hidden');\n" .
         "    btn.disabled = false;\n" .
-        "    btn.textContent = 'Subscrever';\n" .
+        "    btn.textContent = originalText;\n" .
         "  });\n" .
         "};\n";
 }
@@ -1429,9 +1488,10 @@ if (!str_contains($js, '/* ── Support Form Handler ── */')) {
         "    return false;\n" .
         "  }\n\n" .
         "  const body = form.closest('.chat-popup-body');\n" .
-        "  const csrfToken = form.querySelector('input[name=\"_token\"]')?.value || '';\n\n" .
+        "  const csrfToken = form.querySelector('input[name=\"_token\"]')?.value || '';\n" .
+        "  const successMsg = form.getAttribute('data-success') || 'Mensagem enviada! A nossa equipa entrará em contacto em breve.';\n\n" .
         "  if (body) {\n" .
-        "    body.innerHTML = '<div class=\"msg system\" style=\"text-align:center;padding:32px 16px;\"><div style=\"font-size:2rem;margin-bottom:8px;\">✅</div><div style=\"color:#34d399;font-weight:600;margin-bottom:4px;\">Mensagem enviada!</div><div style=\"color:#94a3b8;font-size:0.75rem;\">A nossa equipa entrará em contacto em breve.</div></div>';\n" .
+        "    body.innerHTML = '<div class=\"msg system\" style=\"text-align:center;padding:32px 16px;\"><div style=\"font-size:2rem;margin-bottom:8px;\">✅</div><div style=\"color:#34d399;font-weight:600;margin-bottom:4px;\">' + successMsg + '</div></div>';\n" .
         "  }\n\n" .
         "  fetch('/contacto/enviar', {\n" .
         "    method: 'POST',\n" .
@@ -1448,3 +1508,4 @@ $theme->save();
 
 echo "✅ Theme sections and custom CSS/JS updated successfully in database.\n";
 exit(0);
+
