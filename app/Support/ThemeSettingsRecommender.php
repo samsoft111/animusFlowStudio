@@ -146,6 +146,13 @@ final class ThemeSettingsRecommender
             self::f(['key' => 'contact_show_map', 'label' => 'Mostrar mapa de contacto', 'type' => 'toggle', 'group' => 'rodape', 'default' => $lc['contact_show_map'] ?? true]),
             self::f(['key' => 'contact_map_iframe', 'label' => 'Embed do mapa (iframe src)', 'type' => 'textarea', 'group' => 'rodape', 'default' => $lc['contact_map_iframe'] ?? '', 'hint' => 'URL do Google Maps embed.']),
             self::f(['key' => 'contact_show_newsletter', 'label' => 'Mostrar newsletter', 'type' => 'toggle', 'group' => 'rodape', 'default' => $lc['contact_show_newsletter'] ?? true]),
+            self::f(['key' => 'footer_description', 'label' => 'Rodapé — descrição', 'type' => 'textarea', 'group' => 'rodape', 'default' => $lc['footer_description'] ?? 'Logística autónoma de carga, transporte vertical e monitorização orbital.']),
+            self::f(['key' => 'footer_location', 'label' => 'Rodapé — localização', 'type' => 'text', 'group' => 'rodape', 'default' => $lc['footer_location'] ?? 'Luanda, Angola']),
+            self::f(['key' => 'footer_lat', 'label' => 'Rodapé — latitude', 'type' => 'text', 'group' => 'rodape', 'default' => $lc['footer_lat'] ?? '-8.8124']),
+            self::f(['key' => 'footer_lon', 'label' => 'Rodapé — longitude', 'type' => 'text', 'group' => 'rodape', 'default' => $lc['footer_lon'] ?? '13.2306']),
+            self::f(['key' => 'footer_alt', 'label' => 'Rodapé — altitude', 'type' => 'text', 'group' => 'rodape', 'default' => $lc['footer_alt'] ?? '0m']),
+            self::f(['key' => 'footer_status_text', 'label' => 'Rodapé — status do cockpit', 'type' => 'text', 'group' => 'rodape', 'default' => $lc['footer_status_text'] ?? 'Sistema Operacional']),
+
 
             // ── Funcionalidades ──────────────────────────────────────────
             self::f(['key' => 'telemetry_enabled', 'label' => 'Painel de telemetria live', 'type' => 'toggle', 'group' => 'funcionalidades', 'default' => $lc['telemetry_enabled'] ?? false]),
