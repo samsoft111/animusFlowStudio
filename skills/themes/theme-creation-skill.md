@@ -47,6 +47,11 @@ Cada secção é **Blade** gravada no export como `sections/{tipo}.blade.php`. P
 - Multi-página: nav usa `$nav_links` (loop `@foreach`); usa caminhos relativos (`/`, `/sobre`) e **não**
   âncoras de single-page (`#sobre`).
 
+> ⚠️ **`custom_js` tem de ser JS válido — um único `SyntaxError` mata TODO o JS do tema** (preloader/
+> animações/interações morrem e o preview pode ficar "em branco"). Valida sempre com `node --check`.
+> Evita appends não-idempotentes (acumulam fragmentos órfãos com `return` no topo). Galerias: clica→
+> lightbox, swipe táctil e `loading="lazy"` são interações reutilizáveis (ver `aerospace_theme_skill.md`).
+
 ## 5. settings — schema "Definições do Tema"
 
 Declara as opções que o **criador do site** vai configurar no AnimusFlow (Admin → Definições do Tema).

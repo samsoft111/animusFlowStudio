@@ -112,6 +112,15 @@ fallback para texto demo. (12 secções são dinâmicas; o `footer` é global/es
 A `gallery` usa o carrossel 3D (`gallery_layout`); o `hero` é o screensaver (acima); o `contact`
 mostra o mapa (`contact_map_iframe`) e newsletter conforme as flags.
 
+### ⭐ Galeria 3D — interações (lightbox, swipe, lazy)
+Os 3 layouts (`3d-carousel` · `masonry` · `grid`) partilham as mesmas interações:
+- **Lightbox/zoom:** clicar numa foto abre um overlay full-screen (`window.AeroGalleryLightbox`,
+  `.gallery-lightbox`) com legenda + contador (`1 / N`), navegação por botões ❮/❯, **setas do teclado**
+  e **swipe táctil**, e fecho por ✕ / ESC / clique no fundo (bloqueia o scroll do `body`). O wiring é por
+  JS: lê `data-caption`/`alt` dos `<img>` dentro de `.gallery-3d-scene, .gallery-masonry, .gallery-grid`.
+- **Swipe no carrossel 3D:** `.gallery-3d-viewport` responde a swipe horizontal → `rotate3DGallery()`.
+- **Lazy-loading:** todos os `<img>` levam `loading="lazy" decoding="async" data-caption="…"`.
+
 ### ⭐ Fundos de Secção Personalizáveis por Bloco
 
 **Todas as 11 secções de conteúdo** (exceto `hero` e `footer`) suportam fundos e cor de texto
@@ -222,8 +231,16 @@ Métricas do painel HUD (visíveis no hero quando `telemetry_enabled: true`):
 
 Implementa os comportamentos de marca: **preloader de consola de boot**, **grelha 3D interativa de
 perspetiva**, **menu orbital com sonar**, **widgets de cockpit arrastáveis**, **comandos por voz**, o
-**screensaver interativo** (hover/foco/táctil) e os efeitos de hover. O `custom_css` deve ler as
-`var(--…)` da tabela de definições acima. (Referência completa já resolvida: `aerospace_theme_snapshot.md`.)
+**screensaver interativo** (hover/foco/táctil), a **galeria 3D + lightbox** (acima) e os efeitos de
+hover. O `custom_css` deve ler as `var(--…)` da tabela de definições acima. (Referência completa já
+resolvida: `aerospace_theme_snapshot.md`.)
+
+> ⚠️ **O `custom_js` TEM de ser JS válido — um único `SyntaxError` mata TODO o JS do tema** (o
+> preloader de boot nunca desaparece e o preview fica "em branco"; galeria/menu/chat/lightbox mortos).
+> Valida sempre com **`node --check`** depois de editar (o `aerospace_theme_test.php` BLOCO 3 fá-lo).
+> Causa real já vista: appends não-idempotentes deixaram corpos de handler órfãos (`return` no topo).
+> Cada função de topo (`window.handle…`, `window.initAerospace…`) deve fechar com `};` e **não** ter
+> código solto entre blocos.
 
 Blocos gerados automaticamente por `make_aerospace_dynamic.php` e adicionados ao `custom_css`:
 - `/* ── Barra de Menu Fixa (Sticky) ao fazer Scroll ── */`
@@ -237,9 +254,20 @@ Blocos gerados automaticamente por `make_aerospace_dynamic.php` e adicionados ao
 **instala no AnimusFlow** (os campos aparecem em Definições do Tema → grupos *Cabeçalho*, *Menus*,
 *Fundo & HUD*, etc.).
 
-Ao alterar o tema (BD `StudioTheme` "AeroSpace"):
-1. editar a BD (custom_css / sections.* / layout_config). Para regenerar as secções dirigidas por
-   conteúdo há o script `skills/themes/make_aerospace_dynamic.php` (reescreve os 12 templates dinâmicos),
+> 🚫 **NÃO correr `make_aerospace_dynamic.php` em bloco.** O script está dessincronizado do tema vivo:
+> reescreve `sections` por inteiro a partir de heredocs **mais antigos** (regride o `hero` — perde os IDs
+> de telemetria live, o `<canvas>` da mesh 3D e o bloco de comandos de voz) e tem um append **não
+> idempotente** que duplica/parte o `custom_js`. A **fonte de verdade é o `aerospace_theme_snapshot.md`**.
+
+Ao alterar o tema (BD `StudioTheme` "AeroSpace"), faz **cirurgicamente**:
+1. edita a BD de forma alvo — `str_replace` na secção específica de `sections.*`; **append guardado**
+   (`if (!str_contains(...))`) ao `custom_css`/`custom_js`. Nunca reescrevas tudo de uma vez.
 2. se mudou o schema → `php skills/themes/seed_aerospace_settings.php`,
-3. **`php skills/themes/build_aerospace_skill.php --write`** (resync do snapshot),
-4. `php tests/aerospace_theme_test.php` deve ficar **verde**.
+3. **valida o JS:** `node --check` sobre o `custom_js` (um `SyntaxError` mata todo o JS do tema),
+4. **`php skills/themes/build_aerospace_skill.php --write`** (resync do snapshot a partir da BD),
+5. `php tests/aerospace_theme_test.php` deve ficar **verde** (84 checks: inclui drift de conteúdo
+   snapshot↔BD por secção/css/js e `node --check` do `custom_js`).
+
+**Preview:** as rotas `/preview/theme/{uuid}` e `/sobre … /contactos` exigem `auth`; o preview do tema é
+Blade **standalone** (não usa Vite). Se o preview aparecer "em branco", suspeita primeiro de um
+`SyntaxError` no `custom_js` (preloader preso), não de assets.
