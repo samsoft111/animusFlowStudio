@@ -88,11 +88,15 @@ foreach (['node', 'node.exe'] as $cand) {
 if ($nodeBin === null) {
     echo "  ⏭️  custom_js é JS válido (node --check) — SALTADO (node não disponível)\n";
 } else {
-    $tmpJs = tempnam(sys_get_temp_dir(), 'aero_js_') . '.js';
+    // node --check (Node ≥ v22) exige uma extensão reconhecida → precisamos do .js.
+    // tempnam() cria o ficheiro base; juntamos .js e limpamos AMBOS (sem fugas).
+    $tmpBase = tempnam(sys_get_temp_dir(), 'aero_js_');
+    $tmpJs   = $tmpBase . '.js';
     file_put_contents($tmpJs, $theme->custom_js ?? '');
     $rc = 1;
     @exec($nodeBin . ' --check ' . escapeshellarg($tmpJs) . ' 2>&1', $jsErr, $rc);
     @unlink($tmpJs);
+    @unlink($tmpBase);
     check('custom_js é JS válido (node --check)' . ($rc === 0 ? '' : ' — ' . trim(implode(' ', array_slice($jsErr, 0, 2)))), $rc === 0);
 }
 
