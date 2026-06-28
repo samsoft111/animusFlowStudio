@@ -75,6 +75,27 @@ echo '════════════════════════�
 check('custom_css substancial (>1KB)', strlen($theme->custom_css ?? '') > 1000);
 check('custom_js substancial (>1KB)', strlen($theme->custom_js ?? '') > 1000);
 
+// custom_js tem de ser JS VÁLIDO. Um SyntaxError silencioso (ex.: fragmento
+// órfão de handler com `return` no topo) mata TODO o JS do tema — o preview
+// fica preso no preloader. O teste de comprimento acima não apanha isto.
+// Valida via `node --check`; salta com aviso se o node não existir.
+$nodeBin = null;
+foreach (['node', 'node.exe'] as $cand) {
+    $which = stripos(PHP_OS, 'WIN') === 0 ? "where {$cand}" : "command -v {$cand}";
+    $out = @shell_exec($which . ' 2>' . (stripos(PHP_OS, 'WIN') === 0 ? 'NUL' : '/dev/null'));
+    if (is_string($out) && trim($out) !== '') { $nodeBin = 'node'; break; }
+}
+if ($nodeBin === null) {
+    echo "  ⏭️  custom_js é JS válido (node --check) — SALTADO (node não disponível)\n";
+} else {
+    $tmpJs = tempnam(sys_get_temp_dir(), 'aero_js_') . '.js';
+    file_put_contents($tmpJs, $theme->custom_js ?? '');
+    $rc = 1;
+    @exec($nodeBin . ' --check ' . escapeshellarg($tmpJs) . ' 2>&1', $jsErr, $rc);
+    @unlink($tmpJs);
+    check('custom_js é JS válido (node --check)' . ($rc === 0 ? '' : ' — ' . trim(implode(' ', array_slice($jsErr, 0, 2)))), $rc === 0);
+}
+
 $colors = is_array($theme->colors) ? $theme->colors : [];
 check('colors tem light e dark', isset($colors['light']) && isset($colors['dark']));
 foreach (['light', 'dark'] as $mode) {
