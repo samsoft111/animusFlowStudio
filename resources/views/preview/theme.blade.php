@@ -598,6 +598,11 @@
             @endif
         @endif
 
+        {{-- Gallery (logo a seguir ao hero — destaque na página de galeria) --}}
+        @if(in_array('gallery', $allowedSections) && isset($sections['gallery']))
+            <div class="ai-section">{!! $sections['gallery'] !!}</div>
+        @endif
+
         {{-- Features --}}
         @if(in_array('features', $allowedSections))
             @if(isset($sections['features']))
@@ -709,11 +714,6 @@
         {{-- Steps --}}
         @if(in_array('steps', $allowedSections) && isset($sections['steps']))
             <div class="ai-section">{!! $sections['steps'] !!}</div>
-        @endif
-
-        {{-- Gallery --}}
-        @if(in_array('gallery', $allowedSections) && isset($sections['gallery']))
-            <div class="ai-section">{!! $sections['gallery'] !!}</div>
         @endif
 
         {{-- Contact --}}
