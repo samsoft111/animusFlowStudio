@@ -144,8 +144,49 @@ if (is_file($skillPath)) {
         $dbSecs = array_keys($sections);
         sort($dbSecs);
         check('Snapshot e BD têm as mesmas secções', $skillSecs === $dbSecs);
+
+        // Conteúdo (não só as chaves): cada secção do snapshot tem de bater
+        // byte-a-byte com a BD. Apanha o drift de CONTEÚDO que a verificação de
+        // chaves deixava passar — ex.: um re-sync esquecido depois de editar a BD.
+        $snapSecs = is_array($data['sections'] ?? null) ? $data['sections'] : [];
+        $contentDrift = [];
+        foreach ($sections as $key => $dbHtml) {
+            if (($snapSecs[$key] ?? null) !== $dbHtml) {
+                $contentDrift[] = $key;
+            }
+        }
+        check('Conteúdo de TODAS as secções igual (BD ↔ snapshot)'
+            . ($contentDrift ? ' [drift: ' . implode(', ', $contentDrift) . ']' : ''),
+            $contentDrift === []);
+
+        check('custom_css igual (BD ↔ snapshot)', ($data['custom_css'] ?? null) === ($theme->custom_css ?? null));
+        check('custom_js igual (BD ↔ snapshot)', ($data['custom_js'] ?? null) === ($theme->custom_js ?? null));
+
+        // layout_config: comparação independente da ordem das chaves (mesma
+        // normalização que build_aerospace_skill.php usa no modo --check).
+        $canon = function (mixed $v) use (&$canon) {
+            if (is_array($v)) {
+                $isList = array_is_list($v);
+                $v = array_map($canon, $v);
+                if (!$isList) { ksort($v); }
+            }
+            return $v;
+        };
+        check('layout_config igual (BD ↔ snapshot)',
+            $canon($data['layout_config'] ?? null) === $canon($theme->layout_config ?? []));
     }
 }
+
+// ─── Arquitetura brief ↔ snapshot (memória aerospace-skill-split) ─────────────
+// O brief CARREGÁVEL tem de caber no limite de 60 000 do upload ✦; o snapshot é
+// o espelho literal resolvido e NÃO deve ser carregado no ✦ (nem ficar truncado).
+$briefPath = __DIR__ . '/../skills/themes/aerospace_theme_skill.md';
+check('Brief carregável aerospace_theme_skill.md existe', is_file($briefPath));
+if (is_file($briefPath)) {
+    $briefLen = strlen(file_get_contents($briefPath));
+    check("Brief cabe no limite ✦ de 60 000 caracteres (tem {$briefLen})", $briefLen > 0 && $briefLen < 60000);
+}
+check('Snapshot é substancial — espelho literal, >50 KB', strlen($raw ?? '') > 50000);
 
 // ═══════════════════════════════════════════════════
 echo PHP_EOL . '═══════════════════════════════════════════════════' . PHP_EOL;
