@@ -34,9 +34,23 @@ Nome canónico do manifesto. Declara `name`, `label`, `version`, `hooks[]` e `se
 ## 4. settings_schema (campos configuráveis)
 Cada campo: `{ key, label, type, default, placeholder, hint }`.
 Tipos: `text · textarea · color · select · toggle`. Para `select`, dar `"options": {"valor": "Label"}`.
-Guardados via `Setting::set(key, value, 'plugins')`.
 
-## 5. Modo Construção (agentes)
+*   **Persistência de Dados**: As configurações do plugin são gravadas automaticamente na tabela global de settings sob o namespace do plugin. No seu código PHP, recupere-as sempre utilizando:
+    ```php
+    $valor = \App\Models\StudioSetting::get('chave_config', 'default_value', 'plugins');
+    ```
+    Ou via modelo de Core:
+    ```php
+    $valor = \App\Models\Setting::get('chave_config', 'default_value', 'plugins');
+    ```
+
+## 5. Boas Práticas de Desenvolvimento de Plugins
+
+*   **Degradação Graciosa (Graceful Fallback)**: Se o plugin exigir chaves de API, credenciais ou configurações que o utilizador ainda não preencheu, o widget **nunca deve quebrar a página**. Exiba uma mensagem amigável no lugar do widget para utilizadores autenticados (ex: "Configure a chave de API nas definições do plugin") ou oculte o widget silenciosamente para visitantes.
+*   **Isolamento de JavaScript**: O script `widget.js` deve ser auto-contido e isolado (ex: dentro de um IIFE ou bloco `{}`) para evitar poluição do escopo global. Use seletores altamente específicos (baseados no ID do widget ou classes exclusivas) para que o script do plugin não interfira com o comportamento do tema ou de outros plugins.
+*   **Integração com Modelos Core**: Para armazenar dados de utilizadores ou submissões, utilize as tabelas e modelos nativos do AnimusFlow sempre que possível (ex: `FormSubmission` para formulários) ou crie migrações limpas no seu plugin se for necessário estender o esquema.
+
+## 6. Modo Construção (agentes)
 O Chat IA decide quando faz um build completo e corre os agentes em fundo:
 
 | Agente | Faz |

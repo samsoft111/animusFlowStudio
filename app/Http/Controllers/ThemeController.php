@@ -1158,6 +1158,17 @@ class ThemeController extends Controller
         $sections = implode(', ', array_keys($theme->sections   ?? []));
         $comps    = implode(', ', array_keys($theme->components ?? []));
 
+        $assetsNotice = '';
+        if ($theme->name === 'aerospace') {
+            $assetsNotice = "\nRecursos Físicos e Binários (Demos & PDF):\n"
+                . "  Como este prompt é em formato de texto, os ficheiros binários não estão embutidos directamente.\n"
+                . "  Podes descarregar o vídeo de fundo HUD, as imagens de demonstração e o manual em PDF directamente do repositório oficial do GitHub:\n"
+                . "  - Repositório do Tema: https://github.com/samsoft111/AnimusFlow/tree/main/themes/aerospace\n"
+                . "  - Vídeo de Fundo HUD: https://raw.githubusercontent.com/samsoft111/AnimusFlow/main/themes/aerospace/assets/aerospace-fundo.mp4\n"
+                . "  - Manual de Configuração (PDF): https://raw.githubusercontent.com/samsoft111/AnimusFlow/main/themes/aerospace/docs/aerospace_guide.pdf\n"
+                . "  - Imagens de Demonstração: https://github.com/samsoft111/AnimusFlow/tree/main/themes/aerospace/assets\n";
+        }
+
         $divider = str_repeat('━', 60);
 
         $prompt = <<<PROMPT
@@ -1183,7 +1194,7 @@ O AnimusFlow irá:
   ✓ Registar os componentes: {$comps}
   ✓ Injetar o CSS e JS customizados
   ✓ Associar os assets (imagens/vídeos)
-
+{$assetsNotice}
 {$divider}
 [AF:THEME:BEGIN]
 {$json}
@@ -1270,6 +1281,13 @@ PROMPT;
             file_put_contents("{$themeDir}/custom.js", $theme->custom_js);
         }
 
+        // Copy PDF guide if it exists
+        $pdfFile = public_path("docs/" . strtolower($theme->name) . "_guide.pdf");
+        if (file_exists($pdfFile)) {
+            File::ensureDirectoryExists("{$themeDir}/docs");
+            File::copy($pdfFile, "{$themeDir}/docs/" . basename($pdfFile));
+        }
+
         // Assets — copy uploaded files
         File::ensureDirectoryExists("{$themeDir}/assets");
         foreach ($theme->assets ?? [] as $slot => $url) {
@@ -1297,6 +1315,13 @@ PROMPT;
                     array_keys($theme->capabilities ?? []),
                     array_values($theme->capabilities ?? [])
                 )) . "\n";
+
+            // Append theme-specific guide if it exists
+            $guideFile = base_path("skills/themes/" . strtolower($theme->name) . "_guide.md");
+            if (file_exists($guideFile)) {
+                $readme .= "\n" . file_get_contents($guideFile);
+            }
+
             file_put_contents("{$themeDir}/README.md", $readme);
         }
 

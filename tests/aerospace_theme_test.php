@@ -243,7 +243,7 @@ check('Coluna theme_settings existe', \Illuminate\Support\Facades\Schema::hasCol
 $ts = is_array($theme->theme_settings) ? $theme->theme_settings : [];
 check('theme_settings é array não-vazio', is_array($theme->theme_settings) && count($ts) > 0);
 
-$expectedGroups = ['geral', 'cabecalho', 'menus', 'cores', 'tipografia', 'fundo', 'layout', 'rodape', 'funcionalidades'];
+$expectedGroups = ['geral', 'cabecalho', 'menus', 'cores', 'tipografia', 'fundo', 'layout', 'rodape', 'funcionalidades', 'galeria'];
 $presentGroups  = array_unique(array_column($ts, 'group'));
 check('Todos os 9 grupos estão cobertos', count(array_intersect($expectedGroups, $presentGroups)) === count($expectedGroups));
 

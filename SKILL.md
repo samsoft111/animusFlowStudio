@@ -76,6 +76,9 @@ private const LAYOUT_MAP = [
   - `vertical-left` (sidebar vertical fixa à esquerda)
   - `vertical-right` (sidebar vertical fixa à direita)
   - `vertical-center` (sidebar vertical flutuante centrada no ecrã)
+- **Galeria Holográfica 3D**: O tema suporta layouts avançados (`3d-carousel`, `masonry`, `grid`) controlados por 9 variáveis adicionais (`gallery_autoplay_speed`, `gallery_hover_zoom`, `gallery_columns_desktop`, `gallery_gap`, `gallery_hologram_effect`, `gallery_swipe_enabled`, `gallery_3d_radius_multiplier`, `gallery_lightbox_blur`, `gallery_sound_fx`).
+- **Manual em PDF Acoplado**: O exportador de temas (`buildThemeZip`) copia automaticamente qualquer manual em PDF compilado (ex: `public/docs/aerospace_guide.pdf`) para a pasta `docs/` dentro do ZIP do tema.
+- **Esquema de Definições com Recomendações (152 campos)**: As definições do tema são registadas em `ThemeSettingsRecommender.php` e incluem descrições ricas com orientações e dimensões recomendadas no campo `hint` para ajudar o utilizador final a configurar o site.
 - Em Blade CMS usar **sempre** `$layout['menu_layout']` e `$layout['normal_menu_position']` — **nunca** `$theme->layout_config[...]`
 - Ver documentação completa em `references/theme-development.md` Secção 10
 

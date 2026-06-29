@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Guia de Configuração — Tema AeroSpace</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500&family=Inter:wght@400;500;600;700&family=Outfit:wght@400;600;700;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --color-primary: #2563EB;
+            --color-accent: #06B6D4;
+            --color-bg-dark: #070C18;
+            --color-text-dark: #F3F4F6;
+            --color-text-light: #1E293B;
+            --color-muted: #64748B;
+            --color-border: #E2E8F0;
+        }
+
+        @page {
+            size: A4;
+            margin: 12mm;
+        }
+
+        @media print {
+            body {
+                background-color: #ffffff;
+                color: var(--color-text-light);
+            }
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            color: var(--color-text-light);
+            line-height: 1.45;
+            font-size: 9.5pt;
+            background-color: #ffffff;
+        }
+
+        /* ── COVER PAGE ── */
+        .cover-page {
+            background-color: var(--color-bg-dark);
+            color: var(--color-text-dark);
+            height: 273mm; /* A4 height (297) minus 2 * 12mm margin = 273mm */
+            width: 186mm;  /* A4 width (210) minus 2 * 12mm margin = 186mm */
+            padding: 25mm 15mm;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            position: relative;
+            page-break-after: always;
+            box-sizing: border-box;
+        }
+
+        .cover-page::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background-image: radial-gradient(rgba(6, 182, 212, 0.12) 1px, transparent 1px);
+            background-size: 24px 24px;
+            z-index: 1;
+        }
+
+        .cover-header {
+            z-index: 2;
+        }
+
+        .cover-logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-family: 'Outfit', sans-serif;
+            font-weight: 700;
+            font-size: 22px;
+            color: #ffffff;
+            letter-spacing: 1px;
+        }
+
+        .cover-logo svg {
+            width: 36px;
+            height: 36px;
+            fill: var(--color-accent);
+        }
+
+        .cover-body {
+            margin-top: 30mm;
+            z-index: 2;
+        }
+
+        .cover-subtitle {
+            font-family: 'Fira Code', monospace;
+            color: var(--color-accent);
+            font-size: 11pt;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            margin-bottom: 15px;
+        }
+
+        .cover-title {
+            font-family: 'Outfit', sans-serif;
+            font-size: 38pt;
+            font-weight: 900;
+            line-height: 1.1;
+            color: #ffffff;
+            margin-bottom: 20px;
+        }
+
+        .cover-desc {
+            font-size: 12pt;
+            color: #94a3b8;
+            max-w: 150mm;
+            line-height: 1.5;
+        }
+
+        .cover-footer {
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            padding-top: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            z-index: 2;
+            font-family: 'Fira Code', monospace;
+            font-size: 8.5pt;
+            color: #64748b;
+        }
+
+        .cover-footer strong {
+            color: #ffffff;
+        }
+
+        /* ── INNER PAGES ── */
+        .page-content {
+            height: 273mm;
+            width: 186mm;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            page-break-after: always;
+            box-sizing: border-box;
+            padding: 5mm 0;
+            background-color: #ffffff;
+        }
+
+        .page-body {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+        }
+
+        h1, h2, h3, h4 {
+            font-family: 'Outfit', sans-serif;
+            color: #0f172a;
+            margin-bottom: 0.5em;
+            font-weight: 700;
+        }
+
+        h1 {
+            font-size: 18pt;
+            border-bottom: 2px solid var(--color-accent);
+            padding-bottom: 6px;
+            margin-top: 1em;
+            page-break-after: avoid;
+        }
+
+        h1:first-of-type {
+            margin-top: 0;
+        }
+
+        h2 {
+            font-size: 13pt;
+            margin-top: 1.2em;
+            color: #1e293b;
+            border-left: 3px solid var(--color-accent);
+            padding-left: 10px;
+            page-break-after: avoid;
+        }
+
+        h3 {
+            font-size: 11pt;
+            margin-top: 1em;
+            color: #334155;
+            page-break-after: avoid;
+        }
+
+        p {
+            margin-bottom: 0.8em;
+            color: #334155;
+            text-align: justify;
+        }
+
+        strong {
+            color: #0f172a;
+            font-weight: 600;
+        }
+
+        ul, ol {
+            margin-bottom: 1em;
+            padding-left: 18px;
+            color: #334155;
+        }
+
+        li {
+            margin-bottom: 0.3em;
+        }
+
+        /* ── ALERTS / INFO BOXES ── */
+        .info-box {
+            background-color: #f0fdfa;
+            border-left: 4px solid var(--color-accent);
+            padding: 12px;
+            border-radius: 0 6px 6px 0;
+            margin: 1em 0;
+            page-break-inside: avoid;
+        }
+
+        .info-box-title {
+            font-family: 'Outfit', sans-serif;
+            font-weight: 700;
+            color: #0f766e;
+            margin-bottom: 4px;
+            font-size: 10pt;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .info-box p {
+            margin-bottom: 0;
+            font-size: 9pt;
+            color: #115e59;
+        }
+
+        /* ── CODE / MONOSPACE ── */
+        code {
+            font-family: 'Fira Code', monospace;
+            background-color: #f1f5f9;
+            color: #0f172a;
+            padding: 1px 4px;
+            border-radius: 3px;
+            font-size: 8.5pt;
+        }
+
+        /* ── STEPS ── */
+        .step-list {
+            list-style: none;
+            counter-reset: step-counter;
+        }
+
+        .step-item {
+            position: relative;
+            padding-left: 38px;
+            margin-bottom: 1.2em;
+            page-break-inside: avoid;
+        }
+
+        .step-item::before {
+            counter-increment: step-counter;
+            content: counter(step-counter);
+            position: absolute;
+            left: 0;
+            top: 2px;
+            width: 24px;
+            height: 24px;
+            background-color: var(--color-bg-dark);
+            color: #ffffff;
+            border: 2px solid var(--color-accent);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Outfit', sans-serif;
+            font-weight: 700;
+            font-size: 9pt;
+        }
+
+        .step-title {
+            font-family: 'Outfit', sans-serif;
+            font-weight: 700;
+            font-size: 11pt;
+            color: #0f172a;
+            margin-bottom: 4px;
+        }
+
+        /* ── HEADERS & FOOTERS FOR PAGES ── */
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--color-border);
+            padding-bottom: 4px;
+            margin-bottom: 6mm;
+            font-family: 'Fira Code', monospace;
+            font-size: 8pt;
+            color: var(--color-muted);
+        }
+
+        .page-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-top: 1px solid var(--color-border);
+            padding-top: 4px;
+            margin-top: 6mm;
+            font-family: 'Fira Code', monospace;
+            font-size: 8pt;
+            color: var(--color-muted);
+        }
+    </style>
+</head>
+<body>
+
+    <!-- PÁGINA 1: CAPA -->
+    <div class="cover-page">
+        <div class="cover-header">
+            <div class="cover-logo">
+                <svg viewBox="0 0 24 24">
+                    <path d="M12 2L2 22h20L12 2zm0 3.99L19.53 19H4.47L12 5.99zM11 11v4h2v-4h-2zm0 6v2h2v-2h-2z"/>
+                </svg>
+                <span>AeroSpace Theme</span>
+            </div>
+        </div>
+        <div class="cover-body">
+            <div class="cover-subtitle">Manual de Operações</div>
+            <div class="cover-title">Guia de Configuração<br>&amp; Customização</div>
+            <div class="cover-desc">Instruções passo a passo para instalação, ativação e configuração das funcionalidades HUD, radar orbital e galeria 3D no CMS AnimusFlow.</div>
+        </div>
+        <div class="cover-footer">
+            <div>Plataforma: <strong>AnimusFlow CMS v1.0+</strong></div>
+            <div>Versão do Tema: <strong>v1.1.0</strong></div>
+        </div>
+    </div>
+
+    <!-- PÁGINA 2: INTRODUÇÃO E INSTALAÇÃO -->
+    <div class="page-content">
+        <div class="page-header">
+            <span>TEMA AEROSPACE &middot; MANUAL</span>
+            <span>PÁGINA 2</span>
+        </div>
+
+        <div class="page-body">
+            <h1>Introdução ao AeroSpace</h1>
+            <p>O tema <strong>AeroSpace</strong> é um sistema de design avançado de alta fidelidade visual, concebido especificamente para marcas e projetos do setor aeroespacial, logística autónoma, transporte vertical e tecnologias de vanguarda. O seu principal destaque é o <strong>Ecrã HUD (Heads-Up Display)</strong> interativo e a navegação por radar, oferecendo uma experiência de utilizador altamente imersiva.</p>
+
+            <div class="info-box">
+                <div class="info-box-title">
+                    <span>🛸</span> NOTA DE ARQUITETURA
+                </div>
+                <p>O AeroSpace é 100% dinâmico. Todas as cores, fontes, comportamentos de script e limites da galeria tridimensional são controlados diretamente através do painel de administração do AnimusFlow, sem necessidade de alterações no código-fonte.</p>
+            </div>
+
+            <h1>Instalação e Ativação</h1>
+            <p>Siga os passos abaixo para carregar e ativar o tema no seu servidor:</p>
+
+            <ul class="step-list" style="margin-top: 10px;">
+                <li class="step-item">
+                    <div class="step-title">Upload do Pacote ZIP</div>
+                    <p>Aceda ao painel administrativo do seu site AnimusFlow. No menu lateral esquerdo, navegue até <strong>Extensões</strong> ➔ <strong>Temas</strong>. Clique no botão <strong>Carregar Tema (Upload ZIP)</strong>, selecione o ficheiro <code>aerospace.zip</code> e clique em confirmar.</p>
+                </li>
+                <li class="step-item">
+                    <div class="step-title">Ativação do Tema</div>
+                    <p>Uma vez concluído o carregamento, o tema AeroSpace aparecerá na lista de temas disponíveis. Clique no botão <strong>Ativar</strong>. O site passará imediatamente a utilizar a folha de estilos e a estrutura do AeroSpace.</p>
+                </li>
+                <li class="step-item">
+                    <div class="step-title">Importação de Definições Padrão</div>
+                    <p>Aceda ao separador <strong>Definições do Site</strong>. Para carregar a paleta de cores escura oficial e a tipografia recomendada de fábrica, clique no botão <strong>"Repor definições recomendadas"</strong> no topo da página e clique em <strong>Guardar Alterações</strong>.</p>
+                </li>
+            </ul>
+        </div>
+
+        <div class="page-footer">
+            <span>AnimusFlow Studio &copy; 2026</span>
+            <span>Confidencial &middot; Operações</span>
+        </div>
+    </div>
+
+    <!-- PÁGINA 3: RADAR ORBITAL -->
+    <div class="page-content">
+        <div class="page-header">
+            <span>TEMA AEROSPACE &middot; MANUAL</span>
+            <span>PÁGINA 3</span>
+        </div>
+
+        <div class="page-body">
+            <h1>Configuração da Navegação Orbital</h1>
+            <p>A assinatura de navegação do tema AeroSpace é o seu <strong>Menu Circular Orbital</strong>, que funciona como um radar interativo. Os links principais de navegação são dispostos como satélites que orbitam ao redor de um botão de controlo central.</p>
+
+            <h2>Estrutura do Menu Radar</h2>
+            <p>O menu orbital suporta até <strong>4 botões satélites</strong>. Pode configurar estes elementos acedendo a <strong>Definições do Site</strong> ➔ <strong>Menus</strong>:</p>
+            
+            <ul style="margin-top: 10px; margin-bottom: 15px;">
+                <li><strong>Hub Central (Home)</strong>: O botão central. Configure o texto em maiúsculas (ex: <code>HOME</code>) e a legenda de apoio (ex: <code>Central Hub</code>).</li>
+                <li><strong>Ícones dos Satélites</strong>: Cada satélite suporta um emoji ou caractere unicode (ex: <code>🛸</code> para Serviços, <code>🖼️</code> para Galeria, <code>📡</code> para Contactos).</li>
+                <li><strong>Legenda &amp; Descrição</strong>: Defina títulos curtos para cada órbita para evitar quebras de linha em ecrãs pequenos.</li>
+                <li><strong>Cores Individuais</strong>: Cada satélite pode ter uma cor de acento própria. O sistema calcula automaticamente os brilhos (*glow*) com base nesta seleção.</li>
+            </ul>
+
+            <div class="info-box">
+                <div class="info-box-title">
+                    <span>📱</span> RESPONSIVIDADE MOBILE
+                </div>
+                <p>Em ecrãs móveis (largura inferior a 640px), o menu orbital reduz-se automaticamente para 320px e reposiciona os satélites para caberem no ecrã. O sistema ativa o modo <strong>Touch UX</strong>, permitindo abrir submenus com um clique físico em vez de hover.</p>
+            </div>
+            
+            <p style="margin-top: 10px;">Este menu adapta-se dinamicamente às opções de menu criadas no CMS. Caso crie menos de 4 links de menu, o sistema preencherá as posições restantes com links padrão de demonstração.</p>
+        </div>
+
+        <div class="page-footer">
+            <span>AnimusFlow Studio &copy; 2026</span>
+            <span>Confidencial &middot; Operações</span>
+        </div>
+    </div>
+
+    <!-- PÁGINA 4: HUD & BOOT -->
+    <div class="page-content">
+        <div class="page-header">
+            <span>TEMA AEROSPACE &middot; MANUAL</span>
+            <span>PÁGINA 4</span>
+        </div>
+
+        <div class="page-body">
+            <h1>Fundo HUD &amp; Ecrã de Boot</h1>
+            <p>O ecrã inicial do site apresenta uma consola de carregamento simulada (Boot Preloader) e um fundo dinâmico com telemetria ativa.</p>
+            
+            <h2>Configurações do Fundo</h2>
+            <p>No grupo <strong>Fundo</strong> das Definições do Site, pode parametrizar:</p>
+            <ul style="margin-top: 10px; margin-bottom: 15px;">
+                <li><strong>Tipo de Fundo</strong>: Escolha entre <strong>Vídeo</strong> (MP4 em loop), <strong>Foto única</strong> (imagem estática) ou <strong>Galeria</strong> (slideshow de fundo).</li>
+                <li><strong>Vídeo de Fundo</strong>: Deve carregar um ficheiro otimizado. Recomenda-se a remoção completa da faixa de áudio para evitar bloqueios de reprodução automática nos telemóveis.</li>
+                <li><strong>Mensagem de Boas-vindas</strong>: Altere o título principal do cockpit (ex: <code>AEROSPACE</code>), o subtítulo e a mensagem de instrução.</li>
+                <li><strong>Opacidade e Blur</strong>: Ajuste o nível de escurecimento e desfoque do fundo para garantir que as informações de telemetria ficam perfeitamente legíveis.</li>
+            </ul>
+
+            <h2>Painel de Telemetria Dinâmico</h2>
+            <p>Se ativado no grupo <strong>Funcionalidades</strong>, o painel de telemetria flutuante exibe no canto do ecrã dados como altitude, velocidade e bateria. O JavaScript do tema faz estes valores oscilarem continuamente para simular o comportamento de um drone ou aeronave em voo.</p>
+
+            <div class="info-box">
+                <div class="info-box-title">
+                    <span>🎙️</span> COMANDOS POR VOZ
+                </div>
+                <p>O tema inclui reconhecimento de voz. Se ativado, o utilizador pode dizer comandos como "sobre", "serviços", "telemetria" ou "fechar" para interagir com o site mãos-livres.</p>
+            </div>
+        </div>
+
+        <div class="page-footer">
+            <span>AnimusFlow Studio &copy; 2026</span>
+            <span>Confidencial &middot; Operações</span>
+        </div>
+    </div>
+
+    <!-- PÁGINA 5: GALERIA E FORMULÁRIOS -->
+    <div class="page-content">
+        <div class="page-header">
+            <span>TEMA AEROSPACE &middot; MANUAL</span>
+            <span>PÁGINA 5</span>
+        </div>
+
+        <div class="page-body">
+            <h1>Galeria de Fotos Premium</h1>
+            <p>A secção de galeria de fotos suporta apresentações interativas de alta qualidade com suporte a três layouts distintos.</p>
+
+            <table style="width: 100%; border-collapse: collapse; margin: 1em 0; font-size: 8.5pt; border: 1px solid var(--color-border);">
+                <thead>
+                    <tr style="background-color: var(--color-bg-dark); color: #ffffff; text-align: left;">
+                        <th style="padding: 6px 10px; border: 1px solid rgba(255,255,255,0.1);">Layout</th>
+                        <th style="padding: 6px 10px; border: 1px solid rgba(255,255,255,0.1);">Nº Imagens Recomendado</th>
+                        <th style="padding: 6px 10px; border: 1px solid rgba(255,255,255,0.1);">Características Principais</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr style="background-color: #ffffff;">
+                        <td style="padding: 6px 10px; border: 1px solid var(--color-border); font-weight: bold;">Carrossel 3D</td>
+                        <td style="padding: 6px 10px; border: 1px solid var(--color-border);">3 a 12 imagens</td>
+                        <td style="padding: 6px 10px; border: 1px solid var(--color-border);">Órbita tridimensional rotativa, arrasto com inércia física, inclinação por rato (tilt).</td>
+                    </tr>
+                    <tr style="background-color: #f8fafc;">
+                        <td style="padding: 6px 10px; border: 1px solid var(--color-border); font-weight: bold;">Mosaico (Masonry)</td>
+                        <td style="padding: 6px 10px; border: 1px solid var(--color-border);">Sem limite (20+)</td>
+                        <td style="padding: 6px 10px; border: 1px solid var(--color-border);">Layout fluído vertical (estilo Pinterest). Carregamento sob scroll (*lazy-load*).</td>
+                    </tr>
+                    <tr style="background-color: #ffffff;">
+                        <td style="padding: 6px 10px; border: 1px solid var(--color-border); font-weight: bold;">Grelha (Grid)</td>
+                        <td style="padding: 6px 10px; border: 1px solid var(--color-border);">Sem limite (20+)</td>
+                        <td style="padding: 6px 10px; border: 1px solid var(--color-border);">Grelha clássica de colunas parametrizáveis (2 a 6 colunas).</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <p><strong>Ajuste da Órbita</strong>: Se tiver mais de 8 imagens no Carrossel 3D, aumente o <em>Raio da Órbita 3D</em> (para 120%+) no painel para evitar sobreposição das imagens.</p>
+
+            <h1>Formulários e Resolução de Problemas</h1>
+            <p><strong>Formulários</strong>: O formulário de contactos envia os dados para o e-mail definido em <code>contact_mailto</code>. A lista de serviços do dropdown pode ser personalizada escrevendo um serviço por linha no campo <code>contact_services_list</code>.</p>
+            
+            <p><strong>Resolução de Problemas Rápidos</strong>:</p>
+            <ul style="margin-bottom: 0;">
+                <li><em>Vídeo não carrega em mobile</em>: Certifique-se de que o vídeo não tem faixa de áudio e que o telemóvel não está em modo de poupança de bateria.</li>
+                <li><em>Imagens sobrepostas no Carrossel</em>: Aumente o <strong>Raio da Órbita 3D</strong> nas definições.</li>
+                <li><em>Silenciar som</em>: Clique no ícone de som no cabeçalho ou desative a opção de efeitos sonoros na administração.</li>
+            </ul>
+        </div>
+
+        <div class="page-footer">
+            <span>AnimusFlow Studio &copy; 2026</span>
+            <span>Confidencial &middot; Operações</span>
+        </div>
+    </div>
+
+</body>
+</html>

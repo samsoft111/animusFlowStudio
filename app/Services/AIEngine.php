@@ -1133,6 +1133,7 @@ Gera o design global e branding do tema (nome comercial, descrição, cores ligh
 Responsável por atualizar os campos (em json_updates): label, description, colors, fonts, layout_config, capabilities. E ainda a secção do rodapé (footer) — mas essa vai num bloco delimitado separado, NÃO no JSON.
 OBRIGATÓRIO 1: o bloco json_updates TEM SEMPRE de incluir "fonts" com "heading" E "body" preenchidos (nunca vazios, nunca omitidos), escolhendo um par tipográfico que combine com o brief. Usa apenas fontes do Google Fonts; valores recomendados: Inter, Poppins, DM Sans, Outfit, Plus Jakarta Sans, Playfair Display, Fraunces, Sora. Para temas elegantes/editoriais usa uma serifa (ex.: Playfair Display ou Fraunces) no heading. "heading" e "body" podem ser iguais, mas nunca podem faltar.
 OBRIGATÓRIO 2: inclui SEMPRE "description" — uma frase curta (1 linha) a descrever o tema. Inclui também "label" (nome comercial curto e apelativo) SE o nome actual do tema for genérico (vazio ou a começar por "Novo Tema"); caso contrário mantém o label actual e não o devolvas.
+CONFIGURAÇÃO HUD/COCKPIT: Se o tema for futurista, científico ou aeroespacial, configure o `layout_config` com `menu_layout: 'circular'`, `gallery_layout: '3d-carousel'`, `telemetry_enabled: true`, `hud_bg_type: 'video'`, `chat_popup_enabled: true`, `chat_voice_commands: true`, `hover_sound_effects: true`.
 Exemplo de retorno em json_updates:
 ```json_updates
 {
@@ -1191,18 +1192,54 @@ A SEGUIR ao bloco json_updates (e NÃO dentro dele), gera a secção do rodapé 
 <footer class="af-footer">...HTML do rodapé...</footer>
 DESIGN,
             'intro' => <<<INTRO
-Gera as secções de introdução e apresentação do tema: Hero, Funcionalidades (Features), Testemunhos e Galeria.
+Gera as secções de introdução e apresentação do tema: Hero (HUD/Screensaver), Funcionalidades (Features), Testemunhos e Galeria (Carrossel 3D).
 Responsável pelas secções: hero, features, testimonials, gallery.
 Usa as variáveis CSS globais do tema.
 NÃO uses json_updates. Devolve cada secção num BLOCO DELIMITADO (o HTML fica fora de JSON, evitando erros de escape), exatamente neste formato:
 [[[AF-SECTION:hero]]]
-<section class="af-hero">...HTML...</section>
+<section class="af-hero aerospace-hero group">
+  <!-- PRELOADER TERMINAL -->
+  <div id="af-preloader">...</div>
+  <!-- SCREENSAVER HUD -->
+  <div class="screensaver-container">
+    <div class="bg-scanlines"></div>
+    <div class="info-panel">
+      <div class="info-card">
+        <h1>AEROSPACE</h1>
+        <p>Passe o cursor ou toque no ecrã para aceder</p>
+      </div>
+    </div>
+  </div>
+  <!-- COCKPIT HEADER & CONTENT -->
+  <header class="aerospace-header">...</header>
+  <div class="hero-content">
+    <canvas id="mesh-grid-3d-canvas"></canvas>
+    <!-- MENU CIRCULAR ORBITAL -->
+    <div class="circular-menu-wrapper">
+      <div class="radar-circles"></div>
+      <div class="radial-grid"></div>
+      <a href="/" class="menu-hub-node">HOME</a>
+      <div class="satellite-orbits">
+        <!-- 4 sat-node-containers -->
+      </div>
+    </div>
+  </div>
+</section>
 [[[AF-SECTION:features]]]
 <section class="af-features">...HTML...</section>
 [[[AF-SECTION:testimonials]]]
 <section class="af-testimonials">...HTML...</section>
 [[[AF-SECTION:gallery]]]
-<section class="af-gallery">...HTML...</section>
+<section class="af-gallery">
+  <!-- VIEWPORT DO CARROSSEL 3D -->
+  <div class="gallery-3d-viewport">
+    <div class="gallery-3d-scene">
+      <!-- <img> com data-caption, classe .hud-hologram-overlay e scanner laser .glb-scanner -->
+    </div>
+  </div>
+  <!-- LIGHTBOX RADAR -->
+  <div id="gallery-lightbox" class="gallery-lightbox hidden">...</div>
+</section>
 INTRO,
             'conversion' => <<<CONVERSION
 Gera as secções de negócio e conversão do tema: Tabela de Preços (pricing), Chamada à Ação (cta), Perguntas Frequentes (faq) e Contacto (contact).
@@ -1219,13 +1256,19 @@ NÃO uses json_updates. Devolve cada secção num BLOCO DELIMITADO (o HTML fica 
 <section class="af-contact">...HTML...</section>
 CONVERSION,
             'code' => <<<CODE
-Gera o CSS personalizado e (opcional) JS complementar para micro-interações, transições e ajustes responsivos das secções do tema.
+Gera o CSS personalizado e o JS complementar para dar vida ao tema (3D, HUD, áudio e interações premium).
 Responsável por atualizar: custom_css, custom_js.
+INSTRUÇÕES DE JS DE ALTA PERFORMANCE (Aplica no custom_js):
+1. **Carrossel 3D com Arrasto e Inércia**: Implemente listeners de `mousedown/mousemove/mouseup` e `touchstart/touchmove/touchend` na cena 3D da galeria. Calcule a velocidade de arrasto. Ao soltar, se a velocidade for superior a `0.4px/ms`, use `requestAnimationFrame` para continuar a rodar o carrossel com inércia física, desacelerando gradualmente.
+2. **Sintetizador Web Audio API (Bipes e Sonar)**: Crie uma função `playSynthSound(freq, duration, type)` para evitar carregar ficheiros de áudio. Use `new AudioContext()`. Para cliques, toque um chirp rápido de `680Hz`. Para o sonar da galeria, faça uma varredura de frequência (`exponentialRampToValueAtTime`) de `880Hz` a `1200Hz` durante `0.6s`.
+3. **Screensaver Touch UX**: Adicione listeners para dispositivos táteis (`(hover: none)`) para revelar o conteúdo no primeiro toque (`.hero-revealed`), desativando o drag nos widgets em mobile.
+4. **Canvas 3D Mesh Grid**: Desenhe no `<canvas>` do hero uma grelha de linhas tridimensionais animadas com ondas senoidais dinâmicas.
+5. **HUD Telemetry Loop**: Crie um loop `setInterval` que faça oscilar levemente os valores do cockpit (altitude, velocidade, bateria).
 Exemplo de retorno em json_updates:
 ```json_updates
 {
-  "custom_css": "/* CSS aqui */",
-  "custom_js": "/* JS opcional aqui */"
+  "custom_css": "/* CSS com efeitos .aerospace-sheen, .bg-scanlines, radar e glassmorphism */",
+  "custom_js": "/* JS com carrossel 3D, inércia, Web Audio API, telemetria e preloader */"
 }
 ```
 CODE,

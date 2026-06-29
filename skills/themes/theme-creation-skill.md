@@ -66,12 +66,22 @@ Cada campo:
 - `type`: text · textarea · number · range · toggle · color · select · media_image · media_video · media_gallery
 - `source`: layout · color_light · color_dark · font · capability (onde o valor vive no render)
 - `group`: geral · cabecalho · menus · cores · tipografia · fundo · layout · rodape · funcionalidades
+- ⚠️ **Orientações e Recomendações nas Descrições (`hint`)**: Todos os campos do schema **devem** conter informações e orientações de recomendação diretamente nas suas descrições (`hint`). Explique as dimensões ideais de imagens/logótipos, limites de tamanho de ficheiro para vídeos, e melhores práticas estéticas (ex: "Recomenda-se altura entre 32px e 48px com fundo transparente").
 
 > Regra de ouro: para uma definição ter efeito, a secção/layout **tem de ler** a chave
 > (`$layout[...]` / `$theme->layout_config[...]` / `$theme_settings[...]`). Declarar o campo não chega.
 > Botão "Repor definições recomendadas" no editor → semeia o schema a partir do design atual.
 
-## 6. capabilities
+## 6. Boas Práticas de Desenvolvimento de Temas
+
+*   **Limitação de Classes Dinâmicas do Tailwind**: Como o Tailwind é compilado previamente, classes interpoladas como `grid-cols-{{ $cols }}` ou `gap-{{ $gap }}` **não funcionam** (não serão geradas no CSS). Deve sempre aplicar estes valores dinâmicos via **estilo inline usando variáveis CSS**:
+    ```html
+    <div style="--cols-desktop: {{ $cols }}; --gap-size: {{ $gap }}px;" class="grid grid-cols-[repeat(var(--cols-desktop),_minmax(0,_1fr))] gap-[var(--gap-size)]">
+    ```
+*   **Abstração de Layout do CMS**: No Blade, use sempre as variáveis mapeadas no `$layout` (como `$layout['menu_layout']` e `$layout['normal_menu_position']`) para navegação e estrutura geral, em vez de ler `$theme->layout_config` diretamente. Isto garante compatibilidade com as opções nativas do painel "Aparência" do AnimusFlow.
+*   **Portabilidade de Recursos**: Todos os caminhos de média padrão fornecidos no tema (vídeos de demonstração, placeholders de galeria) devem ser relativos a `/images/...` ou `/videos/...` e estar fisicamente presentes na pasta `public/` do projeto.
+
+## 7. capabilities
 Flags de funcionalidade: `video_bg`, `parallax`, `animations`, `lightbox`, `cookie_banner`,
 `preloader`, `scroll_progress`, `back_to_top`, etc.
 

@@ -84,6 +84,9 @@ nav_type: circular · nav_position: center · menu_layout: circular · submenu_t
 normal_menu_position: horizontal-right · max_width: 1120 · spacing: normal · layout_type: full-width
 show_dark_toggle: true · back_to_top: true
 gallery_layout: "3d-carousel" · gallery_auto_rotate: true · gallery_tilt_enabled: true
+gallery_autoplay_speed: 5000 · gallery_hover_zoom: true · gallery_columns_desktop: 3 · gallery_gap: 16
+gallery_hologram_effect: true · gallery_swipe_enabled: true · gallery_3d_radius_multiplier: 100
+gallery_lightbox_blur: 8 · gallery_sound_fx: true
 hud_bg_type: "video"|"photo"|"gallery"|"none" · hud_bg_video · hud_bg_single_photo · hud_bg_gallery: [3]
 hud_overlay_enabled: true · interactive_mesh_3d: true · preloader_terminal: true · telemetry_enabled: false
 chat_popup_enabled: true · chat_popup_mode: "form" · chat_voice_commands: true · hover_sound_effects: true
@@ -112,13 +115,14 @@ fallback para texto demo. (12 secções são dinâmicas; o `footer` é global/es
 A `gallery` usa o carrossel 3D (`gallery_layout`); o `hero` é o screensaver (acima); o `contact`
 mostra o mapa (`contact_map_iframe`) e newsletter conforme as flags.
 
-### ⭐ Galeria 3D — interações (lightbox, swipe, lazy)
-Os 3 layouts (`3d-carousel` · `masonry` · `grid`) partilham as mesmas interações:
-- **Lightbox/zoom:** clicar numa foto abre um overlay full-screen (`window.AeroGalleryLightbox`,
-  `.gallery-lightbox`) com legenda + contador (`1 / N`), navegação por botões ❮/❯, **setas do teclado**
-  e **swipe táctil**, e fecho por ✕ / ESC / clique no fundo (bloqueia o scroll do `body`). O wiring é por
-  JS: lê `data-caption`/`alt` dos `<img>` dentro de `.gallery-3d-scene, .gallery-masonry, .gallery-grid`.
-- **Swipe no carrossel 3D:** `.gallery-3d-viewport` responde a swipe horizontal → `rotate3DGallery()`.
+### ⭐ Galeria 3D — interações (lightbox, swipe, lazy, áudio e efeitos premium)
+Os 3 layouts (`3d-carousel` · `masonry` · `grid`) partilham as seguintes capacidades e interações:
+- **Arrasto 3D com Inércia Física:** No carrossel 3D, o utilizador pode arrastar as imagens com o rato ou com o dedo (swipe). Se o arrasto for rápido e libertado (velocidade > 0.4px/ms), o carrossel continua a rodar usando física de inércia até parar suavemente no item seguinte/anterior.
+- **Active Glow & Sheen:** O card de imagem que está ativo (focado no centro do carrossel 3D) recebe uma moldura com brilho ciano pulsante (`glow`) e uma animação diagonal metálica refletiva (`aerospace-sheen`) contínua.
+- **Holograma & Scanlines:** Se `gallery_hologram_effect` estiver ativado, as imagens recebem uma sobreposição HUD com linhas de varredura semitransparentes (`.bg-scanlines`) e cantos HUD holográficos (`.hud-hologram-overlay`).
+- **Laser Scanner:** Quando uma imagem é focada ou carregada, uma barra horizontal ciano brilhante (`.glb-scanner`) faz uma varredura vertical (varre de cima para baixo) na imagem.
+- **Glassmorphism Radar Lightbox:** Ao clicar numa imagem, abre-se um Lightbox em ecrã inteiro (`.gallery-lightbox`) com um fundo desfocado (`backdrop-filter: blur(var(--lightbox-blur))`), círculos concêntricos de radar e efeito sonar.
+- **Feedback de Áudio Sintetizado:** Utilizando a Web Audio API para evitar carregar ficheiros pesados, o site emite um bipe agudo (`680Hz`) ao navegar e um efeito de varredura de sonar (subida de frequência de `880Hz` para `1200Hz`) ao abrir o Lightbox. Pode ser silenciado globalmente via `gallery_sound_fx`.
 - **Lazy-loading:** todos os `<img>` levam `loading="lazy" decoding="async" data-caption="…"`.
 
 ### ⭐ Fundos de Secção Personalizáveis por Bloco
