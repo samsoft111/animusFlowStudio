@@ -1223,7 +1223,7 @@ PROMPT;
     {
         $base = rtrim((string) StudioSetting::get(
             'export_asset_raw_base',
-            'https://raw.githubusercontent.com/samsoft111/AnimusFlow/main/core/public'
+            'https://raw.githubusercontent.com/samsoft111/animusflow-assets/main'
         ), '/');
 
         // Gather every string that may contain a /videos|/images|/docs path
