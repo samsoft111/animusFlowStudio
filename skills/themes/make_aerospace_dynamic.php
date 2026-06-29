@@ -2,6 +2,19 @@
 
 declare(strict_types=1);
 
+// ─────────────────────────────────────────────────────────────────────────────
+// ⛔ NÃO EXECUTAR. Este script regride o tema AeroSpace: reescreve o hero com
+// markup antigo e polui `custom_js` com fragmentos órfãos (appends não-idempotentes).
+// O tema vivo já é dinâmico — edita-o cirurgicamente e re-sincroniza o snapshot
+// (aerospace_theme_snapshot.md), não corras isto. Mantido apenas como referência.
+// Para forçar (a tua responsabilidade): AEROSPACE_FORCE=1 php make_aerospace_dynamic.php
+// ─────────────────────────────────────────────────────────────────────────────
+if (getenv('AEROSPACE_FORCE') !== '1') {
+    fwrite(STDERR, "⛔ make_aerospace_dynamic.php está desativado — regride o tema (ver cabeçalho).\n");
+    fwrite(STDERR, "   Para forçar mesmo assim: AEROSPACE_FORCE=1 php make_aerospace_dynamic.php\n");
+    exit(1);
+}
+
 require __DIR__ . '/../../vendor/autoload.php';
 $app = require __DIR__ . '/../../bootstrap/app.php';
 $app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap();
