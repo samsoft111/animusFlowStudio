@@ -1146,6 +1146,7 @@ class ThemeController extends Controller
                 'extra_js'   => $theme->custom_js  ?? '',
                 'settings'   => $afSettings,   // ready to write to AnimusFlow settings table
                 'assets'     => $assetManifest, // physical files to auto-download on install
+                'demo_content' => $this->themeDemoContent($theme), // pages + nav to hydrate a demo site
             ],
         ];
 
@@ -1257,6 +1258,24 @@ PROMPT;
         return $manifest;
     }
 
+    /** Path to a theme's bundled demo content file, or null if none exists. */
+    private function themeDemoContentPath(StudioTheme $theme): ?string
+    {
+        $file = base_path("skills/themes/" . strtolower($theme->name) . "-demo-content.json");
+        return file_exists($file) ? $file : null;
+    }
+
+    /** Decoded demo content ({nav_links, pages[]}) for the prompt payload, or [] if none. */
+    private function themeDemoContent(StudioTheme $theme): array
+    {
+        $file = $this->themeDemoContentPath($theme);
+        if ($file === null) {
+            return [];
+        }
+        $data = json_decode((string) file_get_contents($file), true);
+        return is_array($data) ? $data : [];
+    }
+
     // ──────────────────────────────────────────────
     //  ZIP builder
     // ──────────────────────────────────────────────
@@ -1333,6 +1352,12 @@ PROMPT;
         if (file_exists($pdfFile)) {
             File::ensureDirectoryExists("{$themeDir}/docs");
             File::copy($pdfFile, "{$themeDir}/docs/" . basename($pdfFile));
+        }
+
+        // Bundle demo content (pages + nav) so the install can hydrate a full site
+        $demoFile = $this->themeDemoContentPath($theme);
+        if ($demoFile !== null) {
+            File::copy($demoFile, "{$themeDir}/demo-content.json");
         }
 
         // Assets — copy uploaded files
