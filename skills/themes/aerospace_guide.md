@@ -4,21 +4,20 @@ Este guia fornece instruções passo a passo para instalar, configurar e operar 
 
 ---
 
-## 1. Instalação do Tema
-Para carregar o tema no seu CMS AnimusFlow:
-1. Aceda ao painel de administração do **AnimusFlow**.
-2. No menu lateral, clique em **Extensões** ➔ **Temas** ➔ **Carregar Tema (Upload ZIP)**.
-3. Escolha o ficheiro `aerospace.zip` exportado e clique em **Instalar**.
-4. Após a instalação, clique em **Ativar** para tornar o AeroSpace o tema ativo do seu site.
+## 1. Fluxo Rápido: Como Usar no seu Site Final
+Para levantar o site AeroSpace completo e idêntico ao preview em menos de 1 minuto, siga estes 4 passos:
 
----
-
-## 2. Configuração Inicial (Definições Recomendadas)
-Para garantir que o tema carrega com o design e cores originais de fábrica:
-1. Vá a **Definições do Site** no menu do tema.
-2. Clique no botão **"Repor definições recomendadas"** no topo da página.
-3. Isto irá preencher automaticamente as 152 definições com os esquemas de cores espaciais, fontes e efeitos holográficos otimizados.
-4. Clique em **Guardar Alterações**.
+1.  **Instalação**:
+    *   *Via ZIP*: Aceda a **Extensões** ➔ **Temas** ➔ **Carregar Tema (Upload ZIP)**. Selecione o ficheiro `aerospace.zip` e clique em **Instalar**.
+    *   *Via Prompt*: Aceda a **Extensões** ➔ **Temas** ➔ **Importar Prompt**. Cole o conteúdo do ficheiro `aerospace.afprompt` e clique em **Importar**.
+2.  **Ativação**:
+    *   Na lista de temas, localize o **AeroSpace** e clique em **Ativar**.
+3.  **Importação de Conteúdo Demo**:
+    *   No card do tema **AeroSpace**, clique no botão **Demo** (ícone Sparkles ✨) e confirme. Isto irá criar automaticamente as **5 páginas** (`home`, `sobre`, `servicos`, `galeria`, `contactos`), recheá-las com os blocos/secções e configurar o menu de navegação.
+4.  **Definições Recomendadas**:
+    *   Clique em **Configurações** no card do tema (ou vá a *Definições do Site*).
+    *   Clique no botão **"Repor definições recomendadas"** no topo da página para carregar as cores ciano/escuras, tipografia Outfit/Inter e efeitos HUD de fábrica.
+    *   Clique em **Guardar Alterações**.
 
 ---
 
