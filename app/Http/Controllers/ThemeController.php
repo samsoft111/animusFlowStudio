@@ -1088,6 +1088,10 @@ class ThemeController extends Controller
         if (!empty($caps['animations']))      $afSettings['layout_content_animations'] = '1';
         if (!empty($caps['back_to_top']))     $afSettings['layout_content_animations'] = $afSettings['layout_content_animations'] ?? '1';
 
+        // Physical assets the theme references — emitted as a machine-readable
+        // manifest so the CMS importPrompt() can auto-download them on install.
+        $assetManifest = $this->collectThemeAssets($theme);
+
         // Build the full theme payload
         $payload = [
             'af_prompt_version' => '1.0',
@@ -1141,6 +1145,7 @@ class ThemeController extends Controller
                 'extra_css'  => $theme->custom_css ?? '',
                 'extra_js'   => $theme->custom_js  ?? '',
                 'settings'   => $afSettings,   // ready to write to AnimusFlow settings table
+                'assets'     => $assetManifest, // physical files to auto-download on install
             ],
         ];
 
@@ -1159,14 +1164,13 @@ class ThemeController extends Controller
         $comps    = implode(', ', array_keys($theme->components ?? []));
 
         $assetsNotice = '';
-        if ($theme->name === 'aerospace') {
-            $assetsNotice = "\nRecursos Físicos e Binários (Demos & PDF):\n"
-                . "  Como este prompt é em formato de texto, os ficheiros binários não estão embutidos directamente.\n"
-                . "  Podes descarregar o vídeo de fundo HUD, as imagens de demonstração e o manual em PDF directamente do repositório oficial do GitHub:\n"
-                . "  - Repositório do Tema: https://github.com/samsoft111/AnimusFlow/tree/main/themes/aerospace\n"
-                . "  - Vídeo de Fundo HUD: https://raw.githubusercontent.com/samsoft111/AnimusFlow/main/themes/aerospace/assets/aerospace-fundo.mp4\n"
-                . "  - Manual de Configuração (PDF): https://raw.githubusercontent.com/samsoft111/AnimusFlow/main/themes/aerospace/docs/aerospace_guide.pdf\n"
-                . "  - Imagens de Demonstração: https://github.com/samsoft111/AnimusFlow/tree/main/themes/aerospace/assets\n";
+        if (!empty($assetManifest)) {
+            $assetsNotice = "\nRecursos Físicos (descarregados AUTOMATICAMENTE na importação):\n"
+                . "  Este prompt é texto e não embute binários. Ao importar, o AnimusFlow descarrega\n"
+                . "  cada ficheiro abaixo do repositório oficial e coloca-o em public/ no destino indicado:\n";
+            foreach ($assetManifest as $a) {
+                $assetsNotice .= "  - public/{$a['dest']}  ←  {$a['url']}\n";
+            }
         }
 
         $divider = str_repeat('━', 60);
@@ -1208,6 +1212,49 @@ PROMPT;
             'Content-Type'        => 'text/plain; charset=utf-8',
             'Content-Disposition' => "attachment; filename=\"{$theme->name}.afprompt\"",
         ]);
+    }
+
+    /**
+     * Collect the physical assets a theme references (videos/images/docs) into a
+     * machine-readable manifest the CMS importPrompt() can auto-download.
+     * Each entry: { url (raw GitHub), dest (path relative to public/) }.
+     */
+    private function collectThemeAssets(StudioTheme $theme): array
+    {
+        $base = rtrim((string) StudioSetting::get(
+            'export_asset_raw_base',
+            'https://raw.githubusercontent.com/samsoft111/AnimusFlow/main/core/public'
+        ), '/');
+
+        // Gather every string that may contain a /videos|/images|/docs path
+        $haystacks = [(string) $theme->custom_css];
+        foreach ((array) $theme->sections as $blade)  { if (is_string($blade)) $haystacks[] = $blade; }
+        foreach ((array) $theme->layout_config as $v) { if (is_string($v))     $haystacks[] = $v; }
+        foreach ((array) $theme->theme_settings as $f) {
+            $d = $f['default'] ?? null;
+            if (is_string($d)) { $haystacks[] = $d; }
+            if (is_array($d))  { foreach ($d as $dv) { if (is_string($dv)) $haystacks[] = $dv; } }
+        }
+        // PDF guide (bundled in the ZIP; linked here for prompt installs)
+        $haystacks[] = '/docs/' . strtolower($theme->name) . '_guide.pdf';
+
+        $allowedExt = ['mp4','webm','ogg','jpg','jpeg','png','webp','gif','svg','pdf','ico'];
+        $paths = [];
+        foreach ($haystacks as $h) {
+            if (preg_match_all('#/(?:videos|images|docs)/[A-Za-z0-9._\-/]+\.[A-Za-z0-9]+#', $h, $mm)) {
+                foreach ($mm[0] as $p) {
+                    $ext = strtolower(pathinfo($p, PATHINFO_EXTENSION));
+                    if (in_array($ext, $allowedExt, true)) { $paths[$p] = true; }
+                }
+            }
+        }
+
+        $manifest = [];
+        foreach (array_keys($paths) as $p) {
+            $dest = ltrim($p, '/');
+            $manifest[] = ['url' => $base . '/' . $dest, 'dest' => $dest];
+        }
+        return $manifest;
     }
 
     // ──────────────────────────────────────────────
