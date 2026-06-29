@@ -1304,6 +1304,122 @@ PROMPT;
             if (!empty($theme->fonts)) {
                 $layout = $this->injectFonts($layout, $theme->fonts);
             }
+
+            // Inject Tailwind Play CDN + config for Studio themes to support utility classes
+            $tailwindInject = "\n    <script src=\"https://cdn.tailwindcss.com\"></script>\n"
+                . "    <script>\n"
+                . "        tailwind.config = {\n"
+                . "            theme: {\n"
+                . "                extend: {\n"
+                . "                    fontFamily: {\n"
+                . "                        heading: ['var(--font-heading)', 'system-ui', 'sans-serif'],\n"
+                . "                        body:    ['var(--font-body)', 'system-ui', 'sans-serif'],\n"
+                . "                    },\n"
+                . "                },\n"
+                . "            },\n"
+                . "        };\n"
+                . "    </script>\n";
+            $layout = str_replace('</head>', $tailwindInject . '</head>', $layout);
+
+            // If the theme has a custom footer section, replace the default CMS footer in layout.blade.php
+            if (isset($theme->sections['footer'])) {
+                $layout = preg_replace('/<footer class="af-footer[^>]*">.*?<\/footer>/s', "@include('theme.{$theme->name}.sections.footer')", $layout);
+            }
+
+            // Inject Draggable Support Chat and Telemetry widgets for AeroSpace theme
+            if ($theme->name === 'aerospace') {
+                $widgetsHtml = <<<'HTML'
+
+  <!-- Draggable Popup Chat Support -->
+  @if($theme->layout_config['chat_popup_enabled'] ?? true)
+    <div id="tech-chat-popup" class="chat-popup collapsed">
+      <div class="chat-popup-header" id="chat-drag-handle">
+        <div class="flex items-center gap-2">
+          <span class="chat-status-indicator animate-pulse"></span>
+          <span class="font-heading font-bold text-xs tracking-wider">SUPORTE AERO</span>
+        </div>
+        <div class="flex gap-2 items-center">
+          <button class="chat-toggle-size" onclick="toggleChatCollapse(event)">▢</button>
+          <button class="chat-close" onclick="toggleChatOpen(false, event)">×</button>
+        </div>
+      </div>
+      <div class="chat-popup-body">
+        @if(($theme->layout_config['chat_popup_mode'] ?? 'ai') === 'form')
+        <form class="chat-input-area" style="flex-direction:column;align-items:stretch;gap:8px;" onsubmit="handleSupportFormSubmit(event)">
+          <input type="text" name="nome" placeholder="Nome" required class="chat-input-field">
+          <input type="email" name="email" placeholder="Email" required class="chat-input-field">
+          <textarea name="mensagem" rows="3" placeholder="A sua mensagem..." required class="chat-input-field" style="resize:none;"></textarea>
+          <button type="submit" class="chat-send-btn" style="width:100%;" onclick="playClickChirp()">Enviar ➔</button>
+        </form>
+        @else
+        <div class="chat-messages" id="chat-messages-container">
+          <div class="msg system">Canal encriptado de assistência ativo. Como posso auxiliar a sua missão?</div>
+        </div>
+        <div class="chat-voice-suggestions text-[9px] text-slate-500 font-mono p-2 border-t border-white/5 bg-slate-950/20">
+          Diretivas de Voz: <span class="text-cyan-400">"ir para sobre"</span> | <span class="text-cyan-400">"serviços"</span> | <span class="text-cyan-400">"telemetria"</span> | <span class="text-cyan-400">"áudio"</span> | <span class="text-cyan-400">"fechar"</span>
+        </div>
+        <form class="chat-input-area" onsubmit="handleChatSubmit(event)">
+          <input type="text" id="chat-popup-text-input" placeholder="Introduzir directiva..." class="chat-input-field">
+          @if($theme->layout_config['chat_voice_commands'] ?? true)
+            <button type="button" id="voice-mic-btn" class="chat-send-btn bg-slate-700/50 hover:bg-slate-700" onclick="toggleVoiceListen()" title="Comando de Voz">🎙️</button>
+          @endif
+          <button type="submit" class="chat-send-btn" onclick="playClickChirp()">➔</button>
+        </form>
+        @endif
+      </div>
+    </div>
+    <button id="chat-trigger-btn" onclick="toggleChatOpen(true, event)">💬 Canal de Apoio</button>
+  @endif
+
+  @if($theme->layout_config['telemetry_enabled'] ?? false)
+  <!-- Draggable Live Telemetry Widget -->
+  <div id="tech-telemetry-popup" class="chat-popup collapsed">
+    <div class="chat-popup-header" id="telemetry-drag-handle">
+      <div class="flex items-center gap-2">
+        <span class="chat-status-indicator yellow animate-pulse"></span>
+        <span class="font-heading font-bold text-xs tracking-wider">TELEMETRIA LIVE</span>
+      </div>
+      <div class="flex gap-2">
+        <button class="chat-toggle-size" onclick="toggleTelemetryCollapse(event)">▢</button>
+        <button class="chat-close" onclick="toggleTelemetryOpen(false, event)">×</button>
+      </div>
+    </div>
+    <div class="chat-popup-body">
+      <div class="space-y-4 text-left font-mono text-[10px] text-slate-400">
+        <div class="flex justify-between border-b border-white/5 pb-1">
+          <span>SAT-LINK STATUS:</span> <span class="text-[#06b6d4]">{{ $theme->layout_config['hud_telemetry_navlock'] ?? 'CONNECTED (100%)' }}</span>
+        </div>
+        <div class="flex justify-between border-b border-white/5 pb-1">
+          <span>DRONES OPERACIONAIS:</span> <span class="text-emerald-400" id="telemetry-drones">{{ $theme->layout_config['hud_telemetry_drones_count'] ?? '07 ONLINE' }}</span>
+        </div>
+        <div class="flex justify-between border-b border-white/5 pb-1">
+          <span>VELOCIDADE DO VENTO:</span> <span id="telemetry-wind">{{ $theme->layout_config['hud_telemetry_spd'] ?? '14 km/h' }}</span>
+        </div>
+        <div class="flex justify-between border-b border-white/5 pb-1">
+          <span>ALTITUDE MÉDIA:</span> <span id="telemetry-alt">{{ $theme->layout_config['hud_telemetry_alt'] ?? '120m' }}</span>
+        </div>
+        <div class="flex justify-between">
+          <span>SINAL GPS:</span> <span class="text-emerald-400">{{ $theme->layout_config['hud_telemetry_gps'] ?? 'EXCELENTE' }}</span>
+        </div>
+        <div class="mt-4 pt-2 border-t border-white/10 text-center">
+          <button class="px-2 py-1 rounded bg-[#06b6d4]/10 border border-[#06b6d4]/30 text-[#06b6d4] text-[9px] hover:bg-[#06b6d4]/20 transition" onclick="triggerPingSound()">Sonar Ping Manual</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <button id="telemetry-trigger-btn" onclick="toggleTelemetryOpen(true, event)">📊 Telemetria</button>
+  @endif
+HTML;
+                $layout = str_replace('</body>', $widgetsHtml . "\n</body>", $layout);
+            }
+
+            // Wrap the default CMS navbar in @if(false) since Studio themes render their own header/navigation
+            $layout = preg_replace(
+                '/(<nav class="\{\{\s*\$navClass\s*\}\}">.*?<div class="af-nav__backdrop" id="nav-backdrop" aria-hidden="true"><\/div>)/s',
+                "@if(false)\n$1\n@endif",
+                $layout
+            );
+
             file_put_contents("{$themeDir}/layout.blade.php", $layout);
         }
 

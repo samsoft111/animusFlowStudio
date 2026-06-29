@@ -487,60 +487,6 @@
                     }
                 },
                 {
-                    "type": "gallery",
-                    "sort_order": 2,
-                    "content": {
-                        "heading": "Cartografia & Fotogrametria",
-                        "images": [
-                            {
-                                "src": "https://images.unsplash.com/photo-1446776811953-b23d57bd21aa?w=800&q=80",
-                                "alt": "Vista orbital",
-                                "caption": "Imagem multiespectral de culturas agrícolas — Huambo, 2024"
-                            },
-                            {
-                                "src": "https://images.unsplash.com/photo-1614728894747-a83421e2b9c9?w=800&q=80",
-                                "alt": "Modelo 3D terreno",
-                                "caption": "Modelo digital de elevação — Bacia do Kwanza, 2024"
-                            },
-                            {
-                                "src": "https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=800&q=80",
-                                "alt": "Vista nocturna Terra",
-                                "caption": "Monitorização nocturna de infraestruturas energéticas — Cabinda, 2025"
-                            }
-                        ]
-                    },
-                    "settings": {
-                        "columns": 3
-                    }
-                },
-                {
-                    "type": "gallery",
-                    "sort_order": 3,
-                    "content": {
-                        "heading": "Vigilância & Inspecção Industrial",
-                        "images": [
-                            {
-                                "src": "https://images.unsplash.com/photo-1504711434969-e33886168f5c?w=800&q=80",
-                                "alt": "Patrulhamento aéreo",
-                                "caption": "Patrulhamento do perímetro de infraestrutura petrolífera — Soyo, 2024"
-                            },
-                            {
-                                "src": "https://images.unsplash.com/photo-1559297434-fae8a1916a79?w=800&q=80",
-                                "alt": "Inspecção de torre",
-                                "caption": "Inspecção termográfica de linha de alta tensão — Benguela, 2025"
-                            },
-                            {
-                                "src": "https://images.unsplash.com/photo-1540979388789-6cee28a1cdc9?w=800&q=80",
-                                "alt": "Centro de controlo",
-                                "caption": "Centro de Controlo de Missões — Luanda, operacional 24/7"
-                            }
-                        ]
-                    },
-                    "settings": {
-                        "columns": 3
-                    }
-                },
-                {
                     "type": "cta",
                     "sort_order": 4,
                     "content": {

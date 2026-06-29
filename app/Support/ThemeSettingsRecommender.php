@@ -301,19 +301,19 @@ final class ThemeSettingsRecommender
                 'hint' => 'Espessura da fonte das legendas. "Negrito" ou "Semi-negrito" é altamente recomendado para legibilidade rápida.'
             ]),
 
-            self::f(['key' => 'circular_menu_sat1_icon', 'label' => 'Menu Orbital — Satélite 1 (ícone)', 'type' => 'text', 'group' => 'menus', 'default' => $lc['circular_menu_sat1_icon'] ?? '🛸', 'hint' => 'Ícone do satélite 1 (Emoji ou caractere unicode).']),
+            self::f(['key' => 'circular_menu_sat1_icon', 'label' => 'Menu Orbital — Satélite 1 (ícone)', 'type' => 'media_image', 'group' => 'menus', 'default' => $lc['circular_menu_sat1_icon'] ?? '🛸', 'hint' => 'Ícone do satélite 1 (Emoji ou caminho de imagem/SVG).']),
             self::f(['key' => 'circular_menu_sat1_desc', 'label' => 'Menu Orbital — Satélite 1 (descrição)', 'type' => 'text', 'group' => 'menus', 'default' => $lc['circular_menu_sat1_desc'] ?? 'Operações Aéreas', 'hint' => 'Descrição curta do satélite 1 exibida em hover.']),
             self::f(['key' => 'circular_menu_sat1_color', 'label' => 'Menu Orbital — Satélite 1 (cor)', 'type' => 'color', 'group' => 'menus', 'default' => $lc['circular_menu_sat1_color'] ?? '#06B6D4', 'hint' => 'Cor de acento individual do botão satélite 1.']),
 
-            self::f(['key' => 'circular_menu_sat2_icon', 'label' => 'Menu Orbital — Satélite 2 (ícone)', 'type' => 'text', 'group' => 'menus', 'default' => $lc['circular_menu_sat2_icon'] ?? '🖼️', 'hint' => 'Ícone do satélite 2 (Emoji ou caractere unicode).']),
+            self::f(['key' => 'circular_menu_sat2_icon', 'label' => 'Menu Orbital — Satélite 2 (ícone)', 'type' => 'media_image', 'group' => 'menus', 'default' => $lc['circular_menu_sat2_icon'] ?? '🖼️', 'hint' => 'Ícone do satélite 2 (Emoji ou caminho de imagem/SVG).']),
             self::f(['key' => 'circular_menu_sat2_desc', 'label' => 'Menu Orbital — Satélite 2 (descrição)', 'type' => 'text', 'group' => 'menus', 'default' => $lc['circular_menu_sat2_desc'] ?? 'Missões & Media', 'hint' => 'Descrição curta do satélite 2 exibida em hover.']),
             self::f(['key' => 'circular_menu_sat2_color', 'label' => 'Menu Orbital — Satélite 2 (cor)', 'type' => 'color', 'group' => 'menus', 'default' => $lc['circular_menu_sat2_color'] ?? '#06B6D4', 'hint' => 'Cor de acento individual do botão satélite 2.']),
 
-            self::f(['key' => 'circular_menu_sat3_icon', 'label' => 'Menu Orbital — Satélite 3 (ícone)', 'type' => 'text', 'group' => 'menus', 'default' => $lc['circular_menu_sat3_icon'] ?? '📡', 'hint' => 'Ícone do satélite 3 (Emoji ou caractere unicode).']),
+            self::f(['key' => 'circular_menu_sat3_icon', 'label' => 'Menu Orbital — Satélite 3 (ícone)', 'type' => 'media_image', 'group' => 'menus', 'default' => $lc['circular_menu_sat3_icon'] ?? '📡', 'hint' => 'Ícone do satélite 3 (Emoji ou caminho de imagem/SVG).']),
             self::f(['key' => 'circular_menu_sat3_desc', 'label' => 'Menu Orbital — Satélite 3 (descrição)', 'type' => 'text', 'group' => 'menus', 'default' => $lc['circular_menu_sat3_desc'] ?? 'Centro de Controlo', 'hint' => 'Descrição curta do satélite 3 exibida em hover.']),
             self::f(['key' => 'circular_menu_sat3_color', 'label' => 'Menu Orbital — Satélite 3 (cor)', 'type' => 'color', 'group' => 'menus', 'default' => $lc['circular_menu_sat3_color'] ?? '#06B6D4', 'hint' => 'Cor de acento individual do botão satélite 3.']),
 
-            self::f(['key' => 'circular_menu_sat4_icon', 'label' => 'Menu Orbital — Satélite 4 (ícone)', 'type' => 'text', 'group' => 'menus', 'default' => $lc['circular_menu_sat4_icon'] ?? '🌐', 'hint' => 'Ícone do satélite 4 (Emoji ou caractere unicode).']),
+            self::f(['key' => 'circular_menu_sat4_icon', 'label' => 'Menu Orbital — Satélite 4 (ícone)', 'type' => 'media_image', 'group' => 'menus', 'default' => $lc['circular_menu_sat4_icon'] ?? '🌐', 'hint' => 'Ícone do satélite 4 (Emoji ou caminho de imagem/SVG).']),
             self::f(['key' => 'circular_menu_sat4_desc', 'label' => 'Menu Orbital — Satélite 4 (descrição)', 'type' => 'text', 'group' => 'menus', 'default' => $lc['circular_menu_sat4_desc'] ?? 'Missão & Equipa', 'hint' => 'Descrição curta do satélite 4 exibida em hover.']),
             self::f(['key' => 'circular_menu_sat4_color', 'label' => 'Menu Orbital — Satélite 4 (cor)', 'type' => 'color', 'group' => 'menus', 'default' => $lc['circular_menu_sat4_color'] ?? '#06B6D4', 'hint' => 'Cor de acento individual do botão satélite 4.']),
 
@@ -707,6 +707,18 @@ final class ThemeSettingsRecommender
                 'default' => $lc['gallery_sound_fx'] ?? true, 
                 'hint' => 'Toca efeitos sonoros eletrónicos e de sonar muito suaves e discretos ao deslizar e ao abrir o Lightbox.'
             ]),
+            self::f([
+                'key' => 'gallery_images', 
+                'label' => 'Imagens da Galeria', 
+                'type' => 'media_gallery', 
+                'group' => 'galeria', 
+                'default' => $lc['gallery_images'] ?? [
+                    '/images/aerospace-slide1.svg',
+                    '/images/aerospace-slide2.svg',
+                    '/images/aerospace-slide3.svg'
+                ],
+                'hint' => 'Gira aqui a lista global de imagens da galeria. Elas serão usadas se o bloco da página não definir imagens personalizadas.'
+            ]),
 
             // ── Rodapé ───────────────────────────────────────────────────
             self::f([
@@ -739,7 +751,7 @@ final class ThemeSettingsRecommender
                 'label' => 'Embed do mapa (iframe src)', 
                 'type' => 'textarea', 
                 'group' => 'rodape', 
-                'default' => $lc['contact_map_iframe'] ?? '', 
+                'default' => $lc['contact_map_iframe'] ?? 'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d15760.84157778939!2d13.23005872895697!3d-8.813958742512686!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x1a51f3c83786adbf%3A0x6b772c676bb7db4b!2sLuanda!5e0!3m2!1spt-PT!2sao!4v1700000000000!5m2!1spt-PT!2sao', 
                 'hint' => 'Cole apenas o endereço "src" do iframe gerado na opção Partilhar/Incorporar do Google Maps (ex: https://www.google.com/maps/embed?...).'
             ]),
             self::f([

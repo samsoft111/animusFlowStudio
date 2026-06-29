@@ -1497,9 +1497,11 @@
             class="px-4 py-2 bg-muted text-foreground rounded-xl text-sm font-semibold hover:bg-border transition-colors">
             Cancelar
           </button>
-          <button @click="copyPromptToClipboard"
-            class="px-4 py-2 bg-muted border border-border text-foreground rounded-xl text-sm font-semibold hover:bg-border transition-colors flex items-center gap-2">
-            <span>📋</span> Copiar
+          <button @click="copyPromptToClipboard" :disabled="promptCopied"
+            class="px-4 py-2 border rounded-xl text-sm font-semibold transition-all flex items-center gap-2 disabled:opacity-80"
+            :class="promptCopied ? 'bg-success/10 border-success/30 text-success' : 'bg-muted border-border text-foreground hover:bg-border'">
+            <span>{{ promptCopied ? '✓' : '📋' }}</span>
+            <span>{{ promptCopied ? 'Copiado!' : 'Copiar' }}</span>
           </button>
           <a :href="`/plugins/${plugin.uuid}/export-prompt`"
             class="px-5 py-2 bg-violet-600 text-white rounded-xl text-sm font-bold hover:bg-violet-700 transition-colors flex items-center gap-2">
@@ -2619,6 +2621,7 @@ function applyChatUpdates(updates, msgIdx) {
 
 // ── Plugin Prompt Modal ──────────────────────────────────────────────
 const showPromptModal = ref(false);
+const promptCopied    = ref(false);
 
 const promptSummary = computed(() => {
   const f = form;
@@ -2681,9 +2684,13 @@ async function copyPromptToClipboard() {
     const res  = await fetch(`/plugins/${props.plugin.uuid}/export-prompt`);
     const text = await res.text();
     await navigator.clipboard.writeText(text);
-    feedback.success = '📋 Plugin Prompt copiado para o clipboard!';
-    setTimeout(() => { feedback.success = ''; }, 3000);
-    showPromptModal.value = false;
+    promptCopied.value = true;
+    feedback.success = '📋 Plugin "' + props.plugin.label + '" copiado com sucesso!';
+    setTimeout(() => {
+      promptCopied.value = false;
+      showPromptModal.value = false;
+      setTimeout(() => { feedback.success = ''; }, 3000);
+    }, 1200);
   } catch {
     feedback.error = 'Não foi possível copiar. Usa o botão Descarregar.';
   }
