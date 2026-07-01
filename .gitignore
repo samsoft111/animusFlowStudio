@@ -30,3 +30,4 @@ Thumbs.db
 # Ficheiros de scratch/debug (não pertencem ao repo)
 /scratch
 *.bak_*
+.commit_msg
