@@ -19,6 +19,20 @@ Construção, botão ✦) para gerar um tema completo.
 4. Valida no **Preview**, depois promove `status` para `published`.
 5. Exporta (ZIP ou `.afprompt`) e **instala no AnimusFlow**.
 
+## Guarda de drift (pre-commit)
+
+Existe um hook local em `.git/hooks/pre-commit` que corre
+`build_aerospace_skill.php --check` antes de cada commit e **bloqueia** se o
+snapshot divergir da BD (se a BD estiver em baixo, apenas avisa). O hook não é
+versionado — num clone novo, recria-o a correr o `--check` e bloqueando em
+exit code 1 (ver histórico: commits `650e9e6`…`04027bb` diziam "sync theme"
+mas iam vazios; este hook impede que volte a acontecer).
+
+Para regenerar o snapshot após editar o tema na BD:
+```
+php skills/themes/build_aerospace_skill.php --write
+```
+
 ## Relacionado
 - Guia técnico (Sistema A): `animusFlow/skills/animusflow/references/theme-development.md`
 - Definições do tema (consumidas no CMS): secção §1a do guia acima + `theme_settings` no `theme.json`.
