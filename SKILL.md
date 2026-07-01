@@ -80,6 +80,7 @@ private const LAYOUT_MAP = [
 - **Manual em PDF Acoplado**: O exportador de temas (`buildThemeZip`) copia automaticamente qualquer manual em PDF compilado (ex: `public/docs/aerospace_guide.pdf`) para a pasta `docs/` dentro do ZIP do tema.
 - **Esquema de Definições com Recomendações (152 campos)**: As definições do tema são registadas em `ThemeSettingsRecommender.php` e incluem descrições ricas com orientações e dimensões recomendadas no campo `hint` para ajudar o utilizador final a configurar o site.
 - Em Blade CMS usar **sempre** `$layout['menu_layout']` e `$layout['normal_menu_position']` — **nunca** `$theme->layout_config[...]`
+- **Esquemas de Bloco do Editor Visual**: Todos os blocos agora possuem formulários visuais dinâmicos suportando repeaters estruturados e seletores interativos de imagens (`type: 'image'`), de modo a que todos os temas exportados ofereçam edição 100% livre de JSON bruto.
 - Ver documentação completa em `references/theme-development.md` Secção 10
 
 ### Preview de tema no Studio — pipeline de rendering

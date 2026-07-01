@@ -74,6 +74,11 @@ Cada campo:
 
 ## 6. Boas Práticas de Desenvolvimento de Temas
 
+*   **Estrutura de Blocos sem JSON Bruto**: Os templates Blade das secções do tema devem ser desenhados para consumir dados limpos estruturados pelos novos formulários do editor do AnimusFlow:
+    - **Imagens Únicas**: Mapeie campos de imagens com o tipo `image` (que integra com a galeria de media) e leia-os diretamente (ex: `src="{{ $content['image'] ?? '' }}"`).
+    - **Repeaters**: Use sempre loops Blade `@foreach($content['items'] ?? [])` para listas genéricas (como FAQ, colunas ou cards), `@foreach($content['members'] ?? [])` para o bloco de equipa, e `@foreach($content['logos'] ?? [])` para o logocloud.
+    - **Imagens de Fundo**: Leia e aplique a variável `$settings['bg_image']` sob a forma de estilo em linha (ex: `style="background-image: url('{{ $settings['bg_image'] }}')"`).
+*   **Controlo de Mapa e Imagens no CTA**: Para o bloco CTA, preveja os campos de customização `show_map` (booleano), `map_iframe` (imagem/url) e `map_height` (altura em px). Dê um fallback gracioso no Blade renderizando como tag `<img>` caso a URL não corresponda a um iframe do Google Maps.
 *   **Limitação de Classes Dinâmicas do Tailwind**: Como o Tailwind é compilado previamente, classes interpoladas como `grid-cols-{{ $cols }}` ou `gap-{{ $gap }}` **não funcionam** (não serão geradas no CSS). Deve sempre aplicar estes valores dinâmicos via **estilo inline usando variáveis CSS**:
     ```html
     <div style="--cols-desktop: {{ $cols }}; --gap-size: {{ $gap }}px;" class="grid grid-cols-[repeat(var(--cols-desktop),_minmax(0,_1fr))] gap-[var(--gap-size)]">

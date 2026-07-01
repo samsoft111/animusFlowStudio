@@ -48,6 +48,7 @@ Tipos: `text · textarea · color · select · toggle`. Para `select`, dar `"opt
 
 *   **Degradação Graciosa (Graceful Fallback)**: Se o plugin exigir chaves de API, credenciais ou configurações que o utilizador ainda não preencheu, o widget **nunca deve quebrar a página**. Exiba uma mensagem amigável no lugar do widget para utilizadores autenticados (ex: "Configure a chave de API nas definições do plugin") ou oculte o widget silenciosamente para visitantes.
 *   **Isolamento de JavaScript**: O script `widget.js` deve ser auto-contido e isolado (ex: dentro de um IIFE ou bloco `{}`) para evitar poluição do escopo global. Use seletores altamente específicos (baseados no ID do widget ou classes exclusivas) para que o script do plugin não interfira com o comportamento do tema ou de outros plugins.
+*   **Compatibilidade com Campos do Editor**: Ao desenhar esquemas de definições do plugin (`settings_schema`), certifique-se de que o widget em `widget.blade.php` trata com segurança os tipos de campos nativos (como selects, toggles e cores) e possui fallbacks robustos para valores vazios ou não definidos.
 *   **Integração com Modelos Core**: Para armazenar dados de utilizadores ou submissões, utilize as tabelas e modelos nativos do AnimusFlow sempre que possível (ex: `FormSubmission` para formulários) ou crie migrações limpas no seu plugin se for necessário estender o esquema.
 
 ## 6. Modo Construção (agentes)
